@@ -1,9 +1,1 @@
-{
-  "/project/[websiteId]/page": "app/project/[websiteId]/page.js",
-  "/project/[websiteId]/cart/page": "app/project/[websiteId]/cart/page.js",
-  "/project/[websiteId]/checkout/page": "app/project/[websiteId]/checkout/page.js",
-  "/project/[websiteId]/product/[productSlug]/page": "app/project/[websiteId]/product/[productSlug]/page.js",
-  "/admin/products/page": "app/admin/products/page.js",
-  "/admin/email-templates/page": "app/admin/email-templates/page.js",
-  "/admin/websites/page": "app/admin/websites/page.js"
-}
+{}

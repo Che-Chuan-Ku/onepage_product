@@ -1,0 +1,23 @@
+spring:
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: false
+
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    com.onepage: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
