@@ -1,0 +1,27 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 庫存管理
+%% [ACTOR] 管理員 -> {specs/actors/管理員.md}
+
+flowchart TD
+
+%% ═══ 區段二：節點定義 ═══
+
+    Start(( ))
+
+    %% [STEP:1] @管理員 {features/inventory/查詢庫存.feature}
+    S1["@管理員<br/>查詢庫存"]
+
+    %% [STEP:2] @管理員 {features/inventory/編輯庫存.feature}
+    S2["@管理員<br/>編輯庫存"]
+
+    %% [STEP:3] @管理員 {features/inventory/設定低庫存門檻.feature}
+    S3["@管理員<br/>設定低庫存門檻"]
+
+    End((( )))
+
+%% ═══ 區段三：邊定義 ═══
+
+    Start --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> End

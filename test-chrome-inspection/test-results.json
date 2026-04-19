@@ -1,0 +1,485 @@
+{
+  "timestamp": "2026-04-19T04:00:51.138Z",
+  "summary": {
+    "total": 12,
+    "pass": 12,
+    "fail": 0,
+    "warn": 0
+  },
+  "pages": [
+    {
+      "page": "/admin/login",
+      "name": "admin-login",
+      "status": "PASS",
+      "duration_ms": 3134,
+      "screenshot": "screenshots/admin-login.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": []
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": []
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/websites",
+      "name": "admin-websites",
+      "status": "PASS",
+      "duration_ms": 3077,
+      "screenshot": "screenshots/admin-websites.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": [
+          {
+            "api": "/websites",
+            "apiCount": 2,
+            "pageCount": -1,
+            "match": "N/A"
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": [
+          {
+            "api": "POST /websites",
+            "status": 0,
+            "body": "Skipped (requires file upload)",
+            "itemCount": 1
+          }
+        ]
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/products",
+      "name": "admin-products",
+      "status": "PASS",
+      "duration_ms": 3244,
+      "screenshot": "screenshots/admin-products.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": [
+          {
+            "api": "/products",
+            "apiCount": 11,
+            "pageCount": 11,
+            "match": true
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": [
+          {
+            "api": "POST /products",
+            "status": 201,
+            "body": "Created ID 14",
+            "itemCount": 1
+          }
+        ]
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/categories",
+      "name": "admin-categories",
+      "status": "PASS",
+      "duration_ms": 3079,
+      "screenshot": "screenshots/admin-categories.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": [
+          {
+            "api": "/product-categories",
+            "apiCount": 9,
+            "pageCount": -1,
+            "match": "N/A"
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": [
+          {
+            "api": "POST /product-categories",
+            "status": 201,
+            "body": "Created ID 21",
+            "itemCount": 1
+          },
+          {
+            "api": "DELETE /product-categories/{id}",
+            "status": 204,
+            "body": "Tested via POST+DELETE cycle",
+            "itemCount": 1
+          }
+        ]
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/orders",
+      "name": "admin-orders",
+      "status": "PASS",
+      "duration_ms": 3122,
+      "screenshot": "screenshots/admin-orders.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": [
+          {
+            "api": "/orders",
+            "apiCount": 1,
+            "pageCount": 1,
+            "match": true
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": []
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/invoices",
+      "name": "admin-invoices",
+      "status": "PASS",
+      "duration_ms": 3040,
+      "screenshot": "screenshots/admin-invoices.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": [
+          {
+            "api": "/invoices",
+            "apiCount": 0,
+            "pageCount": -1,
+            "match": "N/A"
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": []
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/inventory",
+      "name": "admin-inventory",
+      "status": "PASS",
+      "duration_ms": 3029,
+      "screenshot": "screenshots/admin-inventory.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": [
+          {
+            "api": "/inventory",
+            "apiCount": 12,
+            "pageCount": 12,
+            "match": true
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": [
+          {
+            "api": "PUT /inventory/{id}",
+            "status": 200,
+            "body": "Updated OK (restored original value)",
+            "itemCount": 1
+          },
+          {
+            "api": "PUT /inventory/{id}/threshold",
+            "status": 200,
+            "body": "Updated OK (restored original value)",
+            "itemCount": 1
+          }
+        ]
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/users",
+      "name": "admin-users",
+      "status": "PASS",
+      "duration_ms": 3089,
+      "screenshot": "screenshots/admin-users.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": [
+          {
+            "api": "/users",
+            "apiCount": 4,
+            "pageCount": 4,
+            "match": true
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": [
+          {
+            "api": "POST /users",
+            "status": 201,
+            "body": "Created ID 5",
+            "itemCount": 1
+          }
+        ]
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/email-templates",
+      "name": "admin-email-templates",
+      "status": "PASS",
+      "duration_ms": 2999,
+      "screenshot": "screenshots/admin-email-templates.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": [
+          {
+            "api": "/email-templates",
+            "apiCount": 4,
+            "pageCount": -1,
+            "match": "N/A"
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": []
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/admin/websites/1/products",
+      "name": "admin-website-products",
+      "status": "PASS",
+      "duration_ms": 3191,
+      "screenshot": "screenshots/admin-website-products.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": false,
+        "checks": [
+          {
+            "api": "/websites/1/products",
+            "apiCount": 3,
+            "pageCount": 9,
+            "match": false
+          },
+          {
+            "api": "/products",
+            "apiCount": 12,
+            "pageCount": 9,
+            "match": false
+          }
+        ]
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": [
+          {
+            "api": "PUT /websites/{id}/products",
+            "status": 200,
+            "body": "Updated 3 products OK",
+            "itemCount": 3
+          }
+        ]
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/project/1",
+      "name": "storefront-home",
+      "status": "PASS",
+      "duration_ms": 3211,
+      "screenshot": "screenshots/storefront-home.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": []
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": []
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    },
+    {
+      "page": "/project/1/cart",
+      "name": "storefront-cart",
+      "status": "PASS",
+      "duration_ms": 2775,
+      "screenshot": "screenshots/storefront-cart.png",
+      "l1_rendering": {
+        "passed": true,
+        "details": ""
+      },
+      "l2_network": {
+        "passed": true,
+        "api_errors": [],
+        "console_errors": []
+      },
+      "l3_data": {
+        "passed": true,
+        "checks": []
+      },
+      "l4_write_apis": {
+        "passed": true,
+        "results": []
+      },
+      "interactions": {
+        "passed": true,
+        "details": ""
+      }
+    }
+  ],
+  "storefront_images": {
+    "images": [
+      {
+        "src": "http://localhost:3001/_next/image?url=http%3A%2F%2Flocalhost%3A8080%2Fapi%2Fv1%2Fuploads%2Fproducts%",
+        "loaded": true,
+        "alt": "測試商店 banner"
+      },
+      {
+        "src": "http://localhost:3001/_next/image?url=http%3A%2F%2Flocalhost%3A8080%2Fapi%2Fv1%2Fuploads%2Fproducts%",
+        "loaded": true,
+        "alt": "宣傳圖"
+      }
+    ],
+    "errors": []
+  }
+}

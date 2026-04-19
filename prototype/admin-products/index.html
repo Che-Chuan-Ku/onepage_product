@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>後台商品管理頁 Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        olive: { 50:'#f7f8f0', 100:'#eef0e1', 200:'#dce1c3', 300:'#c4cc9a', 400:'#a8b36e', 500:'#8d9a4f', 600:'#6e7b3b', 700:'#4A5D23', 800:'#3d4c1f', 900:'#2e3a17' },
+        terra: { 50:'#fdf5f2', 100:'#fbe8e0', 200:'#f5cfc0', 300:'#edae96', 400:'#e28a6a', 500:'#C75B39', 600:'#b74a2c', 700:'#993d25', 800:'#7d3422', 900:'#6a2e20' },
+        cream: { 50:'#FEFDFB', 100:'#FAF7F2', 200:'#F5EFE6', 300:'#EDE4D4' }
+      },
+      fontFamily: {
+        display: ['Playfair Display', 'serif'],
+        body: ['Source Sans 3', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Source Sans 3', sans-serif; background: #FAF7F2; }
+  input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px #4A5D23; }
+  .sidebar-link { transition: all 0.2s; }
+  .sidebar-link:hover { background: rgba(74,93,35,0.1); }
+  .sidebar-link.active { background: rgba(74,93,35,0.15); border-right: 3px solid #4A5D23; }
+  .img-thumb { transition: all 0.2s; }
+  .img-thumb:hover .img-remove { opacity: 1; }
+  .img-remove { opacity: 0; transition: opacity 0.2s; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef } = React;
+
+// REQ-034: RBAC — 角色控制側邊選單
+const ALL_NAV_ITEMS = [
+  { label: '商品管理', href: '../admin-products/index.html', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', active: true, roles: ['管理員','一般使用者'] },
+  { label: '商品類型', href: '../admin-categories/index.html', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', roles: ['管理員','一般使用者'] },
+  { label: '網站管理', href: '../admin-websites/index.html', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9', roles: ['管理員'] },
+  { label: '訂單管理', href: '../admin-orders/index.html', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', roles: ['管理員','一般使用者'] },
+  { label: '發票管理', href: '../admin-invoices/index.html', icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z', roles: ['管理員'] },
+  { label: '庫存管理', href: '../admin-inventory/index.html', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8', roles: ['管理員','一般使用者'] },
+  { label: '使用者管理', href: '../admin-users/index.html', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197', roles: ['管理員'] },
+  { label: 'Email模板', href: '../admin-email-templates/index.html', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', roles: ['管理員'] },
+];
+
+const categories = {
+  '水果類': ['進口', '台灣產'],
+  '南北乾貨': ['乾貨', '調味']
+};
+
+const initialProducts = [
+  { id: 1, name: '頂級蜜蘋果', slug: 'premium-apple', price: 680, unit: '公斤', category: '進口', parentCategory: '水果類', status: 'active', images: 3, isPreorder: false, isBundle: false },
+  { id: 2, name: '愛文芒果', slug: 'mango-preorder', price: 1200, unit: '台斤', category: '台灣產', parentCategory: '水果類', status: 'active', images: 2, isPreorder: true, preorderStart: '2026-04-01', preorderEnd: '2026-05-15', discount: 20 },
+  { id: 3, name: '台灣香菇乾', slug: 'dried-mushroom', price: 450, unit: '公斤', category: '乾貨', parentCategory: '南北乾貨', status: 'active', images: 1, isPreorder: false, isBundle: false },
+  { id: 4, name: '精選水果禮盒組合', slug: 'fruit-bundle', price: 1800, unit: '公斤', category: '進口', parentCategory: '水果類', status: 'active', images: 2, isPreorder: false, isBundle: true, discount: 18 },
+  { id: 5, name: '有機香蕉', slug: 'banana-organic', price: 120, unit: '台斤', category: '台灣產', parentCategory: '水果類', status: 'inactive', images: 1, isPreorder: false, isBundle: false },
+];
+
+// REQ-026: 圖片上傳元件（最多5張，即時預覽）
+function ImageUploader({ images, onChange }) {
+  const fileInputRef = useRef(null);
+  const MAX_IMAGES = 5;
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    const remaining = MAX_IMAGES - images.length;
+    const toAdd = files.slice(0, remaining);
+    const newImages = toAdd.map(file => ({
+      id: Date.now() + Math.random(),
+      url: URL.createObjectURL(file),
+      name: file.name
+    }));
+    onChange([...images, ...newImages]);
+    e.target.value = '';
+  };
+
+  const handleRemove = (id) => {
+    onChange(images.filter(img => img.id !== id));
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f.name));
+    const remaining = MAX_IMAGES - images.length;
+    const toAdd = files.slice(0, remaining);
+    const newImages = toAdd.map(file => ({
+      id: Date.now() + Math.random(),
+      url: URL.createObjectURL(file),
+      name: file.name
+    }));
+    onChange([...images, ...newImages]);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className="font-body font-semibold text-olive-800">商品圖片（最多 5 張）<span className="text-terra-500"> *</span></label>
+        <span className="font-body text-xs text-olive-400">{images.length} / {MAX_IMAGES}</span>
+      </div>
+
+      {/* Preview thumbnails */}
+      {images.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-3">
+          {images.map((img, idx) => (
+            <div key={img.id} className="img-thumb relative w-24 h-24 rounded-sm overflow-hidden border-2 border-olive-200 group">
+              <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+              <div className="img-remove absolute inset-0 bg-black/50 flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleRemove(img.id)}
+                  className="text-white hover:text-terra-300 transition-colors"
+                  title="移除"
+                >
+                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              {idx === 0 && (
+                <div className="absolute bottom-0 left-0 right-0 bg-olive-700/80 text-white text-center text-xs py-0.5 font-body">主圖</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload zone */}
+      {images.length < MAX_IMAGES && (
+        <div
+          onDrop={handleDrop}
+          onDragOver={e => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}
+          className="border-2 border-dashed border-cream-300 rounded-sm p-6 text-center hover:border-olive-400 transition-colors cursor-pointer bg-cream-50"
+        >
+          <svg width="36" height="36" fill="none" stroke="#8d9a4f" strokeWidth="1.5" viewBox="0 0 24 24" className="mx-auto mb-2">
+            <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <p className="font-body text-olive-600 text-sm">拖拉上傳或點擊選擇圖片</p>
+          <p className="font-body text-olive-400 text-xs mt-1">支援 JPG / PNG / WebP，單張 2MB 上限，最多 {MAX_IMAGES} 張</p>
+          <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" multiple className="hidden" onChange={handleFileChange} />
+        </div>
+      )}
+      {images.length >= MAX_IMAGES && (
+        <p className="font-body text-olive-400 text-xs mt-1 text-center">已達上限（{MAX_IMAGES} 張）</p>
+      )}
+    </div>
+  );
+}
+
+function Sidebar({ items, currentRole, onRoleChange }) {
+  const visibleItems = items.filter(item => item.roles.includes(currentRole));
+  return (
+    <aside className="w-56 bg-olive-900 min-h-screen flex-shrink-0 flex flex-col">
+      <div className="p-4 border-b border-olive-800">
+        <h1 className="font-display text-lg text-cream-100 font-bold">豐收農場</h1>
+        <p className="text-olive-400 text-xs font-body">管理後台</p>
+      </div>
+      {/* REQ-034: 角色切換（Prototype 模擬） */}
+      <div className="px-3 py-2 border-b border-olive-800">
+        <p className="text-olive-500 text-xs font-body mb-1">目前角色（Prototype）</p>
+        <select value={currentRole} onChange={e => onRoleChange(e.target.value)}
+          className="w-full text-xs font-body bg-olive-800 text-cream-200 border border-olive-700 rounded px-2 py-1">
+          <option value="管理員">管理員</option>
+          <option value="一般使用者">一般使用者</option>
+        </select>
+      </div>
+      <nav className="py-2 flex-1">
+        {visibleItems.map(item => (
+          <a key={item.label} href={item.href}
+            className={`sidebar-link flex items-center gap-3 px-4 py-3 font-body text-sm ${item.active ? 'active text-cream-100 font-semibold' : 'text-olive-300 hover:text-cream-100'}`}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d={item.icon}/></svg>
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <div className="p-4 border-t border-olive-800">
+        <a href="../admin-login/index.html" className="flex items-center gap-2 text-olive-400 hover:text-cream-100 font-body text-sm transition-colors">
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          登出
+        </a>
+      </div>
+    </aside>
+  );
+}
+
+function App() {
+  const [products, setProducts] = useState(initialProducts);
+  const [view, setView] = useState('list');
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [filter, setFilter] = useState('');
+  const [showConfirmDelist, setShowConfirmDelist] = useState(null);
+  const [currentRole, setCurrentRole] = useState('管理員');
+
+  // REQ-026: 圖片狀態
+  const [uploadedImages, setUploadedImages] = useState([]);
+
+  const [form, setForm] = useState({
+    name: '', description: '', price: '', unit: '公斤', parentCategory: '', subCategory: '',
+    packaging: '', isPreorder: false, preorderStart: '', preorderEnd: '', preorderDiscount: '',
+    isBundle: false, bundleDiscount: ''
+  });
+
+  const filteredProducts = products.filter(p =>
+    !filter || p.name.includes(filter) || p.slug.includes(filter)
+  );
+
+  const startEdit = (product) => {
+    setEditingProduct(product);
+    setForm({
+      name: product.name, description: '', price: String(product.price), unit: product.unit,
+      parentCategory: product.parentCategory, subCategory: product.category,
+      packaging: '', isPreorder: product.isPreorder, preorderStart: product.preorderStart || '',
+      preorderEnd: product.preorderEnd || '', preorderDiscount: product.discount ? String(product.discount) : '',
+      isBundle: product.isBundle, bundleDiscount: product.discount ? String(product.discount) : ''
+    });
+    setUploadedImages([]);
+    setView('edit');
+  };
+
+  const startCreate = () => {
+    setForm({ name:'',description:'',price:'',unit:'公斤',parentCategory:'',subCategory:'',packaging:'',isPreorder:false,preorderStart:'',preorderEnd:'',preorderDiscount:'',isBundle:false,bundleDiscount:'' });
+    setUploadedImages([]);
+    setView('create');
+  };
+
+  const handleDelist = (id) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: 'inactive' } : p));
+    setShowConfirmDelist(null);
+  };
+
+  const handleRelist = (id) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: 'active' } : p));
+  };
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar items={ALL_NAV_ITEMS} currentRole={currentRole} onRoleChange={setCurrentRole} />
+
+      <main className="flex-1 p-6 lg:p-8">
+        {view === 'list' && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-display text-2xl text-olive-900 font-bold">商品管理</h2>
+                <p className="font-body text-olive-500 text-sm mt-1">管理所有商品的上架、編輯與下架</p>
+              </div>
+              <button onClick={startCreate}
+                className="bg-olive-700 text-white px-5 py-2.5 rounded-sm font-body font-semibold hover:bg-olive-800 transition-colors flex items-center gap-2">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                新增商品
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <input type="text" value={filter} onChange={e => setFilter(e.target.value)}
+                className="w-full max-w-sm border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-white"
+                placeholder="搜尋商品名稱..." />
+            </div>
+
+            <div className="bg-white rounded-sm border border-cream-300 overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-cream-100 border-b border-cream-300">
+                    <th className="text-left px-4 py-3 font-body font-semibold text-olive-700 text-sm">商品名稱</th>
+                    <th className="text-left px-4 py-3 font-body font-semibold text-olive-700 text-sm">分類</th>
+                    <th className="text-right px-4 py-3 font-body font-semibold text-olive-700 text-sm">價格</th>
+                    <th className="text-center px-4 py-3 font-body font-semibold text-olive-700 text-sm">標籤</th>
+                    <th className="text-center px-4 py-3 font-body font-semibold text-olive-700 text-sm">狀態</th>
+                    <th className="text-center px-4 py-3 font-body font-semibold text-olive-700 text-sm">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map(product => (
+                    <tr key={product.id} className="border-b border-cream-200 hover:bg-cream-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="font-body font-semibold text-olive-800">{product.name}</p>
+                          <p className="text-xs text-olive-400 font-body">{product.slug} | {product.images} 張圖片</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-body text-sm text-olive-600">{product.parentCategory} &gt; {product.category}</td>
+                      <td className="px-4 py-3 text-right font-body font-semibold text-olive-800">NT${product.price.toLocaleString()}/{product.unit}</td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex justify-center gap-1">
+                          {product.isPreorder && <span className="bg-terra-100 text-terra-600 px-2 py-0.5 text-xs font-body font-semibold rounded-sm">預購</span>}
+                          {product.isBundle && <span className="bg-olive-100 text-olive-700 px-2 py-0.5 text-xs font-body font-semibold rounded-sm">組合包</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-block px-3 py-1 text-xs font-body font-semibold rounded-sm ${product.status === 'active' ? 'bg-olive-100 text-olive-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {product.status === 'active' ? '已上架' : '已下架'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button onClick={() => startEdit(product)} className="text-olive-600 hover:text-olive-800 font-body text-sm underline">編輯</button>
+                          {product.status === 'active' ? (
+                            <button onClick={() => setShowConfirmDelist(product.id)} className="text-terra-500 hover:text-terra-700 font-body text-sm underline">下架</button>
+                          ) : (
+                            <button onClick={() => handleRelist(product.id)} className="text-olive-500 hover:text-olive-700 font-body text-sm underline">上架</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {showConfirmDelist && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                <div className="bg-white rounded-sm p-6 max-w-sm w-full mx-4 border border-cream-300 shadow-xl">
+                  <h3 className="font-display text-lg text-olive-800 font-semibold mb-3">確認下架</h3>
+                  <p className="font-body text-olive-600 mb-6">確定要下架此商品嗎？下架後顧客將無法瀏覽此商品。</p>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setShowConfirmDelist(null)} className="px-5 py-2 rounded-sm font-body border border-cream-300 text-olive-600 hover:bg-cream-100 transition-colors">取消</button>
+                    <button onClick={() => handleDelist(showConfirmDelist)} className="px-5 py-2 rounded-sm font-body bg-terra-500 text-white hover:bg-terra-600 transition-colors">確認下架</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {(view === 'create' || view === 'edit') && (
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <button onClick={() => { setView('list'); setEditingProduct(null); }} className="text-olive-600 hover:text-olive-800 transition-colors">
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              </button>
+              <h2 className="font-display text-2xl text-olive-900 font-bold">{view === 'create' ? '新增商品' : `編輯商品：${editingProduct?.name}`}</h2>
+            </div>
+
+            <div className="bg-white rounded-sm border border-cream-300 p-6 lg:p-8 max-w-3xl">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="lg:col-span-2">
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5">商品名稱 <span className="text-terra-500">*</span></label>
+                  <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                    className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" />
+                </div>
+                <div className="lg:col-span-2">
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5">商品描述</label>
+                  <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})}
+                    className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50 h-24 resize-none" />
+                </div>
+                <div>
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5">價格 <span className="text-terra-500">*</span></label>
+                  <div className="flex gap-2">
+                    <input type="number" min="1" value={form.price} onChange={e => setForm({...form, price: e.target.value})}
+                      className="flex-1 border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" placeholder="NT$" />
+                    <select value={form.unit} onChange={e => setForm({...form, unit: e.target.value})}
+                      className="w-24 border border-cream-300 rounded-sm px-3 py-2.5 font-body text-olive-800 bg-cream-50">
+                      <option>公斤</option><option>台斤</option>
+                    </select>
+                  </div>
+                  {form.price && Number(form.price) <= 0 && (
+                    <p className="text-terra-500 text-xs font-body mt-1">價格必須大於 0</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5">主分類</label>
+                  <select value={form.parentCategory} onChange={e => setForm({...form, parentCategory: e.target.value, subCategory: ''})}
+                    className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50">
+                    <option value="">請選擇</option>
+                    {Object.keys(categories).map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5">子分類</label>
+                  <select value={form.subCategory} onChange={e => setForm({...form, subCategory: e.target.value})}
+                    className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50">
+                    <option value="">請選擇</option>
+                    {(categories[form.parentCategory] || []).map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5">包裝規格（純文字）</label>
+                  <input type="text" value={form.packaging} onChange={e => setForm({...form, packaging: e.target.value})}
+                    className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50"
+                    placeholder="例：3入禮盒, 6入禮盒" />
+                </div>
+
+                {/* REQ-026: 圖片上傳（最多5張，即時預覽） */}
+                <div className="lg:col-span-2">
+                  <ImageUploader images={uploadedImages} onChange={setUploadedImages} />
+                </div>
+
+                {view === 'create' && (
+                  <div>
+                    <label className="block font-body font-semibold text-olive-800 mb-1.5">初始庫存</label>
+                    <input type="number" min="0" className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" placeholder="0" />
+                  </div>
+                )}
+
+                {/* Preorder toggle */}
+                <div className="lg:col-span-2 border-t border-cream-200 pt-5">
+                  <label className="flex items-center gap-3 cursor-pointer mb-4">
+                    <input type="checkbox" checked={form.isPreorder} onChange={e => setForm({...form, isPreorder: e.target.checked})}
+                      className="w-5 h-5 rounded-sm border-cream-300" />
+                    <span className="font-body font-semibold text-olive-800">預購商品</span>
+                  </label>
+                  {form.isPreorder && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 ml-8">
+                      <div>
+                        <label className="block font-body text-sm text-olive-600 mb-1">預購開始</label>
+                        <input type="date" value={form.preorderStart} onChange={e => setForm({...form, preorderStart: e.target.value})}
+                          className="w-full border border-cream-300 rounded-sm px-3 py-2 font-body text-olive-800 bg-cream-50" />
+                      </div>
+                      <div>
+                        <label className="block font-body text-sm text-olive-600 mb-1">預購結束</label>
+                        <input type="date" value={form.preorderEnd} onChange={e => setForm({...form, preorderEnd: e.target.value})}
+                          className="w-full border border-cream-300 rounded-sm px-3 py-2 font-body text-olive-800 bg-cream-50" />
+                      </div>
+                      <div>
+                        <label className="block font-body text-sm text-olive-600 mb-1">折扣 (%)</label>
+                        <input type="number" min="1" max="99" value={form.preorderDiscount} onChange={e => setForm({...form, preorderDiscount: e.target.value})}
+                          className="w-full border border-cream-300 rounded-sm px-3 py-2 font-body text-olive-800 bg-cream-50" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bundle toggle */}
+                <div className="lg:col-span-2 border-t border-cream-200 pt-5">
+                  <label className="flex items-center gap-3 cursor-pointer mb-4">
+                    <input type="checkbox" checked={form.isBundle} onChange={e => setForm({...form, isBundle: e.target.checked})}
+                      className="w-5 h-5 rounded-sm border-cream-300" />
+                    <span className="font-body font-semibold text-olive-800">組合包</span>
+                  </label>
+                  {form.isBundle && (
+                    <div className="ml-8 space-y-4">
+                      <div>
+                        <label className="block font-body text-sm text-olive-600 mb-1">組合折扣 (%)</label>
+                        <input type="number" min="1" max="99" value={form.bundleDiscount} onChange={e => setForm({...form, bundleDiscount: e.target.value})}
+                          className="w-48 border border-cream-300 rounded-sm px-3 py-2 font-body text-olive-800 bg-cream-50" />
+                      </div>
+                      <div>
+                        <p className="font-body text-sm text-olive-600 mb-2">勾選包含商品</p>
+                        <div className="space-y-2">
+                          {initialProducts.filter(p => !p.isBundle).map(p => (
+                            <label key={p.id} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" className="w-4 h-4 rounded-sm" />
+                              <span className="font-body text-olive-700">{p.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-8 pt-5 border-t border-cream-200">
+                <button onClick={() => { setView('list'); setEditingProduct(null); }}
+                  className="px-6 py-2.5 rounded-sm font-body border border-cream-300 text-olive-600 hover:bg-cream-100 transition-colors">
+                  取消
+                </button>
+                <button className="px-6 py-2.5 rounded-sm font-body bg-olive-700 text-white hover:bg-olive-800 transition-colors font-semibold">
+                  {view === 'create' ? '上架商品' : '儲存變更'}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

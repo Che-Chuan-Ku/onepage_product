@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: onepage-product
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/onepage}
+    username: ${DB_USERNAME:onepage}
+    password: ${DB_PASSWORD:onepage}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 20MB
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+jwt:
+  secret: ${JWT_SECRET:onepage-secret-key-for-development-only-change-in-production}
+  access-token-expiration: 1800000      # 30 minutes in ms
+  refresh-token-expiration: 604800000   # 7 days in ms
+
+ecpay:
+  merchant-id: ${ECPAY_MERCHANT_ID:2000132}
+  hash-key: ${ECPAY_HASH_KEY:5294y06JbISpM5x9}
+  hash-iv: ${ECPAY_HASH_IV:v77hoKGq4kWxNNIS}
+  payment-api-url: ${ECPAY_PAYMENT_URL:https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5}
+  invoice-api-url: ${ECPAY_INVOICE_URL:https://einvoice-stage.ecpay.com.tw}
+
+file:
+  upload:
+    base-url: ${FILE_BASE_URL:http://localhost:8080/api/v1}
+    local-path: ${FILE_LOCAL_PATH:uploads}
+
+logging:
+  level:
+    com.onepage: DEBUG
+    org.springframework.security: INFO

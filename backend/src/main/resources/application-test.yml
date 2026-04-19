@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:15:///onepage_test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
+    clean-disabled: false
+
+jwt:
+  secret: test-secret-key-for-cucumber-e2e-testing-only
+  access-token-expiration: 3600000
+  refresh-token-expiration: 86400000
+
+ecpay:
+  merchant-id: 2000132
+  hash-key: 5294y06JbISpM5x9
+  hash-iv: v77hoKGq4kWxNNIS
+  payment-api-url: https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5
+  invoice-api-url: https://einvoice-stage.ecpay.com.tw
+
+file:
+  upload:
+    base-url: http://localhost:8080
+    local-path: /tmp/onepage_test_uploads

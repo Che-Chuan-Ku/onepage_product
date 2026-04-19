@@ -1,0 +1,19 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 通知管理
+%% [ACTOR] 管理員 -> {specs/actors/管理員.md}
+
+flowchart TD
+
+%% ═══ 區段二：節點定義 ═══
+
+    Start(( ))
+
+    %% [STEP:1] @管理員 {features/notification/管理Email通知模板.feature}
+    S1["@管理員<br/>管理Email通知模板"]
+
+    End((( )))
+
+%% ═══ 區段三：邊定義 ═══
+
+    Start --> S1
+    S1 --> End

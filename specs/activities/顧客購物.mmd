@@ -1,0 +1,102 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 顧客購物
+%% [ACTOR] 顧客 -> {specs/actors/顧客.md}
+%% [ACTOR] 綠界金流系統 -> {specs/actors/綠界金流系統.md}
+
+flowchart TD
+
+%% ═══ 區段二：節點定義 ═══
+
+    Start(( ))
+
+    %% [STEP:1] @顧客 {features/shopping/瀏覽商品集合頁.feature}
+    S1["@顧客<br/>瀏覽商品集合頁"]
+
+    %% [STEP:2] @顧客 {features/shopping/瀏覽商品詳情頁.feature}
+    S2["@顧客<br/>瀏覽商品詳情頁"]
+
+    %% [STEP:3] @顧客 {features/shopping/加入購物車.feature}
+    S3["@顧客<br/>加入購物車"]
+
+    %% [STEP:4] @顧客 {features/shopping/調整購物車.feature}
+    S4["@顧客<br/>調整購物車"]
+
+    %% [STEP:5] @顧客 {features/order/填寫下單表單.feature}
+    S5["@顧客<br/>填寫下單表單"]
+
+    %% [STEP:6] @顧客 {features/order/計算運費.feature}
+    S6["@顧客<br/>計算運費"]
+
+    %% [DECISION:6a] 是否為外島地址
+    D6a{"是否為外島地址"}
+
+    %% [BRANCH:6a:是外島] @顧客 {features/order/顯示外島不支援.feature}
+    B6a_island["@顧客<br/>顯示不支援外島運送"]
+
+    %% [BRANCH:6a:非外島]
+    B6a_ok["非外島<br/>運費計算完成"]
+
+    %% [MERGE:6a]
+    M6a(( ))
+
+    %% [STEP:7] @顧客 {features/order/建立訂單.feature}
+    S7["@顧客<br/>建立訂單"]
+
+    %% [STEP:7a] 系統自動觸發下單確認 Email 通知
+    S7a["系統<br/>發送下單確認 Email 通知"]
+
+    %% [STEP:8] @顧客 {features/payment/選擇付款方式.feature}
+    S8["@顧客<br/>選擇付款方式"]
+
+    %% [STEP:9] @綠界金流系統 {features/payment/接收付款回調.feature}
+    S9["@綠界金流系統<br/>付款回調通知"]
+
+    %% [DECISION:9a] 付款結果
+    D9a{"付款結果"}
+
+    %% [BRANCH:9a:付款成功]
+    B9a_ok["付款成功<br/>訂單狀態→已付款"]
+
+    %% [STEP:10] 付款成功後自動開立電子發票
+    S10["系統<br/>自動開立電子發票"]
+
+    %% [STEP:10a] 系統自動觸發付款成功 Email 通知
+    S10a["系統<br/>發送付款成功 Email 通知"]
+
+    %% [BRANCH:9a:付款失敗]
+    B9a_fail["付款失敗<br/>訂單狀態→付款失敗"]
+
+    %% [STEP:11] 付款失敗時發送 Email 通知
+    S11["系統<br/>發送付款失敗 Email 通知"]
+
+    %% [MERGE:9a]
+    M9a(( ))
+
+    End((( )))
+
+%% ═══ 區段三：邊定義 ═══
+
+    Start --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> D6a
+    D6a -- 是外島 --> B6a_island
+    D6a -- 非外島 --> B6a_ok
+    B6a_island --> End
+    B6a_ok --> M6a
+    M6a --> S7
+    S7 --> S7a
+    S7a --> S8
+    S8 --> S9
+    S9 --> D9a
+    D9a -- 付款成功 --> B9a_ok
+    B9a_ok --> S10
+    S10 --> S10a
+    S10a --> M9a
+    D9a -- 付款失敗 --> B9a_fail
+    B9a_fail --> S11
+    S11 --> M9a
+    M9a --> End

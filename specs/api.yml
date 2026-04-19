@@ -1,0 +1,2385 @@
+openapi: 3.0.0
+info:
+  title: OnePage 電商平台 API
+  version: 1.0.0
+  description: |
+    OnePage 一頁式電商平台 API 契約。
+    後端：Spring Boot 3.2 + JPA + PostgreSQL。
+    金流：綠界全方位金流 API v5。
+    發票：綠界電子發票 API。
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: Auth
+    description: 使用者認證與權限
+  - name: ProductCategory
+    description: 商品類型（分類）管理
+  - name: Product
+    description: 商品管理
+  - name: Website
+    description: 網站管理
+  - name: Storefront
+    description: 前台（顧客端）
+  - name: Cart
+    description: 購物車（前端 Local Storage 輔助 API）
+  - name: Order
+    description: 訂單管理
+  - name: Payment
+    description: 付款與金流
+  - name: Invoice
+    description: 發票管理
+  - name: Inventory
+    description: 庫存管理
+  - name: EmailTemplate
+    description: Email 通知模板管理
+  - name: System
+    description: 系統輔助
+
+paths:
+
+  # ═══ Auth ═══
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 登入後台
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登入成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: 帳號或密碼錯誤
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '423':
+          description: 帳號已鎖定
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: 使用 Refresh Token 換發 Access Token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: 換發成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Refresh Token 無效或已過期
+
+  # ═══ User Management ═══
+
+  /users:
+    get:
+      tags: [Auth]
+      summary: 查詢使用者清單（管理員限定）
+      operationId: listUsers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 使用者清單
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDTO'
+        '403':
+          description: 無權限
+
+    post:
+      tags: [Auth]
+      summary: 建立使用者（管理員限定）（REQ-033）
+      operationId: createUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: 使用者建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: 驗證失敗（Email 格式錯誤、密碼不足8碼等）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 無權限（僅管理員）
+        '409':
+          description: Email 已被使用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}/role:
+    put:
+      tags: [Auth]
+      summary: 變更使用者角色（管理員限定）
+      operationId: updateUserRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [ADMIN, GENERAL_USER]
+      responses:
+        '200':
+          description: 角色變更成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: 不可將最後一位管理員降級
+        '403':
+          description: 無權限
+
+  # ═══ Product Category ═══
+
+  /product-categories:
+    get:
+      tags: [ProductCategory]
+      summary: 查詢商品類型清單（樹狀結構）
+      description: 管理員返回所有類型；一般使用者僅返回自己建立的類型（REQ-034 RBAC 資料隔離）
+      operationId: listProductCategories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 分類樹（依 RBAC 角色過濾）
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductCategoryDTO'
+
+    post:
+      tags: [ProductCategory]
+      summary: 新增商品類型
+      operationId: createProductCategory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductCategoryRequest'
+      responses:
+        '201':
+          description: 建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductCategoryDTO'
+        '400':
+          description: 驗證失敗
+
+  /product-categories/{categoryId}:
+    put:
+      tags: [ProductCategory]
+      summary: 修改商品類型名稱（不可調整父子關係）
+      operationId: updateProductCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductCategoryDTO'
+        '400':
+          description: 驗證失敗
+
+    delete:
+      tags: [ProductCategory]
+      summary: 刪除商品類型
+      operationId: deleteProductCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: 刪除成功
+        '400':
+          description: 該分類下仍有商品，無法刪除
+
+  # ═══ Product ═══
+
+  /products:
+    get:
+      tags: [Product]
+      summary: 查詢商品清單（後台）
+      description: 管理員返回所有商品；一般使用者僅返回自己建立的商品（REQ-034 RBAC 資料隔離）
+      operationId: listProducts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 商品清單（依 RBAC 角色過濾）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedProducts'
+
+    post:
+      tags: [Product]
+      summary: 上架商品
+      operationId: createProduct
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: 商品上架成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDTO'
+        '400':
+          description: 驗證失敗
+
+  /products/{productId}:
+    get:
+      tags: [Product]
+      summary: 查詢單一商品（後台）
+      operationId: getProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 商品詳情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDTO'
+        '404':
+          description: 商品不存在
+
+    put:
+      tags: [Product]
+      summary: 編輯商品資訊（不含庫存）
+      operationId: updateProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDTO'
+        '400':
+          description: 驗證失敗
+        '404':
+          description: 商品不存在
+
+  /products/{productId}/images:
+    post:
+      tags: [Product]
+      summary: 上傳商品圖片（REQ-026）
+      operationId: uploadProductImages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [images]
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 5
+      responses:
+        '200':
+          description: 圖片上傳成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductImageDTO'
+        '400':
+          description: 圖片數量超過上限或格式不符
+        '404':
+          description: 商品不存在
+
+  /products/{productId}/deactivate:
+    post:
+      tags: [Product]
+      summary: 下架商品
+      operationId: deactivateProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 下架成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDTO'
+        '400':
+          description: 僅已上架商品可被下架
+        '404':
+          description: 商品不存在
+
+  # ═══ Website ═══
+
+  /websites:
+    get:
+      tags: [Website]
+      summary: 查詢網站清單
+      description: 管理員返回所有網站；一般使用者僅返回自己建立的網站（REQ-034 RBAC 資料隔離）
+      operationId: listWebsites
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 網站清單（依 RBAC 角色過濾）
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebsiteDTO'
+
+    post:
+      tags: [Website]
+      summary: 建立網站
+      operationId: createWebsite
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateWebsiteRequest'
+      responses:
+        '201':
+          description: 網站建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteDTO'
+        '400':
+          description: 驗證失敗
+
+  /websites/{websiteId}:
+    get:
+      tags: [Website]
+      summary: 查詢單一網站
+      operationId: getWebsite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 網站詳情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteDTO'
+        '404':
+          description: 網站不存在
+
+    put:
+      tags: [Website]
+      summary: 編輯網站
+      operationId: updateWebsite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateWebsiteRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteDTO'
+        '400':
+          description: 驗證失敗
+
+  /websites/{websiteId}/publish:
+    post:
+      tags: [Website]
+      summary: 啟用網站（草稿→已上線）
+      operationId: publishWebsite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 啟用成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteDTO'
+        '400':
+          description: 狀態轉換不合法
+
+  /websites/{websiteId}/unpublish:
+    post:
+      tags: [Website]
+      summary: 停用網站（已上線→已下線）
+      operationId: unpublishWebsite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 停用成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteDTO'
+        '400':
+          description: 狀態轉換不合法
+
+  /websites/{websiteId}/republish:
+    post:
+      tags: [Website]
+      summary: 重新上線網站（已下線→已上線）（REQ-028）
+      operationId: republishWebsite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 重新上線成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteDTO'
+        '400':
+          description: 狀態轉換不合法（僅已下線網站可重新上線）
+        '403':
+          description: 無權限（非 owner 且非管理員）
+        '404':
+          description: 網站不存在
+
+  /websites/{websiteId}/products:
+    get:
+      tags: [Website]
+      summary: 查詢網站已上架商品
+      operationId: listWebsiteProducts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 網站商品清單
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebsiteProductDTO'
+
+    put:
+      tags: [Website]
+      summary: 批次更新網站上架商品（覆蓋式）
+      operationId: updateWebsiteProducts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WebsiteProductInput'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebsiteProductDTO'
+        '400':
+          description: 商品不存在或非已上架狀態
+
+  # ═══ Storefront（前台） ═══
+
+  /storefront/websites/{websiteId}:
+    get:
+      tags: [Storefront]
+      summary: 取得網站前台頁面資料（集合頁）
+      operationId: getStorefrontWebsite
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 網站前台資料（含商品列表）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorefrontWebsiteDTO'
+        '404':
+          description: 網站不存在或未上線
+
+  /storefront/websites/{websiteId}/products/{productSlug}:
+    get:
+      tags: [Storefront]
+      summary: 取得商品詳情頁資料
+      operationId: getStorefrontProduct
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: productSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 商品詳情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorefrontProductDTO'
+        '404':
+          description: 商品不存在或未上架至此網站
+
+  /storefront/products/{productId}/stock-check:
+    get:
+      tags: [Storefront]
+      summary: 檢查商品庫存是否足夠（加入購物車前）
+      operationId: checkProductStock
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: quantity
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: 庫存檢查結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  available:
+                    type: boolean
+        '404':
+          description: 商品不存在
+
+  # ═══ Shipping ═══
+
+  /storefront/shipping/calculate:
+    post:
+      tags: [Storefront]
+      summary: 計算運費
+      operationId: calculateShipping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingCalculateRequest'
+      responses:
+        '200':
+          description: 運費計算結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingCalculateResponse'
+
+  # ═══ Order ═══
+
+  /storefront/orders:
+    post:
+      tags: [Order]
+      summary: 建立訂單（前台顧客）
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: 訂單建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDTO'
+        '400':
+          description: 驗證失敗或庫存不足
+        '409':
+          description: 庫存衝突（樂觀鎖）
+
+  /orders:
+    get:
+      tags: [Order]
+      summary: 查詢訂單清單（後台）
+      description: 管理員返回所有訂單；一般使用者僅返回自己網站的訂單（REQ-034 RBAC 資料隔離）
+      operationId: listOrders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: orderNumber
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING_PAYMENT, PROCESSING_PAYMENT, PAID, SHIPPED, RETURNED, PAYMENT_FAILED]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 訂單清單
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedOrders'
+
+  /orders/export:
+    get:
+      tags: [Order]
+      summary: 匯出訂單 CSV
+      operationId: exportOrdersCsv
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: orderNumber
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING_PAYMENT, PROCESSING_PAYMENT, PAID, SHIPPED, RETURNED, PAYMENT_FAILED]
+      responses:
+        '200':
+          description: CSV 檔案（UTF-8 with BOM）
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+
+  /orders/{orderId}/ship:
+    post:
+      tags: [Order]
+      summary: 標註出貨
+      operationId: markOrderShipped
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 標註出貨成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDTO'
+        '400':
+          description: 僅已付款訂單可標註出貨
+
+  /orders/{orderId}/return:
+    post:
+      tags: [Order]
+      summary: 標註退貨
+      operationId: markOrderReturned
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 標註退貨成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDTO'
+        '400':
+          description: 僅已付款訂單可標註退貨
+
+  # ═══ Payment ═══
+
+  /storefront/orders/{orderId}/payment:
+    post:
+      tags: [Payment]
+      summary: 建立付款（選擇付款方式 + 發票資訊）
+      operationId: createPayment
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        '201':
+          description: 付款建立成功，回傳綠界付款頁面 URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDTO'
+        '400':
+          description: 僅待付款訂單可建立付款
+
+  /payment/ecpay/callback:
+    post:
+      tags: [Payment]
+      summary: 綠界付款回調（由綠界呼叫）
+      operationId: ecpayCallback
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              description: 綠界回調參數（含 CheckMacValue）
+      responses:
+        '200':
+          description: 回應 "1|OK"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "1|OK"
+
+  # ═══ Invoice ═══
+
+  /invoices:
+    get:
+      tags: [Invoice]
+      summary: 查詢發票清單
+      operationId: listInvoices
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: invoiceNumber
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [SYNCING, ISSUED, VOIDED, ALLOWANCED]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: 發票清單
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedInvoices'
+
+  /invoices/{invoiceId}/void:
+    post:
+      tags: [Invoice]
+      summary: 作廢發票
+      operationId: voidInvoice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+                  description: 作廢原因
+      responses:
+        '200':
+          description: 作廢成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDTO'
+        '400':
+          description: 僅已開立且同月份的發票可作廢
+
+  /invoices/{invoiceId}/allowance:
+    post:
+      tags: [Invoice]
+      summary: 折讓發票
+      operationId: allowanceInvoice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+                  format: double
+                  minimum: 0.01
+                  description: 折讓金額（不超過原始發票金額）
+      responses:
+        '200':
+          description: 折讓成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDTO'
+        '400':
+          description: 僅已開立發票可折讓或金額超過原始金額
+
+  /invoices/{invoiceId}/sync:
+    post:
+      tags: [Invoice]
+      summary: 手動重新同步發票（綠界）
+      operationId: syncInvoice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 同步成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDTO'
+        '400':
+          description: 僅同步中狀態的發票可手動同步
+
+  # ═══ Inventory ═══
+
+  /inventory:
+    get:
+      tags: [Inventory]
+      summary: 查詢庫存清單
+      operationId: listInventory
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 庫存清單
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryDTO'
+
+  /inventory/{productId}:
+    put:
+      tags: [Inventory]
+      summary: 編輯庫存數量
+      operationId: updateInventory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stockQuantity]
+              properties:
+                stockQuantity:
+                  type: integer
+                  minimum: 0
+      responses:
+        '200':
+          description: 庫存更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryDTO'
+        '400':
+          description: 驗證失敗
+
+  /inventory/{productId}/threshold:
+    put:
+      tags: [Inventory]
+      summary: 設定低庫存門檻
+      operationId: updateLowStockThreshold
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [threshold]
+              properties:
+                threshold:
+                  type: integer
+                  minimum: 0
+      responses:
+        '200':
+          description: 門檻更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryDTO'
+        '400':
+          description: 驗證失敗
+
+  # ═══ Email Template ═══
+
+  /email-templates:
+    get:
+      tags: [EmailTemplate]
+      summary: 查詢 Email 通知模板清單
+      description: 返回當前登入使用者自己的四套模板（REQ-034 RBAC 資料隔離）。可用變數清單含中文說明（REQ-032）。
+      operationId: listEmailTemplates
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 模板清單（含可用變數說明）
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmailTemplateDTO'
+
+  /email-templates/{templateId}:
+    put:
+      tags: [EmailTemplate]
+      summary: 編輯 Email 通知模板
+      operationId: updateEmailTemplate
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailTemplateRequest'
+      responses:
+        '200':
+          description: 模板更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplateDTO'
+        '400':
+          description: 驗證失敗
+        '403':
+          description: 無權限（僅管理員）
+
+  /email-templates/{templateId}/preview:
+    get:
+      tags: [EmailTemplate]
+      summary: 預覽模板（使用範例資料）
+      operationId: previewEmailTemplate
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 預覽 HTML
+          content:
+            text/html:
+              schema:
+                type: string
+
+  # ═══ System ═══
+
+  /system/time:
+    get:
+      tags: [System]
+      summary: 取得伺服器時間（前端倒數計時器同步用）
+      operationId: getServerTime
+      responses:
+        '200':
+          description: 伺服器時間
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverTime:
+                    type: string
+                    format: date-time
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    # ── Auth ──
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, GENERAL_USER]
+        userName:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, GENERAL_USER]
+
+    CreateUserRequest:
+      type: object
+      required: [email, name, password, role]
+      description: 建立新使用者請求（REQ-033）
+      properties:
+        email:
+          type: string
+          format: email
+          description: 登入 Email（唯一）
+        name:
+          type: string
+          minLength: 1
+          description: 使用者姓名
+        password:
+          type: string
+          minLength: 8
+          description: 密碼（8碼以上）
+        role:
+          type: string
+          enum: [ADMIN, GENERAL_USER]
+          description: 角色
+        sendWelcomeEmail:
+          type: boolean
+          default: false
+          description: 是否寄送歡迎 Email 給新使用者（REQ-033）
+
+    # ── Product Category ──
+
+    ProductCategoryDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+        ownerUserId:
+          type: integer
+          format: int64
+          description: 建立者 user ID（REQ-034）
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductCategoryDTO'
+
+    CreateProductCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 父分類 ID（null 表示新增主分類）
+
+    # ── Product ──
+
+    ProductDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        ownerUserId:
+          type: integer
+          format: int64
+          description: 建立者 user ID（REQ-034）
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        priceUnit:
+          type: string
+          enum: [KG, CATTY]
+        packaging:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        categoryName:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+        isBundle:
+          type: boolean
+        bundleDiscountPercent:
+          type: number
+          format: double
+          nullable: true
+        bundleItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/BundleItemDTO'
+        isPreorder:
+          type: boolean
+        preorderStartDate:
+          type: string
+          format: date
+          nullable: true
+        preorderEndDate:
+          type: string
+          format: date
+          nullable: true
+        preorderDiscountPercent:
+          type: number
+          format: double
+          nullable: true
+        shippingDeadline:
+          type: string
+          format: date
+          nullable: true
+        stockQuantity:
+          type: integer
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImageDTO'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BundleItemDTO:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        price:
+          type: number
+          format: double
+
+    ProductImageDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        imageUrl:
+          type: string
+        sortOrder:
+          type: integer
+
+    CreateProductRequest:
+      type: object
+      required: [name, price, priceUnit, categoryId, stockQuantity]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+          minimum: 0.01
+        priceUnit:
+          type: string
+          enum: [KG, CATTY]
+        packaging:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        stockQuantity:
+          type: integer
+          minimum: 0
+        images:
+          type: array
+          items:
+            type: string
+            format: binary
+          maxItems: 5
+        isBundle:
+          type: boolean
+          default: false
+        bundleDiscountPercent:
+          type: number
+          format: double
+        bundleProductIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        isPreorder:
+          type: boolean
+          default: false
+        preorderStartDate:
+          type: string
+          format: date
+        preorderEndDate:
+          type: string
+          format: date
+        preorderDiscountPercent:
+          type: number
+          format: double
+
+    UpdateProductRequest:
+      type: object
+      required: [name, price, priceUnit, categoryId]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+          minimum: 0.01
+        priceUnit:
+          type: string
+          enum: [KG, CATTY]
+        packaging:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        images:
+          type: array
+          items:
+            type: string
+            format: binary
+          maxItems: 5
+        isBundle:
+          type: boolean
+        bundleDiscountPercent:
+          type: number
+          format: double
+        bundleProductIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        isPreorder:
+          type: boolean
+        preorderStartDate:
+          type: string
+          format: date
+        preorderEndDate:
+          type: string
+          format: date
+        preorderDiscountPercent:
+          type: number
+          format: double
+        shippingDeadline:
+          type: string
+          format: date
+
+    PagedProducts:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductDTO'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+
+    # ── Website ──
+
+    WebsiteDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        title:
+          type: string
+          description: 網站標題（前台顯示用）（REQ-029）
+        subtitle:
+          type: string
+          nullable: true
+          description: 網站副標題（選填）（REQ-029）
+        browserTitle:
+          type: string
+          nullable: true
+          description: 瀏覽器分頁標題 <title> tag（選填）（REQ-029）
+        footerTitle:
+          type: string
+          nullable: true
+          description: Footer 標題（店名）（選填）（REQ-029）
+        footerSubtitle:
+          type: string
+          nullable: true
+          description: Footer 副標題（聯絡資訊）（選填）（REQ-029）
+        subscriptionPlan:
+          type: string
+        publishStartAt:
+          type: string
+          format: date-time
+          nullable: true
+        publishEndAt:
+          type: string
+          format: date-time
+          nullable: true
+        bannerImageUrl:
+          type: string
+          nullable: true
+        promoImageUrl:
+          type: string
+          nullable: true
+        freeShippingThreshold:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, OFFLINE]
+        storefrontUrl:
+          type: string
+          description: 前台 URL /project/{websiteId}
+        ownerUserId:
+          type: integer
+          format: int64
+          description: 建立者 user ID（RBAC 資料隔離用）（REQ-034）
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateWebsiteRequest:
+      type: object
+      required: [name, title, bannerImage]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+          description: 網站標題（必填）（REQ-029）
+        subtitle:
+          type: string
+          nullable: true
+          description: 網站副標題（選填）（REQ-029）
+        browserTitle:
+          type: string
+          nullable: true
+          description: 瀏覽器分頁標題（選填）（REQ-029）
+        footerTitle:
+          type: string
+          nullable: true
+          description: Footer 標題（選填）（REQ-029）
+        footerSubtitle:
+          type: string
+          nullable: true
+          description: Footer 副標題（選填）（REQ-029）
+        subscriptionPlan:
+          type: string
+        publishStartAt:
+          type: string
+          format: date-time
+        publishEndAt:
+          type: string
+          format: date-time
+        bannerImage:
+          type: string
+          format: binary
+          description: Banner 主視覺圖片（必填）（REQ-029）
+        promoImage:
+          type: string
+          format: binary
+          nullable: true
+          description: 宣傳文案圖片（選填）（REQ-029）
+        freeShippingThreshold:
+          type: number
+          format: double
+          default: 1500.00
+
+    UpdateWebsiteRequest:
+      type: object
+      required: [name, title]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+          description: 網站標題（必填）（REQ-029）
+        subtitle:
+          type: string
+          nullable: true
+          description: 網站副標題（選填）（REQ-029）
+        browserTitle:
+          type: string
+          nullable: true
+          description: 瀏覽器分頁標題（選填）（REQ-029）
+        footerTitle:
+          type: string
+          nullable: true
+          description: Footer 標題（選填）（REQ-029）
+        footerSubtitle:
+          type: string
+          nullable: true
+          description: Footer 副標題（選填）（REQ-029）
+        subscriptionPlan:
+          type: string
+        publishStartAt:
+          type: string
+          format: date-time
+        publishEndAt:
+          type: string
+          format: date-time
+        bannerImage:
+          type: string
+          format: binary
+          nullable: true
+          description: Banner 主視覺圖片（REQ-029）
+        promoImage:
+          type: string
+          format: binary
+          nullable: true
+          description: 宣傳文案圖片（選填）（REQ-029）
+        freeShippingThreshold:
+          type: number
+          format: double
+
+    WebsiteProductDTO:
+      type: object
+      properties:
+        websiteId:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        productSlug:
+          type: string
+        publishAt:
+          type: string
+          format: date-time
+
+    WebsiteProductInput:
+      type: object
+      required: [productId, publishAt]
+      properties:
+        productId:
+          type: integer
+          format: int64
+        publishAt:
+          type: string
+          format: date-time
+
+    # ── Storefront ──
+
+    StorefrontWebsiteDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        title:
+          type: string
+          description: 網站標題（REQ-029）
+        subtitle:
+          type: string
+          nullable: true
+          description: 網站副標題（REQ-029）
+        browserTitle:
+          type: string
+          nullable: true
+          description: 瀏覽器分頁標題（REQ-029）
+        footerTitle:
+          type: string
+          nullable: true
+          description: Footer 標題（REQ-029）
+        footerSubtitle:
+          type: string
+          nullable: true
+          description: Footer 副標題（REQ-029）
+        bannerImageUrl:
+          type: string
+          nullable: true
+        promoImageUrl:
+          type: string
+          nullable: true
+        freeShippingThreshold:
+          type: number
+          format: double
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorefrontProductCardDTO'
+          description: 已到達上架時間且已關聯至本網站的商品列表（REQ-030）
+
+    StorefrontProductCardDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        slug:
+          type: string
+        price:
+          type: number
+          format: double
+        imageUrl:
+          type: string
+          nullable: true
+        isPreorder:
+          type: boolean
+        preorderDiscountPercent:
+          type: number
+          format: double
+          nullable: true
+
+    StorefrontProductDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        priceUnit:
+          type: string
+          enum: [KG, CATTY]
+        packaging:
+          type: string
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImageDTO'
+        isPreorder:
+          type: boolean
+        preorderStartDate:
+          type: string
+          format: date
+          nullable: true
+        preorderEndDate:
+          type: string
+          format: date
+          nullable: true
+        preorderDiscountPercent:
+          type: number
+          format: double
+          nullable: true
+        isBundle:
+          type: boolean
+        bundleDiscountPercent:
+          type: number
+          format: double
+          nullable: true
+        bundleItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/BundleItemDTO'
+        websiteId:
+          type: integer
+          format: int64
+
+    # ── Shipping ──
+
+    ShippingCalculateRequest:
+      type: object
+      required: [websiteId, shippingMethod]
+      properties:
+        websiteId:
+          type: integer
+          format: int64
+        address:
+          type: string
+          description: 運送地址（自取時可不填）
+        shippingMethod:
+          type: string
+          enum: [DELIVERY, PICKUP]
+        orderAmount:
+          type: number
+          format: double
+          description: 訂單金額（用於判斷免運）
+
+    ShippingCalculateResponse:
+      type: object
+      properties:
+        shippingFee:
+          type: number
+          format: double
+        isRemoteIsland:
+          type: boolean
+          description: 是否為外島
+        freeShippingThreshold:
+          type: number
+          format: double
+        message:
+          type: string
+          nullable: true
+          description: 提示訊息（如「不支援外島運送」）
+
+    # ── Order ──
+
+    CreateOrderRequest:
+      type: object
+      required: [websiteId, customerName, customerPhone, customerEmail, shippingMethod, items]
+      properties:
+        websiteId:
+          type: integer
+          format: int64
+        customerName:
+          type: string
+          minLength: 1
+        customerPhone:
+          type: string
+          minLength: 1
+        customerEmail:
+          type: string
+          format: email
+        shippingAddress:
+          type: string
+          description: 運送地址（宅配必填，自取可空）
+        shippingMethod:
+          type: string
+          enum: [DELIVERY, PICKUP]
+        note:
+          type: string
+        taxId:
+          type: string
+          pattern: '^\d{8}$'
+          description: 統一編號（選填，8碼數字）
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItemInput'
+
+    OrderItemInput:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: integer
+          format: int64
+        quantity:
+          type: integer
+          minimum: 1
+
+    OrderDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderNumber:
+          type: string
+        websiteId:
+          type: integer
+          format: int64
+        websiteName:
+          type: string
+        customerName:
+          type: string
+        customerPhone:
+          type: string
+        customerEmail:
+          type: string
+        shippingAddress:
+          type: string
+        shippingMethod:
+          type: string
+          enum: [DELIVERY, PICKUP]
+        shippingFee:
+          type: number
+          format: double
+        subtotal:
+          type: number
+          format: double
+        totalAmount:
+          type: number
+          format: double
+        note:
+          type: string
+        taxId:
+          type: string
+        status:
+          type: string
+          enum: [PENDING_PAYMENT, PROCESSING_PAYMENT, PAID, SHIPPED, RETURNED, PAYMENT_FAILED]
+        isPreorder:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemDTO'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    OrderItemDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        productPrice:
+          type: number
+          format: double
+        quantity:
+          type: integer
+        discountAmount:
+          type: number
+          format: double
+        subtotal:
+          type: number
+          format: double
+
+    PagedOrders:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderDTO'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+
+    # ── Payment ──
+
+    CreatePaymentRequest:
+      type: object
+      required: [paymentMethod, invoiceType]
+      properties:
+        paymentMethod:
+          type: string
+          enum: [CREDIT_CARD, LINE_PAY, BANK_TRANSFER]
+        invoiceType:
+          type: string
+          enum: [TWO_COPIES, THREE_COPIES]
+        carrierType:
+          type: string
+          enum: [MOBILE_BARCODE, CITIZEN_CERTIFICATE]
+          nullable: true
+        carrierNumber:
+          type: string
+          nullable: true
+          description: '手機條碼：/+7碼英數；自然人憑證：2碼大寫英文+14碼數字'
+        buyerTaxId:
+          type: string
+          pattern: '^\d{8}$'
+          nullable: true
+          description: 買方統一編號（三聯式必填）
+
+    PaymentDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderId:
+          type: integer
+          format: int64
+        paymentMethod:
+          type: string
+          enum: [CREDIT_CARD, LINE_PAY, BANK_TRANSFER]
+        ecpayTradeNo:
+          type: string
+        ecpayPaymentUrl:
+          type: string
+          description: 跳轉至綠界的付款 URL
+        expireAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Invoice ──
+
+    InvoiceDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderId:
+          type: integer
+          format: int64
+        orderNumber:
+          type: string
+        invoiceNumber:
+          type: string
+          nullable: true
+        randomCode:
+          type: string
+          nullable: true
+        invoiceDate:
+          type: string
+          format: date
+          nullable: true
+        amount:
+          type: number
+          format: double
+        invoiceType:
+          type: string
+          enum: [TWO_COPIES, THREE_COPIES]
+        carrierType:
+          type: string
+          nullable: true
+        carrierNumber:
+          type: string
+          nullable: true
+        buyerTaxId:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [SYNCING, ISSUED, VOIDED, ALLOWANCED]
+        voidReason:
+          type: string
+          nullable: true
+        allowanceAmount:
+          type: number
+          format: double
+          nullable: true
+        allowanceNumber:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PagedInvoices:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceDTO'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+
+    # ── Inventory ──
+
+    InventoryDTO:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        stockQuantity:
+          type: integer
+        lowStockThreshold:
+          type: integer
+        isLowStock:
+          type: boolean
+
+    # ── Email Template ──
+
+    EmailTemplateDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        templateType:
+          type: string
+          enum: [ORDER_CONFIRMED, PAYMENT_SUCCESS, PAYMENT_FAILED, SHIPPED]
+        subject:
+          type: string
+        bodyHtml:
+          type: string
+        availableVariables:
+          type: array
+          description: 可用變數清單（REQ-032）
+          items:
+            $ref: '#/components/schemas/TemplateVariableDTO'
+        updatedAt:
+          type: string
+          format: date-time
+
+    TemplateVariableDTO:
+      type: object
+      description: Email 模板可用變數定義（REQ-032）
+      properties:
+        variable:
+          type: string
+          description: 變數名稱（如 {{customerName}}）
+          example: "{{customerName}}"
+        description:
+          type: string
+          description: 變數中文說明
+          example: "顧客姓名"
+
+    UpdateEmailTemplateRequest:
+      type: object
+      required: [subject, bodyHtml]
+      properties:
+        subject:
+          type: string
+          minLength: 1
+        bodyHtml:
+          type: string
+          minLength: 1
+          description: 模板內文（HTML）。可用變數：{{customerName}}、{{orderNumber}}、{{totalAmount}}、{{websiteName}}、{{contactInfo}}（REQ-032）
+
+    # ── Common ──
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time

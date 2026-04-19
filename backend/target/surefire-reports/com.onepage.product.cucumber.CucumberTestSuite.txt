@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.onepage.product.cucumber.CucumberTestSuite
+-------------------------------------------------------------------------------
+Tests run: 236, Failures: 0, Errors: 0, Skipped: 236, Time elapsed: 0.508 s -- in com.onepage.product.cucumber.CucumberTestSuite

@@ -1,0 +1,113 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 商品與網站管理
+%% [ACTOR] 管理員 -> {specs/actors/管理員.md}
+
+flowchart TD
+
+%% ═══ 區段二：節點定義 ═══
+
+    Start(( ))
+
+    %% === 商品管理流程 ===
+
+    %% [STEP:1] @管理員 {features/product/建立商品類型.feature}
+    S1["@管理員<br/>建立商品類型"]
+
+    %% [STEP:2] @管理員 {features/product/上架商品.feature}
+    S2["@管理員<br/>上架商品"]
+
+    %% [DECISION:2a] 是否為預購商品
+    D2a{"是否為預購商品"}
+
+    %% [BRANCH:2a:是預購商品] @管理員 {features/product/上架預購商品.feature}
+    B2a_preorder["@管理員<br/>上架預購商品"]
+
+    %% [BRANCH:2a:是一般商品]
+    B2a_normal["一般商品<br/>直接完成上架"]
+
+    %% [MERGE:2a]
+    M2a(( ))
+
+    %% [DECISION:2b] 是否為組合包
+    D2b{"是否為組合包"}
+
+    %% [BRANCH:2b:是組合包] @管理員 {features/product/設定組合包.feature}
+    B2b_bundle["@管理員<br/>設定組合包"]
+
+    %% [BRANCH:2b:非組合包]
+    B2b_single["非組合包<br/>跳過"]
+
+    %% [MERGE:2b]
+    M2b(( ))
+
+    %% [STEP:3] @管理員 {features/product/編輯商品.feature}
+    S3["@管理員<br/>編輯已上架商品資訊"]
+
+    %% [STEP:4] @管理員 {features/product/下架商品.feature}
+    S4["@管理員<br/>下架商品"]
+
+    EndProduct((( )))
+
+    %% === 網站管理流程 ===
+
+    %% [STEP:5] @管理員 {features/website/建立網站.feature}
+    S5["@管理員<br/>建立網站"]
+
+    %% [STEP:6] @管理員 {features/website/編輯網站.feature}
+    S6["@管理員<br/>編輯網站"]
+
+    %% [STEP:7] @管理員 {features/website/選擇上架商品至網站.feature}
+    S7["@管理員<br/>選擇上架商品至網站"]
+
+    %% [STEP:8] @管理員 {features/website/啟停網站.feature}
+    S8["@管理員<br/>啟用或停用網站"]
+
+    %% [DECISION:8a] 操作類型（REQ-028）
+    D8a{"操作類型"}
+
+    %% [BRANCH:8a:啟用] @管理員
+    B8a_publish["已上線<br/>前台可見"]
+
+    %% [BRANCH:8a:停用] @管理員
+    B8a_unpublish["已下線<br/>前台不可見"]
+
+    %% [BRANCH:8a:重新上線] @管理員 {features/website/啟停網站.feature}
+    B8a_republish["@管理員<br/>重新上線（REQ-028）<br/>已下線→已上線"]
+
+    %% [MERGE:8a]
+    M8a(( ))
+
+    EndWebsite((( )))
+
+%% ═══ 區段三：邊定義 ═══
+
+    %% 商品管理流程
+    Start --> S1
+    S1 --> S2
+    S2 --> D2a
+    D2a -- 是預購商品 --> B2a_preorder
+    D2a -- 是一般商品 --> B2a_normal
+    B2a_preorder --> M2a
+    B2a_normal --> M2a
+    M2a --> D2b
+    D2b -- 是組合包 --> B2b_bundle
+    D2b -- 非組合包 --> B2b_single
+    B2b_bundle --> M2b
+    B2b_single --> M2b
+    M2b --> S3
+    S3 --> S4
+    S4 --> EndProduct
+
+    %% 網站管理流程（獨立流程）
+    Start --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> S8
+    S8 --> D8a
+    D8a -- 啟用草稿 --> B8a_publish
+    D8a -- 停用已上線 --> B8a_unpublish
+    D8a -- 重新上線已下線 --> B8a_republish
+    B8a_publish --> M8a
+    B8a_unpublish --> M8a
+    B8a_republish --> M8a
+    M8a --> EndWebsite

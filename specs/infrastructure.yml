@@ -1,0 +1,52 @@
+# ── 專案技術棧定義 ─────────────────────────────────────
+# 用途：定義本專案使用的所有技術，確保 AI 執行時不使用未定義的技術
+# 產出時機：kickoff Q&A 完成後
+# 生命週期：P1 可修正 → P2 凍結 → P3-P5 唯讀
+
+# ── 後端技術棧 ──────────────────────────────────────────
+backend:
+  stack: java
+  framework: Spring Boot 3.2 + JPA + Cucumber 7.15 + Testcontainers
+  test_strategy: e2e
+  database: PostgreSQL
+  migration: Flyway
+  skills:
+    - aibdd-auto-backend-starter
+    - aibdd-auto-control-flow
+    - aibdd-auto-red
+    - aibdd-auto-green
+    - aibdd-auto-refactor
+
+# ── 前端技術棧 ──────────────────────────────────────────
+frontend:
+  stack: react
+  framework: Next.js 14 + React 18 + MSW 2.x + Playwright
+  skills:
+    - aibdd-auto-frontend-apifirst-msw-starter
+    - aibdd-auto-frontend-msw-api-layer
+    - aibdd-auto-frontend-nextjs-pages
+    - aibdd.frontend.e2e.activity-testplan
+
+# ── 中介軟體 / 基礎設施依賴 ──────────────────────────────
+# kickoff 時為空，P1 discovery 過程中依需求追加
+# AI 自動偵測或人工手動追加，使用者確認後寫入
+dependencies: []
+
+# ── 共用 Skill ──────────────────────────────────────────
+common_skills:
+  - aibdd-kickoff
+  - aibdd-discovery
+  - aibdd-composition-analysis
+  - clarify-loop
+  - aibdd-core
+  - aibdd-form-activity
+  - aibdd-form-feature-spec
+  - aibdd-form-api-spec
+  - aibdd-form-entity-spec
+  - aibdd-form-bdd-analysis
+  - aibdd-consistency-analyzer
+  - aibdd-specformula
+  - aibdd-carry-on-engineering-plan
+  - aibdd.sa.sd-design
+  - aibdd.sa.sequence-diagram
+  - frontend-design

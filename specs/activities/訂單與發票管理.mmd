@@ -1,0 +1,43 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 訂單與發票管理
+%% [ACTOR] 管理員 -> {specs/actors/管理員.md}
+
+flowchart TD
+
+%% ═══ 區段二：節點定義 ═══
+
+    Start(( ))
+
+    %% [STEP:1] @管理員 {features/order/查詢訂單.feature}
+    S1["@管理員<br/>查詢訂單"]
+
+    %% [STEP:2] @管理員 {features/order/匯出訂單CSV.feature}
+    S2["@管理員<br/>匯出訂單CSV"]
+
+    %% [STEP:3] @管理員 {features/order/標註出貨.feature}
+    S3["@管理員<br/>標註出貨"]
+
+    %% [STEP:4] @管理員 {features/order/標註退貨.feature}
+    S4["@管理員<br/>標註退貨"]
+
+    %% [STEP:5] @管理員 {features/invoice/查詢發票.feature}
+    S5["@管理員<br/>查詢發票"]
+
+    %% [STEP:6] @管理員 {features/invoice/作廢發票.feature}
+    S6["@管理員<br/>作廢發票"]
+
+    %% [STEP:7] @管理員 {features/invoice/折讓發票.feature}
+    S7["@管理員<br/>折讓發票"]
+
+    End((( )))
+
+%% ═══ 區段三：邊定義 ═══
+
+    Start --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> End

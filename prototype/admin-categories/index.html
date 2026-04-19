@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>後台商品類型管理頁 Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        olive: { 50:'#f7f8f0', 100:'#eef0e1', 200:'#dce1c3', 300:'#c4cc9a', 400:'#a8b36e', 500:'#8d9a4f', 600:'#6e7b3b', 700:'#4A5D23', 800:'#3d4c1f', 900:'#2e3a17' },
+        terra: { 50:'#fdf5f2', 100:'#fbe8e0', 200:'#f5cfc0', 300:'#edae96', 400:'#e28a6a', 500:'#C75B39', 600:'#b74a2c', 700:'#993d25', 800:'#7d3422', 900:'#6a2e20' },
+        cream: { 50:'#FEFDFB', 100:'#FAF7F2', 200:'#F5EFE6', 300:'#EDE4D4' }
+      },
+      fontFamily: {
+        display: ['Playfair Display', 'serif'],
+        body: ['Source Sans 3', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Source Sans 3', sans-serif; background: #FAF7F2; }
+  input:focus { outline: none; box-shadow: 0 0 0 2px #4A5D23; }
+  .sidebar-link { transition: all 0.2s; }
+  .sidebar-link:hover { background: rgba(74,93,35,0.1); }
+  .sidebar-link.active { background: rgba(74,93,35,0.15); border-right: 3px solid #4A5D23; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+// REQ-034: RBAC 側邊選單
+const ALL_NAV_ITEMS = [
+  { label: '商品管理', href: '../admin-products/index.html', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', roles: ['管理員','一般使用者'] },
+  { label: '商品類型', href: '../admin-categories/index.html', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', active: true, roles: ['管理員','一般使用者'] },
+  { label: '網站管理', href: '../admin-websites/index.html', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9', roles: ['管理員'] },
+  { label: '訂單管理', href: '../admin-orders/index.html', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', roles: ['管理員','一般使用者'] },
+  { label: '發票管理', href: '../admin-invoices/index.html', icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z', roles: ['管理員'] },
+  { label: '庫存管理', href: '../admin-inventory/index.html', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8', roles: ['管理員','一般使用者'] },
+  { label: '使用者管理', href: '../admin-users/index.html', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197', roles: ['管理員'] },
+  { label: 'Email模板', href: '../admin-email-templates/index.html', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', roles: ['管理員'] },
+];
+
+function Sidebar({ items, currentRole, onRoleChange }) {
+  const visibleItems = items.filter(item => item.roles.includes(currentRole));
+  return (
+    <aside className="w-56 bg-olive-900 min-h-screen flex-shrink-0 flex flex-col">
+      <div className="p-4 border-b border-olive-800">
+        <h1 className="font-display text-lg text-cream-100 font-bold">豐收農場</h1>
+        <p className="text-olive-400 text-xs font-body">管理後台</p>
+      </div>
+      <div className="px-3 py-2 border-b border-olive-800">
+        <p className="text-olive-500 text-xs font-body mb-1">目前角色（Prototype）</p>
+        <select value={currentRole} onChange={e => onRoleChange(e.target.value)}
+          className="w-full text-xs font-body bg-olive-800 text-cream-200 border border-olive-700 rounded px-2 py-1">
+          <option value="管理員">管理員</option>
+          <option value="一般使用者">一般使用者</option>
+        </select>
+      </div>
+      <nav className="py-2 flex-1">
+        {visibleItems.map(item => (
+          <a key={item.label} href={item.href}
+            className={`sidebar-link flex items-center gap-3 px-4 py-3 font-body text-sm ${item.active ? 'active text-cream-100 font-semibold' : 'text-olive-300 hover:text-cream-100'}`}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d={item.icon}/></svg>
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <div className="p-4 border-t border-olive-800">
+        <a href="../admin-login/index.html" className="flex items-center gap-2 text-olive-400 hover:text-cream-100 font-body text-sm transition-colors">
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          登出
+        </a>
+      </div>
+    </aside>
+  );
+}
+
+function App() {
+  const [categories, setCategories] = useState([
+    { id: 1, name: '水果類', children: [
+      { id: 11, name: '進口' },
+      { id: 12, name: '台灣產' },
+    ]},
+    { id: 2, name: '南北乾貨', children: [
+      { id: 21, name: '乾貨' },
+      { id: 22, name: '調味' },
+    ]},
+  ]);
+
+  const [editingId, setEditingId] = useState(null);
+  const [editingName, setEditingName] = useState('');
+  const [showAddMain, setShowAddMain] = useState(false);
+  const [showAddSub, setShowAddSub] = useState(null);
+  const [newName, setNewName] = useState('');
+
+  const startEdit = (id, name) => {
+    setEditingId(id);
+    setEditingName(name);
+  };
+
+  const saveEdit = () => {
+    if (!editingName.trim()) return;
+    setCategories(prev => prev.map(cat => {
+      if (cat.id === editingId) return { ...cat, name: editingName };
+      return { ...cat, children: cat.children.map(sub => sub.id === editingId ? { ...sub, name: editingName } : sub) };
+    }));
+    setEditingId(null);
+  };
+
+  const addMainCategory = () => {
+    if (!newName.trim()) return;
+    setCategories(prev => [...prev, { id: Date.now(), name: newName, children: [] }]);
+    setNewName('');
+    setShowAddMain(false);
+  };
+
+  const addSubCategory = (parentId) => {
+    if (!newName.trim()) return;
+    setCategories(prev => prev.map(cat => {
+      if (cat.id === parentId) return { ...cat, children: [...cat.children, { id: Date.now(), name: newName }] };
+      return cat;
+    }));
+    setNewName('');
+    setShowAddSub(null);
+  };
+
+  const [currentRole, setCurrentRole] = React.useState('管理員');
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar items={ALL_NAV_ITEMS} currentRole={currentRole} onRoleChange={setCurrentRole} />
+      <main className="flex-1 p-6 lg:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="font-display text-2xl text-olive-900 font-bold">商品類型管理</h2>
+            <p className="font-body text-olive-500 text-sm mt-1">管理商品主分類與子分類</p>
+          </div>
+          <button onClick={() => { setShowAddMain(true); setNewName(''); }}
+            className="bg-olive-700 text-white px-5 py-2.5 rounded-sm font-body font-semibold hover:bg-olive-800 transition-colors flex items-center gap-2">
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            新增主分類
+          </button>
+        </div>
+
+        {/* Add main category */}
+        {showAddMain && (
+          <div className="bg-olive-50 border border-olive-200 rounded-sm p-4 mb-6 flex items-center gap-3">
+            <input type="text" value={newName} onChange={e => setNewName(e.target.value)} autoFocus
+              className="flex-1 border border-cream-300 rounded-sm px-4 py-2 font-body text-olive-800 bg-white"
+              placeholder="輸入主分類名稱" onKeyDown={e => e.key === 'Enter' && addMainCategory()} />
+            <button onClick={addMainCategory} className="bg-olive-700 text-white px-4 py-2 rounded-sm font-body font-semibold hover:bg-olive-800 transition-colors">新增</button>
+            <button onClick={() => setShowAddMain(false)} className="text-olive-500 hover:text-olive-700 font-body transition-colors">取消</button>
+          </div>
+        )}
+
+        {/* Category tree */}
+        <div className="bg-white rounded-sm border border-cream-300 divide-y divide-cream-200">
+          {categories.map(cat => (
+            <div key={cat.id} className="p-0">
+              {/* Main category */}
+              <div className="flex items-center gap-3 px-5 py-4 bg-cream-50">
+                <svg width="20" height="20" fill="none" stroke="#4A5D23" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                {editingId === cat.id ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <input type="text" value={editingName} onChange={e => setEditingName(e.target.value)} autoFocus
+                      className="flex-1 border border-olive-300 rounded-sm px-3 py-1.5 font-body text-olive-800 bg-white"
+                      onKeyDown={e => e.key === 'Enter' && saveEdit()} />
+                    <button onClick={saveEdit} className="text-olive-700 hover:text-olive-900 font-body text-sm font-semibold">儲存</button>
+                    <button onClick={() => setEditingId(null)} className="text-olive-400 hover:text-olive-600 font-body text-sm">取消</button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="font-body font-semibold text-olive-800 flex-1">{cat.name}</span>
+                    <button onClick={() => startEdit(cat.id, cat.name)} className="text-olive-400 hover:text-olive-700 transition-colors" title="修改名稱">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button onClick={() => { setShowAddSub(cat.id); setNewName(''); }} className="text-olive-400 hover:text-olive-700 transition-colors" title="新增子分類">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Sub categories */}
+              {cat.children.map(sub => (
+                <div key={sub.id} className="flex items-center gap-3 px-5 py-3 pl-14 hover:bg-cream-50 transition-colors">
+                  <div className="w-2 h-2 bg-olive-300 rounded-full"></div>
+                  {editingId === sub.id ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input type="text" value={editingName} onChange={e => setEditingName(e.target.value)} autoFocus
+                        className="flex-1 border border-olive-300 rounded-sm px-3 py-1.5 font-body text-olive-800 bg-white"
+                        onKeyDown={e => e.key === 'Enter' && saveEdit()} />
+                      <button onClick={saveEdit} className="text-olive-700 hover:text-olive-900 font-body text-sm font-semibold">儲存</button>
+                      <button onClick={() => setEditingId(null)} className="text-olive-400 hover:text-olive-600 font-body text-sm">取消</button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="font-body text-olive-700 flex-1">{sub.name}</span>
+                      <button onClick={() => startEdit(sub.id, sub.name)} className="text-olive-300 hover:text-olive-600 transition-colors opacity-0 group-hover:opacity-100" title="修改名稱">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+
+              {/* Add sub category inline */}
+              {showAddSub === cat.id && (
+                <div className="flex items-center gap-2 px-5 py-3 pl-14 bg-olive-50">
+                  <input type="text" value={newName} onChange={e => setNewName(e.target.value)} autoFocus
+                    className="flex-1 border border-cream-300 rounded-sm px-3 py-1.5 font-body text-olive-800 bg-white"
+                    placeholder="輸入子分類名稱" onKeyDown={e => e.key === 'Enter' && addSubCategory(cat.id)} />
+                  <button onClick={() => addSubCategory(cat.id)} className="bg-olive-700 text-white px-3 py-1.5 rounded-sm font-body text-sm font-semibold hover:bg-olive-800 transition-colors">新增</button>
+                  <button onClick={() => setShowAddSub(null)} className="text-olive-500 hover:text-olive-700 font-body text-sm transition-colors">取消</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <p className="font-body text-olive-400 text-sm mt-4">提示：不支援刪除分類操作，僅可修改名稱與新增。</p>
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

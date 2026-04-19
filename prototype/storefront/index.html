@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>商品集合頁 + 商品詳情頁 Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        olive: { 50:'#f7f8f0', 100:'#eef0e1', 200:'#dce1c3', 300:'#c4cc9a', 400:'#a8b36e', 500:'#8d9a4f', 600:'#6e7b3b', 700:'#4A5D23', 800:'#3d4c1f', 900:'#2e3a17' },
+        terra: { 50:'#fdf5f2', 100:'#fbe8e0', 200:'#f5cfc0', 300:'#edae96', 400:'#e28a6a', 500:'#C75B39', 600:'#b74a2c', 700:'#993d25', 800:'#7d3422', 900:'#6a2e20' },
+        cream: { 50:'#FEFDFB', 100:'#FAF7F2', 200:'#F5EFE6', 300:'#EDE4D4' }
+      },
+      fontFamily: {
+        display: ['Playfair Display', 'serif'],
+        body: ['Source Sans 3', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Source Sans 3', sans-serif; background: #FAF7F2; }
+  .noise-overlay { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
+  .card-hover { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; }
+  .card-hover:hover { transform: translateY(-6px) rotate(-0.5deg); box-shadow: 0 20px 40px rgba(74,93,35,0.12); }
+  .slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+  @keyframes slideUp { to { opacity: 1; transform: translateY(0); } from { opacity: 0; transform: translateY(30px); } }
+  .fade-in { animation: fadeIn 0.8s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .img-carousel { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .img-carousel > div { scroll-snap-align: start; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// Mock data
+const mockProducts = [
+  { id: 1, slug: 'premium-apple', name: '頂級蜜蘋果', price: 680, images: ['https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop','https://images.unsplash.com/photo-1579613832125-5d34a13ffe2a?w=400&h=400&fit=crop','https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=400&h=400&fit=crop'], category: '進口水果', isPreorder: false, isBundle: false, packaging: ['3入禮盒','6入禮盒','10入家庭裝'], description: '來自日本青森的頂級蜜蘋果，經過嚴格篩選，每顆甜度皆達14度以上。果肉細緻多汁，蜜腺清晰可見。' },
+  { id: 2, slug: 'mango-preorder', name: '愛文芒果（預購）', price: 1200, originalPrice: 1500, images: ['https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&h=400&fit=crop','https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=400&h=400&fit=crop'], category: '台灣產水果', isPreorder: true, preorderEnd: '2026-05-15', discount: 20, packaging: ['5斤裝','10斤裝'], description: '台南玉井直送，產地新鮮採摘。預購享8折優惠，限量供應中。' },
+  { id: 3, slug: 'dried-mushroom', name: '台灣香菇乾', price: 450, images: ['https://images.unsplash.com/photo-1504545102780-26774c1bb073?w=400&h=400&fit=crop'], category: '南北乾貨', isPreorder: false, isBundle: false, packaging: ['150g','300g'], description: '台灣高山椴木香菇，自然日曬乾燥，香氣濃郁。適合燉湯、滷味。' },
+  { id: 4, slug: 'fruit-bundle', name: '精選水果禮盒組合', price: 1800, originalPrice: 2200, images: ['https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&h=400&fit=crop','https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=400&fit=crop'], category: '組合包', isPreorder: false, isBundle: true, discount: 18, bundleItems: ['頂級蜜蘋果 3入','愛文芒果 5斤','台灣香菇乾 150g'], packaging: ['標準禮盒'], description: '嚴選三款人氣商品組合，送禮自用兩相宜。組合價享82折優惠。' },
+  { id: 5, slug: 'banana-organic', name: '有機香蕉', price: 120, images: ['https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&h=400&fit=crop'], category: '台灣產水果', isPreorder: false, isBundle: false, packaging: ['一串（約6根）'], description: '屏東有機農場栽培，無農藥殘留，自然熟成。' },
+  { id: 6, slug: 'longan-dried', name: '龍眼乾', price: 380, images: ['https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=400&fit=crop'], category: '南北乾貨', isPreorder: false, isBundle: false, packaging: ['200g','500g'], description: '古法柴燒龍眼乾，香甜不膩，可直接食用或煮桂圓紅棗茶。' },
+];
+
+const mockSite = {
+  name: '豐收農場 線上商店',
+  banner: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&h=400&fit=crop',
+  promo: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1200&h=300&fit=crop',
+  footerTitle: '豐收農場',           // REQ-029：對應後台設定的 Footer 標題
+  footerSubtitle: '聯絡我們：0800-123-456 | farm@example.com', // REQ-029：對應後台設定的 Footer 副標題
+};
+
+function ProductCard({ product, onClick, index }) {
+  return (
+    <div
+      className="card-hover cursor-pointer bg-white rounded-sm overflow-hidden border border-cream-300 slide-up"
+      style={{ animationDelay: `${index * 0.1}s` }}
+      onClick={() => onClick(product)}
+    >
+      <div className="relative aspect-square overflow-hidden">
+        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" />
+        {product.isPreorder && (
+          <div className="absolute top-3 left-0 bg-terra-500 text-white px-4 py-1 text-sm font-body font-semibold tracking-wider">
+            預購中
+          </div>
+        )}
+        {product.isBundle && (
+          <div className="absolute top-3 left-0 bg-olive-700 text-white px-4 py-1 text-sm font-body font-semibold tracking-wider">
+            組合包
+          </div>
+        )}
+      </div>
+      <div className="p-5">
+        <p className="text-xs text-olive-500 font-body font-medium uppercase tracking-widest mb-1">{product.category}</p>
+        <h3 className="font-display text-lg text-olive-900 font-semibold mb-2 leading-tight">{product.name}</h3>
+        <div className="flex items-baseline gap-2">
+          <span className="font-display text-xl text-terra-600 font-bold">NT${product.price.toLocaleString()}</span>
+          {product.originalPrice && (
+            <span className="text-sm text-gray-400 line-through font-body">NT${product.originalPrice.toLocaleString()}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CountdownTimer({ endDate }) {
+  const [timeLeft, setTimeLeft] = useState({});
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const diff = new Date(endDate) - new Date();
+      if (diff <= 0) { clearInterval(timer); return; }
+      setTimeLeft({
+        days: Math.floor(diff / (1000*60*60*24)),
+        hours: Math.floor((diff / (1000*60*60)) % 24),
+        minutes: Math.floor((diff / (1000*60)) % 60),
+        seconds: Math.floor((diff / 1000) % 60)
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [endDate]);
+  if (!timeLeft.days && timeLeft.days !== 0) return null;
+  return (
+    <div className="flex gap-3 mt-3">
+      {['days','hours','minutes','seconds'].map((unit, i) => (
+        <div key={unit} className="text-center">
+          <div className="bg-olive-700 text-white font-display text-xl font-bold w-14 h-14 flex items-center justify-center rounded-sm">
+            {String(timeLeft[unit] || 0).padStart(2, '0')}
+          </div>
+          <span className="text-xs text-olive-500 font-body mt-1 block">
+            {['天','時','分','秒'][i]}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProductDetail({ product, onBack, onAddToCart }) {
+  const [selectedPackaging, setSelectedPackaging] = useState(product.packaging[0]);
+  const [currentImage, setCurrentImage] = useState(0);
+  const [addedFeedback, setAddedFeedback] = useState(false);
+
+  const handleAdd = () => {
+    onAddToCart(product, selectedPackaging);
+    setAddedFeedback(true);
+    setTimeout(() => setAddedFeedback(false), 1500);
+  };
+
+  return (
+    <div className="min-h-screen bg-cream-100 noise-overlay">
+      {/* Back nav */}
+      <div className="max-w-6xl mx-auto px-4 py-4">
+        <button onClick={onBack} className="flex items-center gap-2 text-olive-600 hover:text-olive-800 font-body font-medium transition-colors">
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          返回商品列表
+        </button>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Image carousel */}
+          <div className="fade-in">
+            <div className="relative aspect-square overflow-hidden rounded-sm bg-white">
+              <img src={product.images[currentImage]} alt={product.name} className="w-full h-full object-cover" />
+              {product.isPreorder && (
+                <div className="absolute top-4 left-0 bg-terra-500 text-white px-6 py-2 font-body font-semibold tracking-wider">
+                  預購中
+                </div>
+              )}
+            </div>
+            {product.images.length > 1 && (
+              <div className="flex gap-3 mt-4">
+                {product.images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentImage(i)}
+                    className={`w-20 h-20 rounded-sm overflow-hidden border-2 transition-all ${i === currentImage ? 'border-olive-700 shadow-lg' : 'border-cream-300 opacity-60 hover:opacity-100'}`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Product info */}
+          <div className="slide-up" style={{ animationDelay: '0.2s' }}>
+            <p className="text-sm text-olive-500 font-body font-medium uppercase tracking-[0.2em] mb-2">{product.category}</p>
+            <h1 className="font-display text-4xl lg:text-5xl text-olive-900 font-bold leading-tight mb-4">{product.name}</h1>
+
+            <div className="flex items-baseline gap-3 mb-6">
+              <span className="font-display text-3xl text-terra-600 font-bold">NT${product.price.toLocaleString()}</span>
+              {product.originalPrice && (
+                <>
+                  <span className="text-lg text-gray-400 line-through font-body">NT${product.originalPrice.toLocaleString()}</span>
+                  <span className="bg-terra-100 text-terra-600 px-2 py-0.5 text-sm font-body font-semibold rounded-sm">-{product.discount}%</span>
+                </>
+              )}
+            </div>
+
+            {product.isPreorder && (
+              <div className="bg-cream-200 p-4 rounded-sm mb-6 border border-cream-300">
+                <p className="font-body font-semibold text-olive-800 mb-1">預購倒數</p>
+                <CountdownTimer endDate={product.preorderEnd} />
+              </div>
+            )}
+
+            {product.isBundle && product.bundleItems && (
+              <div className="bg-olive-50 p-4 rounded-sm mb-6 border border-olive-200">
+                <p className="font-body font-semibold text-olive-800 mb-2">組合包含商品</p>
+                <ul className="space-y-1">
+                  {product.bundleItems.map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-olive-700 font-body">
+                      <span className="w-1.5 h-1.5 bg-olive-400 rounded-full"></span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <p className="text-olive-700 font-body leading-relaxed mb-8 text-lg">{product.description}</p>
+
+            {/* Packaging options */}
+            <div className="mb-8">
+              <p className="font-body font-semibold text-olive-800 mb-3">包裝選項</p>
+              <div className="flex flex-wrap gap-3">
+                {product.packaging.map(pkg => (
+                  <button
+                    key={pkg}
+                    onClick={() => setSelectedPackaging(pkg)}
+                    className={`px-5 py-2.5 rounded-sm font-body font-medium transition-all ${selectedPackaging === pkg ? 'bg-olive-700 text-white shadow-md' : 'bg-white text-olive-700 border border-olive-300 hover:border-olive-500'}`}
+                  >
+                    {pkg}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Add to cart */}
+            <button
+              onClick={handleAdd}
+              className={`w-full py-4 rounded-sm font-body font-semibold text-lg tracking-wider transition-all duration-300 ${addedFeedback ? 'bg-olive-500 text-white scale-95' : 'bg-terra-500 text-white hover:bg-terra-600 hover:shadow-lg active:scale-[0.98]'}`}
+            >
+              {addedFeedback ? '已加入購物車' : '加入購物車'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* REQ-035: OnePage 平台 Footer */}
+      <div className="border-t-2 border-cream-300 bg-cream-50 py-3">
+        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
+          <p className="font-body text-olive-400 text-xs">由 OnePage 提供技術支援</p>
+          <a
+            href="https://onepage.example.com/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-body text-olive-500 hover:text-olive-700 text-xs underline transition-colors"
+          >
+            聯絡我們
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
+
+  const handleAddToCart = (product, packaging) => {
+    setCartCount(prev => prev + 1);
+  };
+
+  if (selectedProduct) {
+    return <ProductDetail product={selectedProduct} onBack={() => setSelectedProduct(null)} onAddToCart={handleAddToCart} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-cream-100 noise-overlay">
+      {/* Cart indicator */}
+      {cartCount > 0 && (
+        <div className="fixed top-4 right-4 z-50 bg-terra-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg font-body font-bold cursor-pointer hover:scale-110 transition-transform">
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+          <span className="absolute -top-1 -right-1 bg-olive-700 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{cartCount}</span>
+        </div>
+      )}
+
+      {/* Banner */}
+      <div className="relative w-full h-[50vh] min-h-[300px] overflow-hidden">
+        <img src={mockSite.banner} alt="Banner" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-olive-900/60 via-olive-900/20 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 p-8 lg:p-16">
+          <h1 className="font-display text-4xl lg:text-6xl text-white font-bold leading-tight mb-2 drop-shadow-lg">{mockSite.name}</h1>
+          <p className="font-body text-cream-200 text-lg lg:text-xl tracking-wide">產地直送 . 新鮮到貨</p>
+        </div>
+      </div>
+
+      {/* Promo */}
+      <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10">
+        <div className="rounded-sm overflow-hidden shadow-xl">
+          <img src={mockSite.promo} alt="宣傳文案" className="w-full h-48 lg:h-64 object-cover" />
+        </div>
+      </div>
+
+      {/* Products */}
+      <div className="max-w-6xl mx-auto px-4 py-16">
+        <div className="flex items-center gap-4 mb-12">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-olive-300 to-transparent"></div>
+          <h2 className="font-display text-2xl lg:text-3xl text-olive-800 font-semibold tracking-wide">精選商品</h2>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-olive-300 to-transparent"></div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {mockProducts.map((product, i) => (
+            <ProductCard key={product.id} product={product} onClick={setSelectedProduct} index={i} />
+          ))}
+        </div>
+      </div>
+
+      {/* Footer — 店家 footer（REQ-029：footerTitle/footerSubtitle 對應後台設定） */}
+      <footer className="bg-olive-800 text-cream-200 py-12">
+        <div className="max-w-6xl mx-auto px-4 text-center font-body">
+          <p className="font-display text-xl text-white mb-2">{mockSite.footerTitle || mockSite.name}</p>
+          <p className="text-sm text-olive-300">{mockSite.footerSubtitle || ''}</p>
+        </div>
+      </footer>
+
+      {/* REQ-035: OnePage 平台 Footer */}
+      <div className="bg-cream-100 border-t-2 border-cream-300 py-3">
+        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
+          <p className="font-body text-olive-400 text-xs">由 OnePage 提供技術支援</p>
+          <a
+            href="https://onepage.example.com/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-body text-olive-500 hover:text-olive-700 text-xs underline transition-colors"
+          >
+            聯絡我們
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

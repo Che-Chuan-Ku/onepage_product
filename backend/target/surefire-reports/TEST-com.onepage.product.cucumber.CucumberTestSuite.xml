@@ -1,0 +1,773 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.onepage.product.cucumber.CucumberTestSuite" time="0.508" tests="236" errors="0" skipped="236" failures="0">
+  <properties>
+    <property name="java.specification.version" value="21"/>
+    <property name="sun.cpu.isalist" value="amd64"/>
+    <property name="sun.jnu.encoding" value="MS950"/>
+    <property name="java.class.path" value="D:\my\onepage_test\backend\target\test-classes;D:\my\onepage_test\backend\target\classes;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-web\3.2.5\spring-boot-starter-web-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter\3.2.5\spring-boot-starter-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot\3.2.5\spring-boot-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\3.2.5\spring-boot-autoconfigure-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-logging\3.2.5\spring-boot-starter-logging-3.2.5.jar;C:\Users\kksjk\.m2\repository\ch\qos\logback\logback-classic\1.4.14\logback-classic-1.4.14.jar;C:\Users\kksjk\.m2\repository\ch\qos\logback\logback-core\1.4.14\logback-core-1.4.14.jar;C:\Users\kksjk\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.21.1\log4j-to-slf4j-2.21.1.jar;C:\Users\kksjk\.m2\repository\org\apache\logging\log4j\log4j-api\2.21.1\log4j-api-2.21.1.jar;C:\Users\kksjk\.m2\repository\org\slf4j\jul-to-slf4j\2.0.13\jul-to-slf4j-2.0.13.jar;C:\Users\kksjk\.m2\repository\jakarta\annotation\jakarta.annotation-api\2.1.1\jakarta.annotation-api-2.1.1.jar;C:\Users\kksjk\.m2\repository\org\yaml\snakeyaml\2.2\snakeyaml-2.2.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-json\3.2.5\spring-boot-starter-json-3.2.5.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\datatype\jackson-datatype-jdk8\2.15.4\jackson-datatype-jdk8-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\datatype\jackson-datatype-jsr310\2.15.4\jackson-datatype-jsr310-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\module\jackson-module-parameter-names\2.15.4\jackson-module-parameter-names-2.15.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\3.2.5\spring-boot-starter-tomcat-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\10.1.20\tomcat-embed-core-10.1.20.jar;C:\Users\kksjk\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\10.1.20\tomcat-embed-websocket-10.1.20.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-web\6.1.6\spring-web-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-beans\6.1.6\spring-beans-6.1.6.jar;C:\Users\kksjk\.m2\repository\io\micrometer\micrometer-observation\1.12.5\micrometer-observation-1.12.5.jar;C:\Users\kksjk\.m2\repository\io\micrometer\micrometer-commons\1.12.5\micrometer-commons-1.12.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-webmvc\6.1.6\spring-webmvc-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-context\6.1.6\spring-context-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-expression\6.1.6\spring-expression-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\3.2.5\spring-boot-starter-data-jpa-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-aop\3.2.5\spring-boot-starter-aop-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\aspectj\aspectjweaver\1.9.22\aspectjweaver-1.9.22.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\3.2.5\spring-boot-starter-jdbc-3.2.5.jar;C:\Users\kksjk\.m2\repository\com\zaxxer\HikariCP\5.0.1\HikariCP-5.0.1.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-jdbc\6.1.6\spring-jdbc-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\hibernate\orm\hibernate-core\6.4.4.Final\hibernate-core-6.4.4.Final.jar;C:\Users\kksjk\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.1.0\jakarta.persistence-api-3.1.0.jar;C:\Users\kksjk\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\kksjk\.m2\repository\org\jboss\logging\jboss-logging\3.5.3.Final\jboss-logging-3.5.3.Final.jar;C:\Users\kksjk\.m2\repository\org\hibernate\common\hibernate-commons-annotations\6.0.6.Final\hibernate-commons-annotations-6.0.6.Final.jar;C:\Users\kksjk\.m2\repository\io\smallrye\jandex\3.1.2\jandex-3.1.2.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\classmate\1.6.0\classmate-1.6.0.jar;C:\Users\kksjk\.m2\repository\net\bytebuddy\byte-buddy\1.14.13\byte-buddy-1.14.13.jar;C:\Users\kksjk\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.5\jaxb-runtime-4.0.5.jar;C:\Users\kksjk\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.5\jaxb-core-4.0.5.jar;C:\Users\kksjk\.m2\repository\org\glassfish\jaxb\txw2\4.0.5\txw2-4.0.5.jar;C:\Users\kksjk\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\kksjk\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\kksjk\.m2\repository\org\antlr\antlr4-runtime\4.13.0\antlr4-runtime-4.13.0.jar;C:\Users\kksjk\.m2\repository\org\springframework\data\spring-data-jpa\3.2.5\spring-data-jpa-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\data\spring-data-commons\3.2.5\spring-data-commons-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-orm\6.1.6\spring-orm-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-tx\6.1.6\spring-tx-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-aspects\6.1.6\spring-aspects-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-security\3.2.5\spring-boot-starter-security-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-aop\6.1.6\spring-aop-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-config\6.2.4\spring-security-config-6.2.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-web\6.2.4\spring-security-web-6.2.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-validation\3.2.5\spring-boot-starter-validation-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\10.1.20\tomcat-embed-el-10.1.20.jar;C:\Users\kksjk\.m2\repository\org\hibernate\validator\hibernate-validator\8.0.1.Final\hibernate-validator-8.0.1.Final.jar;C:\Users\kksjk\.m2\repository\jakarta\validation\jakarta.validation-api\3.0.2\jakarta.validation-api-3.0.2.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-mail\3.2.5\spring-boot-starter-mail-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-context-support\6.1.6\spring-context-support-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\eclipse\angus\jakarta.mail\2.0.3\jakarta.mail-2.0.3.jar;C:\Users\kksjk\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.3\jakarta.activation-api-2.1.3.jar;C:\Users\kksjk\.m2\repository\org\eclipse\angus\angus-activation\2.0.2\angus-activation-2.0.2.jar;C:\Users\kksjk\.m2\repository\org\postgresql\postgresql\42.6.2\postgresql-42.6.2.jar;C:\Users\kksjk\.m2\repository\org\checkerframework\checker-qual\3.31.0\checker-qual-3.31.0.jar;C:\Users\kksjk\.m2\repository\org\flywaydb\flyway-core\9.22.3\flyway-core-9.22.3.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-toml\2.15.4\jackson-dataformat-toml-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.15.4\jackson-core-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar;C:\Users\kksjk\.m2\repository\io\jsonwebtoken\jjwt-api\0.12.5\jjwt-api-0.12.5.jar;C:\Users\kksjk\.m2\repository\io\jsonwebtoken\jjwt-impl\0.12.5\jjwt-impl-0.12.5.jar;C:\Users\kksjk\.m2\repository\io\jsonwebtoken\jjwt-jackson\0.12.5\jjwt-jackson-0.12.5.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.15.4\jackson-databind-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.15.4\jackson-annotations-2.15.4.jar;C:\Users\kksjk\.m2\repository\org\projectlombok\lombok\1.18.32\lombok-1.18.32.jar;C:\Users\kksjk\.m2\repository\com\opencsv\opencsv\5.9\opencsv-5.9.jar;C:\Users\kksjk\.m2\repository\org\apache\commons\commons-lang3\3.13.0\commons-lang3-3.13.0.jar;C:\Users\kksjk\.m2\repository\org\apache\commons\commons-text\1.11.0\commons-text-1.11.0.jar;C:\Users\kksjk\.m2\repository\commons-beanutils\commons-beanutils\1.9.4\commons-beanutils-1.9.4.jar;C:\Users\kksjk\.m2\repository\commons-logging\commons-logging\1.2\commons-logging-1.2.jar;C:\Users\kksjk\.m2\repository\commons-collections\commons-collections\3.2.2\commons-collections-3.2.2.jar;C:\Users\kksjk\.m2\repository\org\apache\commons\commons-collections4\4.4\commons-collections4-4.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-test\3.2.5\spring-boot-starter-test-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-test\3.2.5\spring-boot-test-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\3.2.5\spring-boot-test-autoconfigure-3.2.5.jar;C:\Users\kksjk\.m2\repository\com\jayway\jsonpath\json-path\2.9.0\json-path-2.9.0.jar;C:\Users\kksjk\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.2\jakarta.xml.bind-api-4.0.2.jar;C:\Users\kksjk\.m2\repository\net\minidev\json-smart\2.5.1\json-smart-2.5.1.jar;C:\Users\kksjk\.m2\repository\net\minidev\accessors-smart\2.5.1\accessors-smart-2.5.1.jar;C:\Users\kksjk\.m2\repository\org\ow2\asm\asm\9.6\asm-9.6.jar;C:\Users\kksjk\.m2\repository\org\assertj\assertj-core\3.24.2\assertj-core-3.24.2.jar;C:\Users\kksjk\.m2\repository\org\awaitility\awaitility\4.2.1\awaitility-4.2.1.jar;C:\Users\kksjk\.m2\repository\org\hamcrest\hamcrest\2.2\hamcrest-2.2.jar;C:\Users\kksjk\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.2\junit-jupiter-5.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.2\junit-jupiter-api-5.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.2\junit-jupiter-params-5.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.2\junit-jupiter-engine-5.10.2.jar;C:\Users\kksjk\.m2\repository\org\mockito\mockito-core\5.7.0\mockito-core-5.7.0.jar;C:\Users\kksjk\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.13\byte-buddy-agent-1.14.13.jar;C:\Users\kksjk\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\kksjk\.m2\repository\org\mockito\mockito-junit-jupiter\5.7.0\mockito-junit-jupiter-5.7.0.jar;C:\Users\kksjk\.m2\repository\org\skyscreamer\jsonassert\1.5.1\jsonassert-1.5.1.jar;C:\Users\kksjk\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-core\6.1.6\spring-core-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-jcl\6.1.6\spring-jcl-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-test\6.1.6\spring-test-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\xmlunit\xmlunit-core\2.9.1\xmlunit-core-2.9.1.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-test\6.2.4\spring-security-test-6.2.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-core\6.2.4\spring-security-core-6.2.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-crypto\6.2.4\spring-security-crypto-6.2.4.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-java\7.15.0\cucumber-java-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-core\7.15.0\cucumber-core-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-gherkin\7.15.0\cucumber-gherkin-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-gherkin-messages\7.15.0\cucumber-gherkin-messages-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\gherkin\26.2.0\gherkin-26.2.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\messages\22.0.0\messages-22.0.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\tag-expressions\6.0.0\tag-expressions-6.0.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-expressions\17.0.1\cucumber-expressions-17.0.1.jar;C:\Users\kksjk\.m2\repository\io\cucumber\datatable\7.15.0\datatable-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-plugin\7.15.0\cucumber-plugin-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\docstring\7.15.0\docstring-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\html-formatter\20.4.0\html-formatter-20.4.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\junit-xml-formatter\0.2.0\junit-xml-formatter-0.2.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\ci-environment\10.0.0\ci-environment-10.0.0.jar;C:\Users\kksjk\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-spring\7.15.0\cucumber-spring-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-junit-platform-engine\7.15.0\cucumber-junit-platform-engine-7.15.0.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-engine\1.10.2\junit-platform-engine-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-commons\1.10.2\junit-platform-commons-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-suite\1.10.2\junit-platform-suite-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-suite-api\1.10.2\junit-platform-suite-api-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-suite-engine\1.10.2\junit-platform-suite-engine-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-suite-commons\1.10.2\junit-platform-suite-commons-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-launcher\1.10.2\junit-platform-launcher-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\testcontainers\1.19.7\testcontainers-1.19.7.jar;C:\Users\kksjk\.m2\repository\junit\junit\4.13.2\junit-4.13.2.jar;C:\Users\kksjk\.m2\repository\org\hamcrest\hamcrest-core\2.2\hamcrest-core-2.2.jar;C:\Users\kksjk\.m2\repository\org\slf4j\slf4j-api\2.0.13\slf4j-api-2.0.13.jar;C:\Users\kksjk\.m2\repository\org\apache\commons\commons-compress\1.24.0\commons-compress-1.24.0.jar;C:\Users\kksjk\.m2\repository\org\rnorth\duct-tape\duct-tape\1.0.8\duct-tape-1.0.8.jar;C:\Users\kksjk\.m2\repository\org\jetbrains\annotations\17.0.0\annotations-17.0.0.jar;C:\Users\kksjk\.m2\repository\com\github\docker-java\docker-java-api\3.3.6\docker-java-api-3.3.6.jar;C:\Users\kksjk\.m2\repository\com\github\docker-java\docker-java-transport-zerodep\3.3.6\docker-java-transport-zerodep-3.3.6.jar;C:\Users\kksjk\.m2\repository\com\github\docker-java\docker-java-transport\3.3.6\docker-java-transport-3.3.6.jar;C:\Users\kksjk\.m2\repository\net\java\dev\jna\jna\5.13.0\jna-5.13.0.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\postgresql\1.19.7\postgresql-1.19.7.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\jdbc\1.19.7\jdbc-1.19.7.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\database-commons\1.19.7\database-commons-1.19.7.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\junit-jupiter\1.19.7\junit-jupiter-1.19.7.jar;C:\Users\kksjk\.m2\repository\io\rest-assured\rest-assured\5.3.2\rest-assured-5.3.2.jar;C:\Users\kksjk\.m2\repository\org\apache\groovy\groovy\4.0.21\groovy-4.0.21.jar;C:\Users\kksjk\.m2\repository\org\apache\groovy\groovy-xml\4.0.21\groovy-xml-4.0.21.jar;C:\Users\kksjk\.m2\repository\org\apache\httpcomponents\httpclient\4.5.13\httpclient-4.5.13.jar;C:\Users\kksjk\.m2\repository\org\apache\httpcomponents\httpcore\4.4.16\httpcore-4.4.16.jar;C:\Users\kksjk\.m2\repository\commons-codec\commons-codec\1.16.1\commons-codec-1.16.1.jar;C:\Users\kksjk\.m2\repository\org\apache\httpcomponents\httpmime\4.5.13\httpmime-4.5.13.jar;C:\Users\kksjk\.m2\repository\org\ccil\cowan\tagsoup\tagsoup\1.2.1\tagsoup-1.2.1.jar;C:\Users\kksjk\.m2\repository\io\rest-assured\json-path\5.3.2\json-path-5.3.2.jar;C:\Users\kksjk\.m2\repository\org\apache\groovy\groovy-json\4.0.21\groovy-json-4.0.21.jar;C:\Users\kksjk\.m2\repository\io\rest-assured\rest-assured-common\5.3.2\rest-assured-common-5.3.2.jar;C:\Users\kksjk\.m2\repository\io\rest-assured\xml-path\5.3.2\xml-path-5.3.2.jar;"/>
+    <property name="java.vm.vendor" value="Microsoft"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="user.variant" value=""/>
+    <property name="java.vendor.url" value="https://www.microsoft.com"/>
+    <property name="user.timezone" value="Asia/Taipei"/>
+    <property name="os.name" value="Windows 11"/>
+    <property name="java.vm.specification.version" value="21"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="user.country" value="TW"/>
+    <property name="sun.boot.library.path" value="C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin"/>
+    <property name="sun.java.command" value="C:\Users\kksjk\AppData\Local\Temp\surefire6165262712685909674\surefirebooter-20260419000620984_3.jar C:\Users\kksjk\AppData\Local\Temp\surefire6165262712685909674 2026-04-19T00-06-20_880-jvmRun1 surefire-20260419000620984_1tmp surefire_0-20260419000620984_2tmp"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="test" value="CucumberTestSuite"/>
+    <property name="surefire.test.class.path" value="D:\my\onepage_test\backend\target\test-classes;D:\my\onepage_test\backend\target\classes;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-web\3.2.5\spring-boot-starter-web-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter\3.2.5\spring-boot-starter-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot\3.2.5\spring-boot-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\3.2.5\spring-boot-autoconfigure-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-logging\3.2.5\spring-boot-starter-logging-3.2.5.jar;C:\Users\kksjk\.m2\repository\ch\qos\logback\logback-classic\1.4.14\logback-classic-1.4.14.jar;C:\Users\kksjk\.m2\repository\ch\qos\logback\logback-core\1.4.14\logback-core-1.4.14.jar;C:\Users\kksjk\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.21.1\log4j-to-slf4j-2.21.1.jar;C:\Users\kksjk\.m2\repository\org\apache\logging\log4j\log4j-api\2.21.1\log4j-api-2.21.1.jar;C:\Users\kksjk\.m2\repository\org\slf4j\jul-to-slf4j\2.0.13\jul-to-slf4j-2.0.13.jar;C:\Users\kksjk\.m2\repository\jakarta\annotation\jakarta.annotation-api\2.1.1\jakarta.annotation-api-2.1.1.jar;C:\Users\kksjk\.m2\repository\org\yaml\snakeyaml\2.2\snakeyaml-2.2.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-json\3.2.5\spring-boot-starter-json-3.2.5.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\datatype\jackson-datatype-jdk8\2.15.4\jackson-datatype-jdk8-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\datatype\jackson-datatype-jsr310\2.15.4\jackson-datatype-jsr310-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\module\jackson-module-parameter-names\2.15.4\jackson-module-parameter-names-2.15.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\3.2.5\spring-boot-starter-tomcat-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\10.1.20\tomcat-embed-core-10.1.20.jar;C:\Users\kksjk\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\10.1.20\tomcat-embed-websocket-10.1.20.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-web\6.1.6\spring-web-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-beans\6.1.6\spring-beans-6.1.6.jar;C:\Users\kksjk\.m2\repository\io\micrometer\micrometer-observation\1.12.5\micrometer-observation-1.12.5.jar;C:\Users\kksjk\.m2\repository\io\micrometer\micrometer-commons\1.12.5\micrometer-commons-1.12.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-webmvc\6.1.6\spring-webmvc-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-context\6.1.6\spring-context-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-expression\6.1.6\spring-expression-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\3.2.5\spring-boot-starter-data-jpa-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-aop\3.2.5\spring-boot-starter-aop-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\aspectj\aspectjweaver\1.9.22\aspectjweaver-1.9.22.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\3.2.5\spring-boot-starter-jdbc-3.2.5.jar;C:\Users\kksjk\.m2\repository\com\zaxxer\HikariCP\5.0.1\HikariCP-5.0.1.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-jdbc\6.1.6\spring-jdbc-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\hibernate\orm\hibernate-core\6.4.4.Final\hibernate-core-6.4.4.Final.jar;C:\Users\kksjk\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.1.0\jakarta.persistence-api-3.1.0.jar;C:\Users\kksjk\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\kksjk\.m2\repository\org\jboss\logging\jboss-logging\3.5.3.Final\jboss-logging-3.5.3.Final.jar;C:\Users\kksjk\.m2\repository\org\hibernate\common\hibernate-commons-annotations\6.0.6.Final\hibernate-commons-annotations-6.0.6.Final.jar;C:\Users\kksjk\.m2\repository\io\smallrye\jandex\3.1.2\jandex-3.1.2.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\classmate\1.6.0\classmate-1.6.0.jar;C:\Users\kksjk\.m2\repository\net\bytebuddy\byte-buddy\1.14.13\byte-buddy-1.14.13.jar;C:\Users\kksjk\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.5\jaxb-runtime-4.0.5.jar;C:\Users\kksjk\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.5\jaxb-core-4.0.5.jar;C:\Users\kksjk\.m2\repository\org\glassfish\jaxb\txw2\4.0.5\txw2-4.0.5.jar;C:\Users\kksjk\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\kksjk\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\kksjk\.m2\repository\org\antlr\antlr4-runtime\4.13.0\antlr4-runtime-4.13.0.jar;C:\Users\kksjk\.m2\repository\org\springframework\data\spring-data-jpa\3.2.5\spring-data-jpa-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\data\spring-data-commons\3.2.5\spring-data-commons-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-orm\6.1.6\spring-orm-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-tx\6.1.6\spring-tx-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-aspects\6.1.6\spring-aspects-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-security\3.2.5\spring-boot-starter-security-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-aop\6.1.6\spring-aop-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-config\6.2.4\spring-security-config-6.2.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-web\6.2.4\spring-security-web-6.2.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-validation\3.2.5\spring-boot-starter-validation-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\10.1.20\tomcat-embed-el-10.1.20.jar;C:\Users\kksjk\.m2\repository\org\hibernate\validator\hibernate-validator\8.0.1.Final\hibernate-validator-8.0.1.Final.jar;C:\Users\kksjk\.m2\repository\jakarta\validation\jakarta.validation-api\3.0.2\jakarta.validation-api-3.0.2.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-mail\3.2.5\spring-boot-starter-mail-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-context-support\6.1.6\spring-context-support-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\eclipse\angus\jakarta.mail\2.0.3\jakarta.mail-2.0.3.jar;C:\Users\kksjk\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.3\jakarta.activation-api-2.1.3.jar;C:\Users\kksjk\.m2\repository\org\eclipse\angus\angus-activation\2.0.2\angus-activation-2.0.2.jar;C:\Users\kksjk\.m2\repository\org\postgresql\postgresql\42.6.2\postgresql-42.6.2.jar;C:\Users\kksjk\.m2\repository\org\checkerframework\checker-qual\3.31.0\checker-qual-3.31.0.jar;C:\Users\kksjk\.m2\repository\org\flywaydb\flyway-core\9.22.3\flyway-core-9.22.3.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-toml\2.15.4\jackson-dataformat-toml-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.15.4\jackson-core-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar;C:\Users\kksjk\.m2\repository\io\jsonwebtoken\jjwt-api\0.12.5\jjwt-api-0.12.5.jar;C:\Users\kksjk\.m2\repository\io\jsonwebtoken\jjwt-impl\0.12.5\jjwt-impl-0.12.5.jar;C:\Users\kksjk\.m2\repository\io\jsonwebtoken\jjwt-jackson\0.12.5\jjwt-jackson-0.12.5.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.15.4\jackson-databind-2.15.4.jar;C:\Users\kksjk\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.15.4\jackson-annotations-2.15.4.jar;C:\Users\kksjk\.m2\repository\org\projectlombok\lombok\1.18.32\lombok-1.18.32.jar;C:\Users\kksjk\.m2\repository\com\opencsv\opencsv\5.9\opencsv-5.9.jar;C:\Users\kksjk\.m2\repository\org\apache\commons\commons-lang3\3.13.0\commons-lang3-3.13.0.jar;C:\Users\kksjk\.m2\repository\org\apache\commons\commons-text\1.11.0\commons-text-1.11.0.jar;C:\Users\kksjk\.m2\repository\commons-beanutils\commons-beanutils\1.9.4\commons-beanutils-1.9.4.jar;C:\Users\kksjk\.m2\repository\commons-logging\commons-logging\1.2\commons-logging-1.2.jar;C:\Users\kksjk\.m2\repository\commons-collections\commons-collections\3.2.2\commons-collections-3.2.2.jar;C:\Users\kksjk\.m2\repository\org\apache\commons\commons-collections4\4.4\commons-collections4-4.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-starter-test\3.2.5\spring-boot-starter-test-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-test\3.2.5\spring-boot-test-3.2.5.jar;C:\Users\kksjk\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\3.2.5\spring-boot-test-autoconfigure-3.2.5.jar;C:\Users\kksjk\.m2\repository\com\jayway\jsonpath\json-path\2.9.0\json-path-2.9.0.jar;C:\Users\kksjk\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.2\jakarta.xml.bind-api-4.0.2.jar;C:\Users\kksjk\.m2\repository\net\minidev\json-smart\2.5.1\json-smart-2.5.1.jar;C:\Users\kksjk\.m2\repository\net\minidev\accessors-smart\2.5.1\accessors-smart-2.5.1.jar;C:\Users\kksjk\.m2\repository\org\ow2\asm\asm\9.6\asm-9.6.jar;C:\Users\kksjk\.m2\repository\org\assertj\assertj-core\3.24.2\assertj-core-3.24.2.jar;C:\Users\kksjk\.m2\repository\org\awaitility\awaitility\4.2.1\awaitility-4.2.1.jar;C:\Users\kksjk\.m2\repository\org\hamcrest\hamcrest\2.2\hamcrest-2.2.jar;C:\Users\kksjk\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.2\junit-jupiter-5.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.2\junit-jupiter-api-5.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.2\junit-jupiter-params-5.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.2\junit-jupiter-engine-5.10.2.jar;C:\Users\kksjk\.m2\repository\org\mockito\mockito-core\5.7.0\mockito-core-5.7.0.jar;C:\Users\kksjk\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.13\byte-buddy-agent-1.14.13.jar;C:\Users\kksjk\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\kksjk\.m2\repository\org\mockito\mockito-junit-jupiter\5.7.0\mockito-junit-jupiter-5.7.0.jar;C:\Users\kksjk\.m2\repository\org\skyscreamer\jsonassert\1.5.1\jsonassert-1.5.1.jar;C:\Users\kksjk\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-core\6.1.6\spring-core-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-jcl\6.1.6\spring-jcl-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\springframework\spring-test\6.1.6\spring-test-6.1.6.jar;C:\Users\kksjk\.m2\repository\org\xmlunit\xmlunit-core\2.9.1\xmlunit-core-2.9.1.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-test\6.2.4\spring-security-test-6.2.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-core\6.2.4\spring-security-core-6.2.4.jar;C:\Users\kksjk\.m2\repository\org\springframework\security\spring-security-crypto\6.2.4\spring-security-crypto-6.2.4.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-java\7.15.0\cucumber-java-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-core\7.15.0\cucumber-core-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-gherkin\7.15.0\cucumber-gherkin-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-gherkin-messages\7.15.0\cucumber-gherkin-messages-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\gherkin\26.2.0\gherkin-26.2.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\messages\22.0.0\messages-22.0.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\tag-expressions\6.0.0\tag-expressions-6.0.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-expressions\17.0.1\cucumber-expressions-17.0.1.jar;C:\Users\kksjk\.m2\repository\io\cucumber\datatable\7.15.0\datatable-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-plugin\7.15.0\cucumber-plugin-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\docstring\7.15.0\docstring-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\html-formatter\20.4.0\html-formatter-20.4.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\junit-xml-formatter\0.2.0\junit-xml-formatter-0.2.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\ci-environment\10.0.0\ci-environment-10.0.0.jar;C:\Users\kksjk\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-spring\7.15.0\cucumber-spring-7.15.0.jar;C:\Users\kksjk\.m2\repository\io\cucumber\cucumber-junit-platform-engine\7.15.0\cucumber-junit-platform-engine-7.15.0.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-engine\1.10.2\junit-platform-engine-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-commons\1.10.2\junit-platform-commons-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-suite\1.10.2\junit-platform-suite-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-suite-api\1.10.2\junit-platform-suite-api-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-suite-engine\1.10.2\junit-platform-suite-engine-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-suite-commons\1.10.2\junit-platform-suite-commons-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\junit\platform\junit-platform-launcher\1.10.2\junit-platform-launcher-1.10.2.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\testcontainers\1.19.7\testcontainers-1.19.7.jar;C:\Users\kksjk\.m2\repository\junit\junit\4.13.2\junit-4.13.2.jar;C:\Users\kksjk\.m2\repository\org\hamcrest\hamcrest-core\2.2\hamcrest-core-2.2.jar;C:\Users\kksjk\.m2\repository\org\slf4j\slf4j-api\2.0.13\slf4j-api-2.0.13.jar;C:\Users\kksjk\.m2\repository\org\apache\commons\commons-compress\1.24.0\commons-compress-1.24.0.jar;C:\Users\kksjk\.m2\repository\org\rnorth\duct-tape\duct-tape\1.0.8\duct-tape-1.0.8.jar;C:\Users\kksjk\.m2\repository\org\jetbrains\annotations\17.0.0\annotations-17.0.0.jar;C:\Users\kksjk\.m2\repository\com\github\docker-java\docker-java-api\3.3.6\docker-java-api-3.3.6.jar;C:\Users\kksjk\.m2\repository\com\github\docker-java\docker-java-transport-zerodep\3.3.6\docker-java-transport-zerodep-3.3.6.jar;C:\Users\kksjk\.m2\repository\com\github\docker-java\docker-java-transport\3.3.6\docker-java-transport-3.3.6.jar;C:\Users\kksjk\.m2\repository\net\java\dev\jna\jna\5.13.0\jna-5.13.0.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\postgresql\1.19.7\postgresql-1.19.7.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\jdbc\1.19.7\jdbc-1.19.7.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\database-commons\1.19.7\database-commons-1.19.7.jar;C:\Users\kksjk\.m2\repository\org\testcontainers\junit-jupiter\1.19.7\junit-jupiter-1.19.7.jar;C:\Users\kksjk\.m2\repository\io\rest-assured\rest-assured\5.3.2\rest-assured-5.3.2.jar;C:\Users\kksjk\.m2\repository\org\apache\groovy\groovy\4.0.21\groovy-4.0.21.jar;C:\Users\kksjk\.m2\repository\org\apache\groovy\groovy-xml\4.0.21\groovy-xml-4.0.21.jar;C:\Users\kksjk\.m2\repository\org\apache\httpcomponents\httpclient\4.5.13\httpclient-4.5.13.jar;C:\Users\kksjk\.m2\repository\org\apache\httpcomponents\httpcore\4.4.16\httpcore-4.4.16.jar;C:\Users\kksjk\.m2\repository\commons-codec\commons-codec\1.16.1\commons-codec-1.16.1.jar;C:\Users\kksjk\.m2\repository\org\apache\httpcomponents\httpmime\4.5.13\httpmime-4.5.13.jar;C:\Users\kksjk\.m2\repository\org\ccil\cowan\tagsoup\tagsoup\1.2.1\tagsoup-1.2.1.jar;C:\Users\kksjk\.m2\repository\io\rest-assured\json-path\5.3.2\json-path-5.3.2.jar;C:\Users\kksjk\.m2\repository\org\apache\groovy\groovy-json\4.0.21\groovy-json-4.0.21.jar;C:\Users\kksjk\.m2\repository\io\rest-assured\rest-assured-common\5.3.2\rest-assured-common-5.3.2.jar;C:\Users\kksjk\.m2\repository\io\rest-assured\xml-path\5.3.2\xml-path-5.3.2.jar;"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="user.home" value="C:\Users\kksjk"/>
+    <property name="user.language" value="zh"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.version.date" value="2026-01-20"/>
+    <property name="java.home" value="C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot"/>
+    <property name="file.separator" value="\"/>
+    <property name="basedir" value="D:\my\onepage_test\backend"/>
+    <property name="java.vm.compressedOopsMode" value="Zero based"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="surefire.real.class.path" value="C:\Users\kksjk\AppData\Local\Temp\surefire6165262712685909674\surefirebooter-20260419000620984_3.jar"/>
+    <property name="user.script" value=""/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="java.runtime.version" value="21.0.10+7-LTS"/>
+    <property name="user.name" value="kksjk"/>
+    <property name="stdout.encoding" value="MS950"/>
+    <property name="path.separator" value=";"/>
+    <property name="os.version" value="10.0"/>
+    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+    <property name="java.vendor.version" value="Microsoft-13106404"/>
+    <property name="localRepository" value="C:\Users\kksjk\.m2\repository"/>
+    <property name="java.vendor.url.bug" value="https://github.com/microsoft/openjdk/issues"/>
+    <property name="java.io.tmpdir" value="C:\Users\kksjk\AppData\Local\Temp\"/>
+    <property name="java.version" value="21.0.10"/>
+    <property name="user.dir" value="D:\my\onepage_test\backend"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="sun.os.patch.level" value=""/>
+    <property name="native.encoding" value="MS950"/>
+    <property name="java.library.path" value="C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Users\kksjk\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\local\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\kksjk\bin;C:\Users\kksjk\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand;C:\Users\kksjk\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli;C:\Users\kksjk\AppData\Local\Programs\Microsoft VS Code;C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32\OpenSSH;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0;C:\WINDOWS\System32\OpenSSH;C:\Program Files\Microsoft SQL Server\150\Tools\Binn;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn;C:\Program Files\TortoiseGit\bin;C:\Program Files\Git\cmd;C:\Program Files (x86)\Microsoft SQL Server\160\DTS\Binn;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn;C:\Program Files\Microsoft SQL Server\160\Tools\Binn;C:\Program Files\Microsoft SQL Server\160\DTS\Binn;C:\Program Files\Seq;C:\Program Files\Seq\Client;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\my\webshop\maven-mvnd-1.0.2-windows-amd64\apache-maven-3.9.9\bin;C:\Program Files\dotnet;C:\Program Files (x86)\Common Files\Acronis\SnapAPI;C:\Program Files (x86)\Common Files\Acronis\VirtualFile;C:\Program Files (x86)\Common Files\Acronis\VirtualFile64;C:\Users\kksjk\.local\bin\claude.exe;C:\Users\kksjk\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files\nodejs;D:\toolslibrary\apache-maven-3.9.14-bin\apache-maven-3.9.14\bin;C:\Program Files\Docker\Docker\resources\bin;C:\Users\kksjk\AppData\Local\Programs\Python\Python312\Scripts;C:\Users\kksjk\AppData\Local\Programs\Python\Python312;C:\Users\kksjk\.local\bin;C:\Users\kksjk\AppData\Local\Programs\Python\Python312-32\Scripts;C:\Users\kksjk\AppData\Local\Programs\Python\Python312-32;C:\Users\kksjk\AppData\Local\Programs\Python\Python36-32\Scripts;C:\Users\kksjk\AppData\Local\Programs\Python\Python36-32;C:\Users\kksjk\AppData\Local\Microsoft\WindowsApps;C:\Users\kksjk\AppData\Local\Programs\Microsoft VS Code\bin;C:\my\webshop\maven-mvnd-1.0.2-windows-amd64\apache-maven-3.9.9\bin;C:\Users\kksjk\AppData\Local\Programs\Fiddler;D:\IntelliJ IDEA 2025.2.4\bin;C:\Users\kksjk\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\kksjk\AppData\Roaming\npm;C:\Users\kksjk\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin;D:\toolslibrary\apache-maven-3.9.14-bin\apache-maven-3.9.14\bin;C:\Users\kksjk\.vscode\extensions\vscjava.vscode-java-debug-0.59.0\bundled\scripts\noConfigScripts;C:\Program Files\Git\usr\bin\vendor_perl;C:\Program Files\Git\usr\bin\core_perl;C:\Users\kksjk\.claude\plugins\cache\happy-claude-skills\browser\632f2c3472ec\bin;C:\Users\kksjk\.claude\plugins\cache\claude-code-skills\engineering-skills\2.1.2\bin;C:\Users\kksjk\.claude\plugins\cache\claude-plugins-official\asana\d5c15b861cd2\bin;."/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="stderr.encoding" value="MS950"/>
+    <property name="java.vendor" value="Microsoft"/>
+    <property name="java.vm.version" value="21.0.10+7-LTS"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="java.class.version" value="65.0"/>
+  </properties>
+  <testcase name="一般使用者只看到自己的網站" classname="約束（RBAC 資料隔離）- 管理員可查看所有使用者的全部資料（REQ-034）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+    <system-out><![CDATA[Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+]]></system-out>
+  </testcase>
+  <testcase name="一般使用者只看到自己的商品" classname="約束（RBAC 資料隔離）- 管理員可查看所有使用者的全部資料（REQ-034）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="管理員可查看所有使用者的網站" classname="約束（RBAC 資料隔離）- 管理員可查看所有使用者的全部資料（REQ-034）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="一般使用者查詢訂單只看自己網站的訂單" classname="約束（RBAC 資料隔離）- 管理員可查看所有使用者的全部資料（REQ-034）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功建立一般使用者" classname="後置（狀態）- 建立成功後新使用者可使用該帳號登入後台" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功建立管理員角色使用者" classname="後置（狀態）- 建立成功後新使用者可使用該帳號登入後台" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Email 重複時拒絕建立" classname="後置（狀態）- 建立成功後新使用者可使用該帳號登入後台" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="密碼不足 8 碼時拒絕建立" classname="後置（狀態）- 建立成功後新使用者可使用該帳號登入後台" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="非管理員嘗試建立使用者" classname="後置（狀態）- 建立成功後新使用者可使用該帳號登入後台" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="管理員成功登入" classname="約束 - 登入頁為最小 MVP（帳號+密碼+登入按鈕，無忘記密碼）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="一般使用者成功登入" classname="約束 - 登入頁為最小 MVP（帳號+密碼+登入按鈕，無忘記密碼）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="密碼錯誤時顯示統一錯誤訊息" classname="約束 - 登入頁為最小 MVP（帳號+密碼+登入按鈕，無忘記密碼）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="帳號不存在時顯示統一錯誤訊息" classname="約束 - 登入頁為最小 MVP（帳號+密碼+登入按鈕，無忘記密碼）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="連續登入失敗 5 次鎖定帳號" classname="約束 - 登入頁為最小 MVP（帳號+密碼+登入按鈕，無忘記密碼）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="帳號鎖定期間嘗試登入" classname="約束 - 登入頁為最小 MVP（帳號+密碼+登入按鈕，無忘記密碼）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="鎖定 30 分鐘後自動解鎖" classname="約束 - 登入頁為最小 MVP（帳號+密碼+登入按鈕，無忘記密碼）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Access Token 過期後使用 Refresh Token 換發" classname="約束 - 登入頁為最小 MVP（帳號+密碼+登入按鈕，無忘記密碼）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="將一般使用者升級為管理員" classname="後置（回應）- 權限管理頁為使用者清單表格 + 角色下拉選單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="將管理員降級為一般使用者" classname="後置（回應）- 權限管理頁為使用者清單表格 + 角色下拉選單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="不可將最後一位管理員降級" classname="後置（回應）- 權限管理頁為使用者清單表格 + 角色下拉選單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="非管理員嘗試存取使用者管理頁" classname="後置（回應）- 權限管理頁為使用者清單表格 + 角色下拉選單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="查看庫存管理清單" classname="後置（回應）- 顯示商品名稱、目前庫存數量、低庫存門檻" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="無商品時顯示空清單" classname="後置（回應）- 顯示商品名稱、目前庫存數量、低庫存門檻" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.1" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.2" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.3" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.4" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.4" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.4" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.4" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.4" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.4" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.5" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.5" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.5" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.5" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Example #1.6" classname="Examples" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存數量為負數時拒絕" classname="後置（狀態）- 庫存修改後即時生效" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存數量輸入非數字時拒絕" classname="後置（狀態）- 庫存修改後即時生效" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存低於門檻時觸發 Email 警示" classname="約束 - 系統保存警示紀錄避免重複通知" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存恰好等於門檻不觸發警示" classname="約束 - 系統保存警示紀錄避免重複通知" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="同一商品重複低於門檻不重複通知" classname="約束 - 系統保存警示紀錄避免重複通知" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存回補後清除警示紀錄" classname="約束 - 系統保存警示紀錄避免重複通知" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存回補後再次低於門檻時重新觸發" classname="約束 - 系統保存警示紀錄避免重複通知" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功作廢發票" classname="約束 - 綠界同步失敗提供手動重新同步按鈕" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="跨月份作廢時拒絕" classname="約束 - 綠界同步失敗提供手動重新同步按鈕" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="未填寫作廢原因時拒絕" classname="約束 - 綠界同步失敗提供手動重新同步按鈕" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="綠界同步失敗時提供重試按鈕" classname="約束 - 綠界同步失敗提供手動重新同步按鈕" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="手動重新同步成功" classname="約束 - 綠界同步失敗提供手動重新同步按鈕" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="折讓金額超過原始金額時拒絕" classname="退貨場景 - 訂單標註為「已退貨」時，可執行全額折讓（折讓至 0 元），後續退款由人工處理" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="退貨場景全額折讓" classname="退貨場景 - 訂單標註為「已退貨」時，可執行全額折讓（折讓至 0 元），後續退款由人工處理" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="折讓確認框取消時不執行" classname="退貨場景 - 訂單標註為「已退貨」時，可執行全額折讓（折讓至 0 元），後續退款由人工處理" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="查詢所有發票（無篩選）" classname="後置（回應）- 分頁預設每頁 20 筆，最大 100 筆" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="依發票號碼篩選" classname="後置（回應）- 分頁預設每頁 20 筆，最大 100 筆" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="依開立日期區間篩選" classname="後置（回應）- 分頁預設每頁 20 筆，最大 100 筆" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="依所屬網站篩選" classname="後置（回應）- 分頁預設每頁 20 筆，最大 100 筆" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="查無結果時顯示空狀態" classname="後置（回應）- 分頁預設每頁 20 筆，最大 100 筆" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功編輯通知模板" classname="後置（回應）- 可用變數含中文說明（REQ-032）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="模板標題為空時拒絕儲存" classname="後置（回應）- 可用變數含中文說明（REQ-032）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="非管理員嘗試存取模板管理頁" classname="後置（回應）- 可用變數含中文說明（REQ-032）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="模板清單包含可用變數說明" classname="後置（回應）- 可用變數含中文說明（REQ-032）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="預覽模板時新變數正確替換" classname="後置（回應）- 可用變數含中文說明（REQ-032）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功匯出訂單 CSV" classname="約束 - 匯出權限與查詢權限相同" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="篩選後匯出僅含篩選結果" classname="約束 - 匯出權限與查詢權限相同" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="查詢結果為空時匯出空CSV" classname="約束 - 匯出權限與查詢權限相同" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="自取模式下免地址驗證" classname="約束 - 顧客為匿名使用者（不需登入）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="姓名為空時驗證失敗" classname="約束 - 顧客為匿名使用者（不需登入）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="Email 格式錯誤時驗證失敗" classname="約束 - 顧客為匿名使用者（不需登入）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="電話為空時驗證失敗" classname="約束 - 顧客為匿名使用者（不需登入）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存不足時拒絕整筆訂單" classname="後置（連鎖）- 低庫存門檻觸發時發送 Email 警示給管理員" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存剛好等於訂購量" classname="後置（連鎖）- 低庫存門檻觸發時發送 Email 警示給管理員" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="扣減庫存後觸發低庫存門檻警示" classname="後置（連鎖）- 低庫存門檻觸發時發送 Email 警示給管理員" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="樂觀鎖衝突時重試扣減" classname="後置（連鎖）- 低庫存門檻觸發時發送 Email 警示給管理員" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="多商品訂單部分庫存不足時整筆拒絕" classname="後置（連鎖）- 低庫存門檻觸發時發送 Email 警示給管理員" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="查詢所有訂單（無篩選）" classname="約束 - 訂單狀態流轉：待付款 → 付款處理中 → 已付款 → 已出貨 / 已退貨 / 付款失敗" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="依所屬網站篩選" classname="約束 - 訂單狀態流轉：待付款 → 付款處理中 → 已付款 → 已出貨 / 已退貨 / 付款失敗" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="依訂單編號篩選" classname="約束 - 訂單狀態流轉：待付款 → 付款處理中 → 已付款 → 已出貨 / 已退貨 / 付款失敗" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="依日期區間篩選" classname="約束 - 訂單狀態流轉：待付款 → 付款處理中 → 已付款 → 已出貨 / 已退貨 / 付款失敗" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="多條件組合篩選" classname="約束 - 訂單狀態流轉：待付款 → 付款處理中 → 已付款 → 已出貨 / 已退貨 / 付款失敗" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="查無結果時顯示空狀態" classname="約束 - 訂單狀態流轉：待付款 → 付款處理中 → 已付款 → 已出貨 / 已退貨 / 付款失敗" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功標註出貨" classname="約束 - 出貨為管理員手動標註，非物流系統回調" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功標註退貨（含二次確認）" classname="約束 - 退貨標註需二次確認（彈出確認框）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="退貨確認框取消時不執行" classname="約束 - 退貨標註需二次確認（彈出確認框）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="退貨後對發票執行全額折讓" classname="約束 - 退貨標註需二次確認（彈出確認框）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="自取運費固定 NT$0" classname="約束 - 地址輸入後呼叫 API 即時計算運費" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="地址變更觸發重新計算" classname="約束 - 地址輸入後呼叫 API 即時計算運費" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="修改地址回本島後恢復按鈕" classname="後置（狀態）- 阻擋提交，禁用送出按鈕" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="付款成功回調處理" classname="約束 - 不顯示付款手續費" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="付款失敗回調處理" classname="約束 - 不顯示付款手續費" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="CheckMacValue 驗證失敗時拒絕處理" classname="約束 - 不顯示付款手續費" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="重複回調時不重複開立發票" classname="約束 - 不顯示付款手續費" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="發票開立失敗時記錄同步中狀態" classname="約束 - 不顯示付款手續費" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="非待付款訂單嘗試付款時拒絕" classname="發票類型 - 支援二聯式（個人）與三聯式（公司）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="商品名稱為空時拒絕上架" classname="組合包 - 組合包在上架商品時一起設定（勾選包含商品 + 百分比折扣）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="商品圖片超過 5 張時拒絕" classname="組合包 - 組合包在上架商品時一起設定（勾選包含商品 + 百分比折扣）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="單張圖片超過 2MB 時拒絕" classname="組合包 - 組合包在上架商品時一起設定（勾選包含商品 + 百分比折扣）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="圖片格式不符時拒絕" classname="組合包 - 組合包在上架商品時一起設定（勾選包含商品 + 百分比折扣）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存數量為負數時拒絕" classname="組合包 - 組合包在上架商品時一起設定（勾選包含商品 + 百分比折扣）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存數量為 0 時允許上架" classname="組合包 - 組合包在上架商品時一起設定（勾選包含商品 + 百分比折扣）" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="預購期間未填寫時拒絕上架" classname="約束 - 預購商品不可與一般商品混合下單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="預購開始日晚於結束日時拒絕" classname="約束 - 預購商品不可與一般商品混合下單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="管理員手動調整出貨期限" classname="約束 - 預購商品不可與一般商品混合下單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="每日排程掃描預購到期並發送通知" classname="約束 - 預購商品不可與一般商品混合下單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="預購商品與一般商品混合下單時拒絕" classname="約束 - 預購商品不可與一般商品混合下單" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功下架已上架商品" classname="約束 - 商品不可刪除，確保歷史訂單引用完整" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="下架商品自動從所有網站移除" classname="約束 - 商品不可刪除，確保歷史訂單引用完整" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="嘗試下架已下架商品時拒絕" classname="約束 - 商品不可刪除，確保歷史訂單引用完整" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="下架商品不影響歷史訂單" classname="約束 - 商品不可刪除，確保歷史訂單引用完整" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="主分類名稱為空時拒絕建立" classname="約束 - 修改僅限名稱變更，不可調整父子關係" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="子分類未指定父分類時拒絕建立" classname="約束 - 修改僅限名稱變更，不可調整父子關係" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功修改分類名稱" classname="約束 - 修改僅限名稱變更，不可調整父子關係" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="嘗試刪除分類時系統拒絕" classname="約束 - 修改僅限名稱變更，不可調整父子關係" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功編輯已下架商品資訊" classname="約束 - 庫存數量透過庫存管理頁編輯，商品編輯頁不可修改庫存" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="編輯時商品名稱清空被拒絕" classname="約束 - 庫存數量透過庫存管理頁編輯，商品編輯頁不可修改庫存" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="編輯時商品價格改為 0 被拒絕" classname="約束 - 庫存數量透過庫存管理頁編輯，商品編輯頁不可修改庫存" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="切換商品分類成功" classname="約束 - 庫存數量透過庫存管理頁編輯，商品編輯頁不可修改庫存" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="商品編輯頁不可修改庫存" classname="約束 - 庫存數量透過庫存管理頁編輯，商品編輯頁不可修改庫存" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="組合包未勾選商品時拒絕" classname="後置（狀態）- 組合包前台共用商品詳情頁，額外顯示包含商品列表與折扣後價格" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="組合包未設定折扣時拒絕" classname="後置（狀態）- 組合包前台共用商品詳情頁，額外顯示包含商品列表與折扣後價格" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="組合包加入購物車時自動計算折扣" classname="後置（狀態）- 組合包前台共用商品詳情頁，額外顯示包含商品列表與折扣後價格" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功加入一般商品至購物車" classname="約束 - 庫存不足時顯示通用錯誤訊息" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="組合包加入購物車時自動計算折扣" classname="約束 - 庫存不足時顯示通用錯誤訊息" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="預購商品不可與一般商品混合加入" classname="約束 - 庫存不足時顯示通用錯誤訊息" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="一般商品不可加入已有預購商品的購物車" classname="約束 - 庫存不足時顯示通用錯誤訊息" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="不同網站商品不可混合加入購物車" classname="約束 - 庫存不足時顯示通用錯誤訊息" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="庫存不足時顯示錯誤" classname="約束 - 庫存不足時顯示通用錯誤訊息" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="瀏覽一般商品詳情頁" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="瀏覽預購商品詳情頁" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="瀏覽組合包商品詳情頁" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="存取不存在的商品時顯示 404" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="倒數計時器使用伺服器時間同步" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="成功瀏覽商品集合頁" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="存取已下線網站時顯示不可用" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="僅顯示已到達上架時間的商品" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="網站無商品時顯示空集合頁" classname="約束 - FCP &lt; 3 秒" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="增加商品數量" classname="約束 - 純前端 Local Storage 實作" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="減少商品數量" classname="約束 - 純前端 Local Storage 實作" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="數量設為 0 等同刪除" classname="約束 - 純前端 Local Storage 實作" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="刪除購物車中的商品" classname="約束 - 純前端 Local Storage 實作" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="購物車顯示運費預估" classname="約束 - 純前端 Local Storage 實作" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="購物車清空後顯示空狀態" classname="約束 - 純前端 Local Storage 實作" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="草稿網站啟用為已上線" classname="約束 - 上下架時間同時控制前台可見性" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="已上線網站停用為已下線" classname="約束 - 上下架時間同時控制前台可見性" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="已下線網站重新上線" classname="約束 - 上下架時間同時控制前台可見性" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="非已下線網站無法重新上線" classname="約束 - 上下架時間同時控制前台可見性" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="上下架時間控制前台可見性" classname="約束 - 上下架時間同時控制前台可見性" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="網站名稱為空時拒絕建立" classname="後置（狀態）- 自動產生唯一前台連結，URL 格式為 /project/{網站ID}" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="建立網站時上傳 Banner 與宣傳文案圖片" classname="後置（狀態）- 自動產生唯一前台連結，URL 格式為 /project/{網站ID}" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="設定網站上下架時間" classname="後置（狀態）- 自動產生唯一前台連結，URL 格式為 /project/{網站ID}" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="滿額免運門檻使用預設值" classname="後置（狀態）- 自動產生唯一前台連結，URL 格式為 /project/{網站ID}" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="編輯網站名稱清空時拒絕" classname="後置（狀態）- 編輯成功後資訊即時更新" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="編輯已上線網站的 Banner 圖片" classname="後置（狀態）- 編輯成功後資訊即時更新" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="設定網站標題與副標題" classname="後置（狀態）- 編輯成功後資訊即時更新" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="設定 Footer 標題與副標題" classname="後置（狀態）- 編輯成功後資訊即時更新" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="網站標題為必填" classname="後置（狀態）- 編輯成功後資訊即時更新" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="同一商品上架至多個網站" classname="約束 - 可在網站管理頁批次勾選商品並設定各商品上架時間" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="批次勾選商品上架至網站" classname="約束 - 可在網站管理頁批次勾選商品並設定各商品上架時間" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+  <testcase name="選擇已下架商品時不顯示於可選清單" classname="約束 - 可在網站管理頁批次勾選商品並設定各商品上架時間" time="0.0">
+    <skipped message="&apos;cucumber.filter.tags=not ( @ignore )&apos; did not match this scenario"/>
+  </testcase>
+</testsuite>

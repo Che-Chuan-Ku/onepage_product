@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>付款頁 Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        olive: { 50:'#f7f8f0', 100:'#eef0e1', 200:'#dce1c3', 300:'#c4cc9a', 400:'#a8b36e', 500:'#8d9a4f', 600:'#6e7b3b', 700:'#4A5D23', 800:'#3d4c1f', 900:'#2e3a17' },
+        terra: { 50:'#fdf5f2', 100:'#fbe8e0', 200:'#f5cfc0', 300:'#edae96', 400:'#e28a6a', 500:'#C75B39', 600:'#b74a2c', 700:'#993d25', 800:'#7d3422', 900:'#6a2e20' },
+        cream: { 50:'#FEFDFB', 100:'#FAF7F2', 200:'#F5EFE6', 300:'#EDE4D4' }
+      },
+      fontFamily: {
+        display: ['Playfair Display', 'serif'],
+        body: ['Source Sans 3', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Source Sans 3', sans-serif; background: #FAF7F2; }
+  .noise-overlay { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
+  input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px #4A5D23; }
+  .field-error { border-color: #C75B39 !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+function App() {
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [invoiceType, setInvoiceType] = useState('personal');
+  const [carrierType, setCarrierType] = useState('phone');
+  const [carrierNumber, setCarrierNumber] = useState('');
+  const [carrierError, setCarrierError] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
+
+  const orderSummary = {
+    items: [
+      { name: '頂級蜜蘋果 (6入禮盒) x 2', amount: 1360 },
+      { name: '台灣香菇乾 (300g) x 1', amount: 450 },
+      { name: '有機香蕉 (一串) x 3', amount: 360 },
+    ],
+    subtotal: 2170,
+    shipping: 0,
+    total: 2170
+  };
+
+  const validateCarrier = (type, value) => {
+    if (!value) return '';
+    if (type === 'phone') {
+      return /^\/[A-Z0-9+\-.]{7}$/.test(value) ? '' : '手機條碼格式：/ + 7碼英數字';
+    }
+    if (type === 'certificate') {
+      return /^[A-Z]{2}\d{14}$/.test(value) ? '' : '自然人憑證格式：2碼大寫英文 + 14碼數字';
+    }
+    return '';
+  };
+
+  const handleCarrierChange = (value) => {
+    setCarrierNumber(value);
+    setCarrierError(validateCarrier(carrierType, value));
+  };
+
+  const handleConfirm = () => {
+    if (!paymentMethod) return;
+    if (carrierNumber) {
+      const err = validateCarrier(carrierType, carrierNumber);
+      if (err) { setCarrierError(err); return; }
+    }
+    setConfirmed(true);
+  };
+
+  if (confirmed) {
+    return (
+      <div className="min-h-screen bg-cream-100 noise-overlay flex items-center justify-center p-4">
+        <div className="bg-white rounded-sm p-10 border border-cream-300 max-w-md w-full text-center">
+          <div className="w-20 h-20 mx-auto mb-6 relative">
+            <div className="absolute inset-0 bg-olive-100 rounded-full animate-ping opacity-30"></div>
+            <div className="relative w-20 h-20 bg-olive-100 rounded-full flex items-center justify-center">
+              <svg width="36" height="36" fill="none" stroke="#4A5D23" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/></svg>
+            </div>
+          </div>
+          <h2 className="font-display text-2xl text-olive-800 font-bold mb-2">正在跳轉至綠界付款...</h2>
+          <p className="font-body text-olive-600 mb-4">
+            您選擇了「{paymentMethod === 'linepay' ? 'LINE Pay' : paymentMethod === 'transfer' ? '轉帳' : '信用卡'}」付款方式
+          </p>
+          <p className="font-body text-olive-400 text-sm">（Prototype 模擬 - 實際將跳轉綠界金流頁面）</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-cream-100 noise-overlay">
+      <header className="bg-olive-800 text-white py-4">
+        <div className="max-w-4xl mx-auto px-4">
+          <h1 className="font-display text-2xl font-bold">付款</h1>
+        </div>
+      </header>
+
+      <div className="max-w-4xl mx-auto px-4 py-8 lg:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Payment form */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Payment method */}
+            <div className="bg-white rounded-sm p-6 border border-cream-300">
+              <h2 className="font-display text-xl text-olive-800 font-semibold mb-6 pb-3 border-b border-cream-200">選擇付款方式</h2>
+              <div className="space-y-3">
+                {[
+                  { value: 'linepay', label: 'LINE Pay', icon: '💚', desc: '使用 LINE Pay 行動支付' },
+                  { value: 'transfer', label: '銀行轉帳', icon: '🏦', desc: 'ATM 或網路銀行轉帳' },
+                  { value: 'credit', label: '信用卡', icon: '💳', desc: 'Visa / MasterCard / JCB' },
+                ].map(method => (
+                  <label
+                    key={method.value}
+                    className={`flex items-center gap-4 p-4 rounded-sm border-2 cursor-pointer transition-all ${paymentMethod === method.value ? 'border-olive-700 bg-olive-50' : 'border-cream-300 bg-white hover:border-olive-300'}`}
+                  >
+                    <input type="radio" name="payment" value={method.value} checked={paymentMethod === method.value}
+                      onChange={e => setPaymentMethod(e.target.value)} className="sr-only" />
+                    <span className="text-2xl">{method.icon}</span>
+                    <div>
+                      <p className="font-body font-semibold text-olive-800">{method.label}</p>
+                      <p className="text-sm text-olive-500 font-body">{method.desc}</p>
+                    </div>
+                    <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${paymentMethod === method.value ? 'border-olive-700' : 'border-cream-300'}`}>
+                      {paymentMethod === method.value && <div className="w-3 h-3 rounded-full bg-olive-700"></div>}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Invoice info */}
+            <div className="bg-white rounded-sm p-6 border border-cream-300">
+              <h2 className="font-display text-xl text-olive-800 font-semibold mb-6 pb-3 border-b border-cream-200">發票資訊</h2>
+
+              <div className="mb-5">
+                <label className="block font-body font-semibold text-olive-800 mb-2">發票類型</label>
+                <div className="flex gap-4">
+                  {[['personal','二聯式（個人）'],['company','三聯式（公司）']].map(([val,label]) => (
+                    <label key={val} className={`flex-1 p-3 rounded-sm border-2 cursor-pointer transition-all text-center ${invoiceType === val ? 'border-olive-700 bg-olive-50' : 'border-cream-300 hover:border-olive-300'}`}>
+                      <input type="radio" name="invoice" value={val} checked={invoiceType === val}
+                        onChange={e => setInvoiceType(e.target.value)} className="sr-only" />
+                      <span className="font-body font-medium text-olive-800">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {invoiceType === 'personal' && (
+                <>
+                  <div className="mb-5">
+                    <label className="block font-body font-semibold text-olive-800 mb-2">載具類型</label>
+                    <div className="flex gap-4">
+                      {[['phone','手機條碼'],['certificate','自然人憑證']].map(([val,label]) => (
+                        <label key={val} className={`flex-1 p-3 rounded-sm border-2 cursor-pointer transition-all text-center ${carrierType === val ? 'border-olive-700 bg-olive-50' : 'border-cream-300 hover:border-olive-300'}`}>
+                          <input type="radio" name="carrier" value={val} checked={carrierType === val}
+                            onChange={e => { setCarrierType(e.target.value); setCarrierNumber(''); setCarrierError(''); }} className="sr-only" />
+                          <span className="font-body font-medium text-olive-800">{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <label className="block font-body font-semibold text-olive-800 mb-1.5">載具號碼</label>
+                    <input type="text" value={carrierNumber} onChange={e => handleCarrierChange(e.target.value.toUpperCase())}
+                      className={`w-full border rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50 ${carrierError ? 'field-error border-terra-400' : 'border-cream-300'}`}
+                      placeholder={carrierType === 'phone' ? '/+7碼英數字' : '2碼大寫英文+14碼數字'} />
+                    {carrierError && <p className="text-terra-500 text-sm font-body mt-1">{carrierError}</p>}
+                    <p className="text-xs text-olive-400 font-body mt-1">
+                      {carrierType === 'phone' ? '格式：/ 加上 7 碼英數字，例如 /ABC1234' : '格式：2 碼大寫英文 + 14 碼數字'}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Order summary */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-sm p-6 border border-cream-300 sticky top-8">
+              <h2 className="font-display text-xl text-olive-800 font-semibold mb-6 pb-3 border-b border-cream-200">訂單摘要</h2>
+              <div className="space-y-3 mb-6">
+                {orderSummary.items.map((item, i) => (
+                  <div key={i} className="flex justify-between font-body text-sm">
+                    <span className="text-olive-700">{item.name}</span>
+                    <span className="text-olive-800 font-semibold">NT${item.amount.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-cream-200 pt-4 space-y-2 font-body">
+                <div className="flex justify-between text-olive-600">
+                  <span>商品小計</span>
+                  <span>NT${orderSummary.subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-olive-600">
+                  <span>運費</span>
+                  <span className="text-olive-500 font-semibold">免運費</span>
+                </div>
+                <div className="border-t border-cream-200 pt-3 flex justify-between items-baseline">
+                  <span className="font-semibold text-olive-800">應付金額</span>
+                  <span className="font-display text-2xl text-terra-600 font-bold">NT${orderSummary.total.toLocaleString()}</span>
+                </div>
+              </div>
+              <button
+                onClick={handleConfirm}
+                disabled={!paymentMethod}
+                className={`w-full mt-6 py-4 rounded-sm font-body font-semibold text-lg tracking-wider transition-all ${!paymentMethod ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-terra-500 text-white hover:bg-terra-600 hover:shadow-lg active:scale-[0.98]'}`}
+              >
+                確認付款
+              </button>
+              {!paymentMethod && <p className="text-olive-400 text-sm font-body mt-2 text-center">請先選擇付款方式</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* REQ-035: OnePage 平台 Footer */}
+      <div className="border-t-2 border-cream-300 mt-8 py-4">
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
+          <p className="font-body text-olive-400 text-xs">由 OnePage 提供技術支援</p>
+          <a
+            href="https://onepage.example.com/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-body text-olive-500 hover:text-olive-700 text-xs underline transition-colors"
+          >
+            聯絡我們
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

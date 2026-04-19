@@ -1,0 +1,261 @@
+// ═══ OnePage 電商平台 — Entity Relationship Model ═══
+// 產出時機：Tactical 層 DFS 完成後
+// 來源：28 Feature Rules + 6 Activity + 4 Actor + 14 UI
+
+// ── 使用者認證與權限 ─────────────────────────────────
+
+Table users {
+  id bigint [pk, increment]
+  email varchar(255) [unique, not null, note: '登入帳號']
+  password_hash varchar(255) [not null, note: 'BCrypt 雜湊']
+  name varchar(100) [not null, note: '使用者名稱']
+  role varchar(20) [not null, default: 'GENERAL_USER', note: '角色：ADMIN / GENERAL_USER']
+  locked_until timestamp [note: '帳號鎖定到期時間，null 表示未鎖定']
+  failed_login_count int [default: 0, note: '連續登入失敗次數']
+  last_login_at timestamp [note: '最後登入時間']
+  last_login_ip varchar(45) [note: '最後登入 IP']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+// ── 商品類型（分類） ─────────────────────────────────
+
+Table product_categories {
+  id bigint [pk, increment]
+  owner_user_id bigint [not null, note: '建立者 user ID（RBAC 資料隔離，REQ-034）']
+  name varchar(100) [not null, note: '分類名稱']
+  parent_id bigint [note: '父分類 ID，null 表示主分類']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+Ref: product_categories.owner_user_id > users.id
+
+Ref: product_categories.parent_id > product_categories.id
+
+// ── 商品 ─────────────────────────────────────────────
+
+Table products {
+  id bigint [pk, increment]
+  owner_user_id bigint [not null, note: '建立者 user ID（RBAC 資料隔離，REQ-034）']
+  name varchar(255) [not null, note: '商品名稱']
+  slug varchar(255) [unique, not null, note: '基於名稱自動產生的 URL slug']
+  description text [note: '商品描述']
+  price decimal(10,2) [not null, note: '商品價格，必須 > 0']
+  price_unit varchar(10) [not null, note: '價格單位：KG（公斤）/ CATTY（台斤）']
+  packaging varchar(255) [note: '包裝規格（純文字）']
+  category_id bigint [not null, note: '商品分類 ID']
+  status varchar(20) [not null, default: 'ACTIVE', note: '商品狀態：ACTIVE（已上架）/ INACTIVE（已下架）']
+  is_bundle boolean [not null, default: false, note: '是否為組合包']
+  bundle_discount_percent decimal(5,2) [note: '組合包折扣百分比']
+  is_preorder boolean [not null, default: false, note: '是否為預購商品']
+  preorder_start_date date [note: '預購開始日']
+  preorder_end_date date [note: '預購結束日']
+  preorder_discount_percent decimal(5,2) [note: '預購折扣百分比']
+  shipping_deadline date [note: '出貨期限（預購結束日+7天，可手動調整）']
+  stock_quantity int [not null, default: 0, note: '庫存數量，>= 0']
+  low_stock_threshold int [not null, default: 10, note: '低庫存門檻']
+  low_stock_alerted boolean [not null, default: false, note: '低庫存是否已警示（回補後重置）']
+  version int [not null, default: 0, note: '樂觀鎖版本號 @Version']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+Ref: products.category_id > product_categories.id
+Ref: products.owner_user_id > users.id
+
+// ── 商品圖片 ──────────────────────────────────────────
+
+Table product_images {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  image_url varchar(500) [not null, note: '圖片 URL']
+  sort_order int [not null, default: 0, note: '排序順序']
+  created_at timestamp [not null, default: `now()`]
+}
+
+Ref: product_images.product_id > products.id
+
+// ── 組合包包含商品 ────────────────────────────────────
+
+Table bundle_items {
+  id bigint [pk, increment]
+  bundle_product_id bigint [not null, note: '組合包商品 ID']
+  included_product_id bigint [not null, note: '被包含的商品 ID']
+  created_at timestamp [not null, default: `now()`]
+}
+
+Ref: bundle_items.bundle_product_id > products.id
+Ref: bundle_items.included_product_id > products.id
+
+// ── 網站 ──────────────────────────────────────────────
+
+Table websites {
+  id bigint [pk, increment]
+  owner_user_id bigint [not null, note: '建立者 user ID（RBAC 資料隔離，REQ-034）']
+  name varchar(255) [not null, note: '網站名稱']
+  title varchar(255) [not null, note: '網站標題（前台顯示用，必填，REQ-029）']
+  subtitle varchar(255) [note: '網站副標題（選填，REQ-029）']
+  browser_title varchar(255) [note: '瀏覽器分頁標題 <title> tag（選填，REQ-029）']
+  footer_title varchar(255) [note: 'Footer 標題（店名，選填，REQ-029）']
+  footer_subtitle text [note: 'Footer 副標題（聯絡資訊，選填，REQ-029）']
+  subscription_plan text [note: '訂閱方案描述']
+  publish_start_at timestamp [note: '上架時間']
+  publish_end_at timestamp [note: '下架時間']
+  banner_image_url varchar(500) [not null, note: 'Banner 主視覺圖片 URL（必填，REQ-029）']
+  promo_image_url varchar(500) [note: '宣傳文案圖片 URL（選填，REQ-029）']
+  free_shipping_threshold decimal(10,2) [not null, default: 1500.00, note: '滿額免運門檻（預設 NT$1,500）']
+  status varchar(20) [not null, default: 'DRAFT', note: '網站狀態：DRAFT（草稿）/ PUBLISHED（已上線）/ OFFLINE（已下線）']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+Ref: websites.owner_user_id > users.id
+
+// ── 網站商品關聯（由網站端管理） ──────────────────────
+
+Table website_products {
+  id bigint [pk, increment]
+  website_id bigint [not null]
+  product_id bigint [not null]
+  publish_at timestamp [not null, note: '該商品於此網站的上架時間']
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (website_id, product_id) [unique]
+  }
+}
+
+Ref: website_products.website_id > websites.id
+Ref: website_products.product_id > products.id
+
+// ── 訂單 ──────────────────────────────────────────────
+
+Table orders {
+  id bigint [pk, increment]
+  order_number varchar(50) [unique, not null, note: '訂單編號，如 ORD-20260501-001']
+  website_id bigint [not null, note: '所屬網站 ID']
+  customer_name varchar(100) [not null, note: '顧客姓名']
+  customer_phone varchar(20) [not null, note: '顧客電話']
+  customer_email varchar(255) [not null, note: '顧客 Email']
+  shipping_address text [note: '運送地址（自取時可為空）']
+  shipping_method varchar(20) [not null, note: '運送方式：DELIVERY（宅配）/ PICKUP（自取）']
+  shipping_fee decimal(10,2) [not null, default: 0, note: '運費']
+  subtotal decimal(10,2) [not null, note: '商品小計']
+  total_amount decimal(10,2) [not null, note: '訂單總金額（含運費）']
+  note text [note: '備註']
+  tax_id varchar(8) [note: '統一編號（選填，8碼數字）']
+  status varchar(20) [not null, default: 'PENDING_PAYMENT', note: '訂單狀態：PENDING_PAYMENT / PROCESSING_PAYMENT / PAID / SHIPPED / RETURNED / PAYMENT_FAILED']
+  is_preorder boolean [not null, default: false, note: '是否為預購訂單']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+Ref: orders.website_id > websites.id
+
+// ── 訂單明細 ──────────────────────────────────────────
+
+Table order_items {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  product_id bigint [not null]
+  product_name varchar(255) [not null, note: '下單時快照商品名稱']
+  product_price decimal(10,2) [not null, note: '下單時快照單價']
+  quantity int [not null, note: '數量']
+  discount_amount decimal(10,2) [not null, default: 0, note: '折扣金額（組合包/預購折扣）']
+  subtotal decimal(10,2) [not null, note: '小計 = (單價 * 數量) - 折扣']
+  created_at timestamp [not null, default: `now()`]
+}
+
+Ref: order_items.order_id > orders.id
+Ref: order_items.product_id > products.id
+
+// ── 付款 ──────────────────────────────────────────────
+
+Table payments {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  payment_method varchar(20) [not null, note: '付款方式：CREDIT_CARD / LINE_PAY / BANK_TRANSFER']
+  ecpay_trade_no varchar(50) [note: '綠界交易編號']
+  ecpay_payment_url varchar(500) [note: '綠界付款頁面 URL']
+  expire_at timestamp [note: '付款過期時間']
+  status varchar(20) [not null, default: 'PENDING', note: '付款狀態：PENDING / SUCCESS / FAILED']
+  paid_at timestamp [note: '付款成功時間']
+  raw_callback text [note: '原始回調內容（JSON）']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+Ref: payments.order_id > orders.id
+
+// ── 發票 ──────────────────────────────────────────────
+
+Table invoices {
+  id bigint [pk, increment]
+  order_id bigint [unique, not null, note: '每張訂單僅開立一次發票']
+  invoice_number varchar(20) [note: '發票號碼']
+  random_code varchar(4) [note: '隨機碼']
+  invoice_date date [note: '開立日期']
+  amount decimal(10,2) [not null, note: '發票金額']
+  invoice_type varchar(20) [not null, note: '發票類型：TWO_COPIES（二聯式）/ THREE_COPIES（三聯式）']
+  carrier_type varchar(20) [note: '載具類型：MOBILE_BARCODE / CITIZEN_CERTIFICATE']
+  carrier_number varchar(20) [note: '載具號碼']
+  buyer_tax_id varchar(8) [note: '買方統一編號（三聯式）']
+  status varchar(20) [not null, default: 'SYNCING', note: '發票狀態：SYNCING（同步中）/ ISSUED（已開立）/ VOIDED（已作廢）/ ALLOWANCED（已折讓）']
+  void_reason text [note: '作廢原因']
+  voided_at timestamp [note: '作廢時間']
+  allowance_amount decimal(10,2) [note: '折讓金額']
+  allowance_number varchar(50) [note: '折讓編號']
+  allowanced_at timestamp [note: '折讓時間']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+Ref: invoices.order_id > orders.id
+
+// ── Email 通知模板 ────────────────────────────────────
+
+Table email_templates {
+  id bigint [pk, increment]
+  owner_user_id bigint [not null, note: '所屬 user ID（RBAC 資料隔離，REQ-034）']
+  template_type varchar(50) [not null, note: '模板類型：ORDER_CONFIRMED / PAYMENT_SUCCESS / PAYMENT_FAILED / SHIPPED']
+  subject varchar(255) [not null, note: '模板標題']
+  body_html text [not null, note: '模板內文（HTML，支援 {{變數}} 替換，REQ-032 新增 {{websiteName}}、{{contactInfo}})']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (owner_user_id, template_type) [unique, note: '每位使用者各有一套獨立模板（REQ-034）']
+  }
+}
+
+Ref: email_templates.owner_user_id > users.id
+
+// ── 低庫存警示紀錄 ────────────────────────────────────
+
+Table low_stock_alerts {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  alerted_at timestamp [not null, note: '警示觸發時間']
+  resolved_at timestamp [note: '庫存回補時間（清除警示）']
+  stock_at_alert int [not null, note: '觸發時的庫存數量']
+  threshold_at_alert int [not null, note: '觸發時的門檻值']
+  created_at timestamp [not null, default: `now()`]
+}
+
+Ref: low_stock_alerts.product_id > products.id
+
+// ── Email 通知紀錄 ────────────────────────────────────
+
+Table email_notifications {
+  id bigint [pk, increment]
+  order_id bigint [note: '關聯訂單 ID（低庫存警示時可為 null）']
+  template_type varchar(50) [not null, note: '使用的模板類型']
+  recipient_email varchar(255) [not null, note: '收件人 Email']
+  subject varchar(255) [not null, note: '實際發送的標題']
+  sent_at timestamp [not null, note: '發送時間']
+  status varchar(20) [not null, default: 'SENT', note: '發送狀態：SENT / FAILED']
+  created_at timestamp [not null, default: `now()`]
+}
+
+Ref: email_notifications.order_id > orders.id

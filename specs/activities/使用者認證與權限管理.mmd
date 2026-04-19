@@ -1,0 +1,32 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 使用者認證與權限管理
+%% [ACTOR] 管理員 -> {specs/actors/管理員.md}
+%% [ACTOR] 一般使用者 -> {specs/actors/一般使用者.md}
+
+flowchart TD
+
+%% ═══ 區段二：節點定義 ═══
+
+    Start(( ))
+
+    %% [STEP:1] @管理員 {features/auth/登入.feature}
+    S1["@管理員<br/>登入後台"]
+
+    %% [STEP:2] @管理員 {features/auth/管理使用者角色.feature}
+    S2["@管理員<br/>管理使用者角色"]
+
+    %% [STEP:3] @管理員 {features/auth/建立使用者.feature}
+    S3["@管理員<br/>建立使用者（REQ-033）"]
+
+    %% [STEP:4] @管理員、@一般使用者 {features/auth/管理使用者角色.feature}
+    S4["系統<br/>RBAC 資料隔離（REQ-034）<br/>一般使用者僅操作自己的資料"]
+
+    End((( )))
+
+%% ═══ 區段三：邊定義 ═══
+
+    Start --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> End

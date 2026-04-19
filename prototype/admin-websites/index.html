@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>後台網站管理頁 Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        olive: { 50:'#f7f8f0', 100:'#eef0e1', 200:'#dce1c3', 300:'#c4cc9a', 400:'#a8b36e', 500:'#8d9a4f', 600:'#6e7b3b', 700:'#4A5D23', 800:'#3d4c1f', 900:'#2e3a17' },
+        terra: { 50:'#fdf5f2', 100:'#fbe8e0', 200:'#f5cfc0', 300:'#edae96', 400:'#e28a6a', 500:'#C75B39', 600:'#b74a2c', 700:'#993d25', 800:'#7d3422', 900:'#6a2e20' },
+        cream: { 50:'#FEFDFB', 100:'#FAF7F2', 200:'#F5EFE6', 300:'#EDE4D4' }
+      },
+      fontFamily: {
+        display: ['Playfair Display', 'serif'],
+        body: ['Source Sans 3', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Source Sans 3', sans-serif; background: #FAF7F2; }
+  input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px #4A5D23; }
+  .sidebar-link { transition: all 0.2s; }
+  .sidebar-link:hover { background: rgba(74,93,35,0.1); }
+  .sidebar-link.active { background: rgba(74,93,35,0.15); border-right: 3px solid #4A5D23; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+// REQ-034: RBAC 側邊選單
+const ALL_NAV_ITEMS = [
+  { label: '商品管理', href: '../admin-products/index.html', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', roles: ['管理員','一般使用者'] },
+  { label: '商品類型', href: '../admin-categories/index.html', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', roles: ['管理員','一般使用者'] },
+  { label: '網站管理', href: '../admin-websites/index.html', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9', active: true, roles: ['管理員'] },
+  { label: '訂單管理', href: '../admin-orders/index.html', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', roles: ['管理員','一般使用者'] },
+  { label: '發票管理', href: '../admin-invoices/index.html', icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z', roles: ['管理員'] },
+  { label: '庫存管理', href: '../admin-inventory/index.html', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8', roles: ['管理員','一般使用者'] },
+  { label: '使用者管理', href: '../admin-users/index.html', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197', roles: ['管理員'] },
+  { label: 'Email模板', href: '../admin-email-templates/index.html', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', roles: ['管理員'] },
+];
+
+const allProducts = [
+  { id: 1, name: '頂級蜜蘋果', selected: true, launchTime: '2026-04-01' },
+  { id: 2, name: '愛文芒果', selected: true, launchTime: '2026-04-15' },
+  { id: 3, name: '台灣香菇乾', selected: false, launchTime: '' },
+  { id: 4, name: '精選水果禮盒組合', selected: true, launchTime: '2026-04-01' },
+  { id: 5, name: '有機香蕉', selected: false, launchTime: '' },
+  { id: 6, name: '龍眼乾', selected: false, launchTime: '' },
+];
+
+function Sidebar({ items, currentRole, onRoleChange }) {
+  const visibleItems = items.filter(item => item.roles.includes(currentRole));
+  return (
+    <aside className="w-56 bg-olive-900 min-h-screen flex-shrink-0 flex flex-col">
+      <div className="p-4 border-b border-olive-800">
+        <h1 className="font-display text-lg text-cream-100 font-bold">豐收農場</h1>
+        <p className="text-olive-400 text-xs font-body">管理後台</p>
+      </div>
+      <div className="px-3 py-2 border-b border-olive-800">
+        <p className="text-olive-500 text-xs font-body mb-1">目前角色（Prototype）</p>
+        <select value={currentRole} onChange={e => onRoleChange(e.target.value)}
+          className="w-full text-xs font-body bg-olive-800 text-cream-200 border border-olive-700 rounded px-2 py-1">
+          <option value="管理員">管理員</option>
+          <option value="一般使用者">一般使用者</option>
+        </select>
+      </div>
+      <nav className="py-2 flex-1">
+        {visibleItems.map(item => (
+          <a key={item.label} href={item.href}
+            className={`sidebar-link flex items-center gap-3 px-4 py-3 font-body text-sm ${item.active ? 'active text-cream-100 font-semibold' : 'text-olive-300 hover:text-cream-100'}`}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d={item.icon}/></svg>
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <div className="p-4 border-t border-olive-800">
+        <a href="../admin-login/index.html" className="flex items-center gap-2 text-olive-400 hover:text-cream-100 font-body text-sm transition-colors">
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          登出
+        </a>
+      </div>
+    </aside>
+  );
+}
+
+function App() {
+  const [currentRole, setCurrentRole] = useState('管理員');
+  const [sites, setSites] = useState([
+    { id: 'site-001', name: '春季水果特賣', status: 'online', freeShippingThreshold: 1500 },
+    { id: 'site-002', name: '年節禮盒專區', status: 'draft', freeShippingThreshold: 2000 },
+    { id: 'site-003', name: '舊版商店', status: 'offline', freeShippingThreshold: 1500 },
+  ]);
+  const [selected, setSelected] = useState('site-001');
+  const [editForm, setEditForm] = useState({
+    name: '春季水果特賣',
+    title: '豐收農場 春季水果特賣',
+    subtitle: '產地直送，新鮮到貨',
+    pageTitle: '春季水果特賣 | 豐收農場',
+    description: '2026 春季限定水果特賣活動',
+    launchTime: '2026-03-01',
+    endTime: '2026-06-30',
+    freeShippingThreshold: '1500',
+    footerTitle: '豐收農場',
+    footerSubtitle: '聯絡我們：farm@example.com | 02-1234-5678',
+    bannerUploaded: false,
+    promoUploaded: false,
+  });
+  const [products, setProducts] = useState(allProducts);
+  const [showReactivateConfirm, setShowReactivateConfirm] = useState(null);
+
+  const currentSite = sites.find(s => s.id === selected);
+
+  const statusColors = { online: 'bg-olive-100 text-olive-700', draft: 'bg-cream-300 text-olive-600', offline: 'bg-gray-100 text-gray-500' };
+  const statusLabels = { online: '已上線', draft: '草稿', offline: '已下線' };
+
+  const toggleProduct = (id) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, selected: !p.selected } : p));
+  };
+
+  const toggleStatus = () => {
+    setSites(prev => prev.map(s => {
+      if (s.id === selected) {
+        return { ...s, status: s.status === 'online' ? 'offline' : 'online' };
+      }
+      return s;
+    }));
+  };
+
+  // REQ-028: 重新上線
+  const handleReactivate = (siteId) => {
+    setSites(prev => prev.map(s => s.id === siteId ? { ...s, status: 'online' } : s));
+    setShowReactivateConfirm(null);
+  };
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar items={ALL_NAV_ITEMS} currentRole={currentRole} onRoleChange={setCurrentRole} />
+      <main className="flex-1 flex flex-col">
+        {/* REQ-028: 返回上一頁按鈕 */}
+        <div className="px-6 pt-4 border-b border-cream-300 bg-cream-50">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 text-olive-600 hover:text-olive-800 font-body text-sm transition-colors py-3"
+          >
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            返回上一頁
+          </button>
+        </div>
+
+        <div className="flex flex-1">
+          {/* Site list */}
+          <div className="w-72 border-r border-cream-300 bg-cream-50 flex-shrink-0">
+            <div className="p-4 border-b border-cream-200 flex items-center justify-between">
+              <h2 className="font-display text-lg text-olive-800 font-semibold">網站列表</h2>
+              <button className="bg-olive-700 text-white w-8 h-8 rounded-sm flex items-center justify-center hover:bg-olive-800 transition-colors">
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
+            <div className="py-2">
+              {sites.map(site => (
+                <div key={site.id}>
+                  <button onClick={() => setSelected(site.id)}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between transition-colors ${selected === site.id ? 'bg-olive-100 border-r-3 border-olive-700' : 'hover:bg-cream-100'}`}>
+                    <div>
+                      <p className={`font-body font-medium ${selected === site.id ? 'text-olive-800' : 'text-olive-600'}`}>{site.name}</p>
+                      <p className="font-body text-xs text-olive-400 mt-0.5">/project/{site.id}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 text-xs font-body font-semibold rounded-sm ${statusColors[site.status]}`}>
+                      {statusLabels[site.status]}
+                    </span>
+                  </button>
+                  {/* REQ-028: 已下線網站顯示「重新上線」按鈕 */}
+                  {site.status === 'offline' && (
+                    <div className="px-4 pb-2">
+                      <button
+                        onClick={() => setShowReactivateConfirm(site.id)}
+                        className="w-full text-sm font-body font-semibold text-olive-700 border border-olive-300 bg-olive-50 hover:bg-olive-100 rounded-sm py-1.5 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0115-6.7L20 5M20 15a9 9 0 01-15 6.7L4 19"/></svg>
+                        重新上線
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Edit panel */}
+          <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
+            <div className="max-w-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display text-2xl text-olive-900 font-bold">編輯網站</h2>
+                <button onClick={toggleStatus}
+                  className={`px-5 py-2 rounded-sm font-body font-semibold transition-colors ${currentSite?.status === 'online' ? 'bg-terra-500 text-white hover:bg-terra-600' : 'bg-olive-700 text-white hover:bg-olive-800'}`}>
+                  {currentSite?.status === 'online' ? '停用網站' : '啟用網站'}
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Basic info */}
+                <div className="bg-white rounded-sm border border-cream-300 p-6">
+                  <h3 className="font-body font-semibold text-olive-800 mb-4 pb-2 border-b border-cream-200">基本資訊</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">網站名稱 <span className="text-terra-500">*</span></label>
+                      <input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})}
+                        className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" />
+                    </div>
+
+                    {/* REQ-029: 新增標題/副標題/分頁標題欄位 */}
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">
+                        網站標題 <span className="text-terra-500">*</span>
+                        <span className="font-normal text-olive-400 text-xs ml-2">（前台頁面顯示用）</span>
+                      </label>
+                      <input type="text" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
+                        className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50"
+                        placeholder="顯示於前台的網站主標題" />
+                    </div>
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">
+                        網站副標題
+                        <span className="font-normal text-olive-400 text-xs ml-2">（選填）</span>
+                      </label>
+                      <input type="text" value={editForm.subtitle} onChange={e => setEditForm({...editForm, subtitle: e.target.value})}
+                        className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50"
+                        placeholder="顯示於 Banner 下方的說明文字" />
+                    </div>
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">
+                        瀏覽器分頁標題 &lt;title&gt;
+                        <span className="font-normal text-olive-400 text-xs ml-2">（選填）</span>
+                      </label>
+                      <input type="text" value={editForm.pageTitle} onChange={e => setEditForm({...editForm, pageTitle: e.target.value})}
+                        className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50"
+                        placeholder="顯示於瀏覽器分頁標籤的文字" />
+                    </div>
+
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">訂閱方案描述</label>
+                      <input type="text" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})}
+                        className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">上架時間</label>
+                        <input type="date" value={editForm.launchTime} onChange={e => setEditForm({...editForm, launchTime: e.target.value})}
+                          className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" />
+                      </div>
+                      <div>
+                        <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">下架時間</label>
+                        <input type="date" value={editForm.endTime} onChange={e => setEditForm({...editForm, endTime: e.target.value})}
+                          className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">滿額免運門檻</label>
+                      <div className="flex items-center gap-2">
+                        <span className="font-body text-olive-500">NT$</span>
+                        <input type="number" value={editForm.freeShippingThreshold} onChange={e => setEditForm({...editForm, freeShippingThreshold: e.target.value})}
+                          className="w-32 border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* REQ-029: 圖片設定（Banner + 宣傳文案圖片） */}
+                <div className="bg-white rounded-sm border border-cream-300 p-6">
+                  <h3 className="font-body font-semibold text-olive-800 mb-4 pb-2 border-b border-cream-200">圖片設定</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">
+                        Banner 主視覺圖片 <span className="text-terra-500">*</span>
+                        <span className="font-normal text-olive-400 text-xs ml-2">（建議尺寸：1200×400px）</span>
+                      </label>
+                      {editForm.bannerUploaded ? (
+                        <div className="relative border border-olive-200 rounded-sm overflow-hidden bg-olive-50">
+                          <div className="h-32 bg-gradient-to-r from-olive-200 to-olive-300 flex items-center justify-center">
+                            <span className="font-body text-olive-600 text-sm">已上傳 Banner 圖片</span>
+                          </div>
+                          <button onClick={() => setEditForm({...editForm, bannerUploaded: false})}
+                            className="absolute top-2 right-2 bg-white/80 hover:bg-white text-terra-500 rounded-sm px-2 py-1 text-xs font-body transition-colors">
+                            移除
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => setEditForm({...editForm, bannerUploaded: true})}
+                          className="border-2 border-dashed border-cream-300 rounded-sm p-6 text-center hover:border-olive-400 transition-colors cursor-pointer bg-cream-50"
+                        >
+                          <svg width="32" height="32" fill="none" stroke="#8d9a4f" strokeWidth="1.5" viewBox="0 0 24 24" className="mx-auto mb-2"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                          <p className="font-body text-olive-500 text-sm">點擊上傳 Banner 圖片</p>
+                          <p className="font-body text-olive-400 text-xs mt-1">支援 JPG / PNG / WebP</p>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">
+                        宣傳文案圖片
+                        <span className="font-normal text-olive-400 text-xs ml-2">（選填，建議尺寸：1200×300px）</span>
+                      </label>
+                      {editForm.promoUploaded ? (
+                        <div className="relative border border-olive-200 rounded-sm overflow-hidden bg-olive-50">
+                          <div className="h-24 bg-gradient-to-r from-terra-100 to-terra-200 flex items-center justify-center">
+                            <span className="font-body text-terra-600 text-sm">已上傳宣傳文案圖片</span>
+                          </div>
+                          <button onClick={() => setEditForm({...editForm, promoUploaded: false})}
+                            className="absolute top-2 right-2 bg-white/80 hover:bg-white text-terra-500 rounded-sm px-2 py-1 text-xs font-body transition-colors">
+                            移除
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => setEditForm({...editForm, promoUploaded: true})}
+                          className="border-2 border-dashed border-cream-300 rounded-sm p-6 text-center hover:border-olive-400 transition-colors cursor-pointer bg-cream-50"
+                        >
+                          <svg width="32" height="32" fill="none" stroke="#8d9a4f" strokeWidth="1.5" viewBox="0 0 24 24" className="mx-auto mb-2"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                          <p className="font-body text-olive-500 text-sm">點擊上傳宣傳文案圖片（選填）</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* REQ-029: Footer 設定 */}
+                <div className="bg-white rounded-sm border border-cream-300 p-6">
+                  <h3 className="font-body font-semibold text-olive-800 mb-4 pb-2 border-b border-cream-200">Footer 設定</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">
+                        Footer 標題
+                        <span className="font-normal text-olive-400 text-xs ml-2">（選填，供填寫店名）</span>
+                      </label>
+                      <input type="text" value={editForm.footerTitle} onChange={e => setEditForm({...editForm, footerTitle: e.target.value})}
+                        className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50"
+                        placeholder="例：豐收農場" />
+                    </div>
+                    <div>
+                      <label className="block font-body font-semibold text-olive-700 mb-1 text-sm">
+                        Footer 副標題
+                        <span className="font-normal text-olive-400 text-xs ml-2">（選填，供填寫聯絡資訊與說明文字）</span>
+                      </label>
+                      <textarea value={editForm.footerSubtitle} onChange={e => setEditForm({...editForm, footerSubtitle: e.target.value})}
+                        className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50 h-20 resize-none"
+                        placeholder="例：聯絡我們：farm@example.com｜02-1234-5678" />
+                      <p className="font-body text-olive-400 text-xs mt-1">此內容也會用於 Email 通知中的 {`{{contactInfo}}`} 變數</p>
+                    </div>
+
+                    {/* Footer 預覽 */}
+                    {(editForm.footerTitle || editForm.footerSubtitle) && (
+                      <div className="bg-olive-800 rounded-sm p-4 mt-2">
+                        <p className="font-body text-xs text-olive-400 mb-2">Footer 預覽</p>
+                        {editForm.footerTitle && <p className="font-display text-lg text-white font-semibold">{editForm.footerTitle}</p>}
+                        {editForm.footerSubtitle && <p className="font-body text-cream-300 text-sm mt-1 whitespace-pre-line">{editForm.footerSubtitle}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Product selection */}
+                <div className="bg-white rounded-sm border border-cream-300 p-6">
+                  <h3 className="font-body font-semibold text-olive-800 mb-4 pb-2 border-b border-cream-200">上架商品選擇</h3>
+                  <div className="space-y-3">
+                    {products.map(p => (
+                      <div key={p.id} className={`flex items-center gap-4 p-3 rounded-sm transition-colors ${p.selected ? 'bg-olive-50' : 'hover:bg-cream-50'}`}>
+                        <input type="checkbox" checked={p.selected} onChange={() => toggleProduct(p.id)}
+                          className="w-5 h-5 rounded-sm" />
+                        <span className="font-body text-olive-800 flex-1">{p.name}</span>
+                        {p.selected && (
+                          <div className="flex items-center gap-2">
+                            <label className="font-body text-xs text-olive-500">上架時間</label>
+                            <input type="date" value={p.launchTime}
+                              onChange={e => setProducts(prev => prev.map(pp => pp.id === p.id ? {...pp, launchTime: e.target.value} : pp))}
+                              className="border border-cream-300 rounded-sm px-2 py-1 font-body text-sm text-olive-800 bg-cream-50" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Frontend URL */}
+                <div className="bg-olive-50 rounded-sm border border-olive-200 p-4">
+                  <p className="font-body text-sm text-olive-600 mb-1">前台連結（自動產生）</p>
+                  <p className="font-body font-semibold text-olive-800">/project/{selected}</p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button className="px-6 py-2.5 rounded-sm font-body bg-olive-700 text-white hover:bg-olive-800 transition-colors font-semibold">
+                    儲存變更
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* REQ-028: 重新上線確認 Modal */}
+      {showReactivateConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-sm p-6 max-w-sm w-full mx-4 border border-cream-300 shadow-xl">
+            <h3 className="font-display text-lg text-olive-800 font-semibold mb-3">確認重新上線</h3>
+            <p className="font-body text-olive-600 mb-6">確定要將此網站重新上線嗎？上線後顧客即可訪問前台頁面。</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowReactivateConfirm(null)} className="px-5 py-2 rounded-sm font-body border border-cream-300 text-olive-600 hover:bg-cream-100 transition-colors">取消</button>
+              <button onClick={() => handleReactivate(showReactivateConfirm)} className="px-5 py-2 rounded-sm font-body bg-olive-700 text-white hover:bg-olive-800 transition-colors font-semibold">確認上線</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

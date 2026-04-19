@@ -1,0 +1,77 @@
+# ── AIBDD Workflow State v2.0 ─────────────────────
+# 由 /aiworkflow (Hub) 的專用工具管理
+# 模組不得直接修改此檔案
+# 所有寫入透過 tools/update-workflow-state 執行
+
+version: "3.0"
+project_root: "D:/my/onepage_test"
+created_at: "2026-04-14"
+updated_at: "2026-04-16"
+
+# ── 模組 DAG（所有模組一視同仁）────────────────────
+# 階段管理由人透過 Git PR/MR 控制，Hub 不追蹤階段狀態
+modules:
+  demand_analysis:
+    status: "completed"          # pending / in_progress / partial / completed / error
+    audit: "passed"              # pending / in_progress / passed / failed
+    depends_on: []
+    options: {mode: "CHANGE", knowledge_base: "document/需求明細表_0418.csv"}
+    input:  ["document/"]
+    output: ["specs/"]
+
+  uiux_design:
+    status: "completed"
+    audit: "passed"
+    depends_on: ["demand_analysis"]
+    options: {}
+    input:  ["specs/activities/", "specs/ui/", "specs/actors/"]
+    output: ["prototype/"]
+
+  document_generate_sa:
+    status: "pending"
+    audit: "pending"
+    depends_on: ["demand_analysis"]
+    options: {}                  # Hub 問人選文件種類
+    input:  []                   # 依文件種類決定
+    output: ["specs/document/"]
+
+  backend_development:
+    status: "in_progress"
+    audit: "pending"
+    depends_on: ["demand_analysis"]
+    options: {stack: "java", framework: "Spring Boot 3.2 + JPA + Cucumber 7.15 + Testcontainers", database: "PostgreSQL"}
+    input:  ["specs/features/", "specs/api.yml", "specs/erm.dbml"]
+    output: ["backend/"]
+
+  frontend_development:
+    status: "completed"
+    audit: "in_progress"
+    depends_on: ["uiux_design"]
+    options: {framework: "Next.js 14 + React 18 + MSW 2.x + Playwright"}
+    input:  ["specs/", "prototype/"]
+    output: ["frontend/"]
+
+  integration_test:
+    status: "in_progress"
+    audit: "pending"
+    depends_on: ["frontend_development", "backend_development"]
+    options: {method: "全端 E2E", driver: "Playwright + Testcontainers"}
+    input:  ["specs/", "frontend/", "backend/"]
+    output: []                   # 測試腳本 + pass/fail，可觸發 document_generate
+
+# ── 當前 interrupt（Hub 工具寫入）─────────────────
+# 模組回傳 interrupt 後，Hub 工具將內容寫在此段
+# 人回應後由 Hub 工具清除或更新
+interrupt:
+  active: false
+  module: ""
+  status: ""
+  response_mode: ""
+  description: ""
+  options: {}
+  file: ""
+  resume_input: ""
+  token_usage:
+    input_tokens: 0
+    output_tokens: 0
+    total_tokens: 0

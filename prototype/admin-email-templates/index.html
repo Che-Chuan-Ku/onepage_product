@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>後台Email通知模板管理頁 Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        olive: { 50:'#f7f8f0', 100:'#eef0e1', 200:'#dce1c3', 300:'#c4cc9a', 400:'#a8b36e', 500:'#8d9a4f', 600:'#6e7b3b', 700:'#4A5D23', 800:'#3d4c1f', 900:'#2e3a17' },
+        terra: { 50:'#fdf5f2', 100:'#fbe8e0', 200:'#f5cfc0', 300:'#edae96', 400:'#e28a6a', 500:'#C75B39', 600:'#b74a2c', 700:'#993d25', 800:'#7d3422', 900:'#6a2e20' },
+        cream: { 50:'#FEFDFB', 100:'#FAF7F2', 200:'#F5EFE6', 300:'#EDE4D4' }
+      },
+      fontFamily: {
+        display: ['Playfair Display', 'serif'],
+        body: ['Source Sans 3', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Source Sans 3', sans-serif; background: #FAF7F2; }
+  input:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px #4A5D23; }
+  .sidebar-link { transition: all 0.2s; }
+  .sidebar-link:hover { background: rgba(74,93,35,0.1); }
+  .sidebar-link.active { background: rgba(74,93,35,0.15); border-right: 3px solid #4A5D23; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+// REQ-034: RBAC 側邊選單
+const ALL_NAV_ITEMS = [
+  { label: '商品管理', href: '../admin-products/index.html', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', roles: ['管理員','一般使用者'] },
+  { label: '商品類型', href: '../admin-categories/index.html', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', roles: ['管理員','一般使用者'] },
+  { label: '網站管理', href: '../admin-websites/index.html', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9', roles: ['管理員'] },
+  { label: '訂單管理', href: '../admin-orders/index.html', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', roles: ['管理員','一般使用者'] },
+  { label: '發票管理', href: '../admin-invoices/index.html', icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z', roles: ['管理員'] },
+  { label: '庫存管理', href: '../admin-inventory/index.html', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8', roles: ['管理員','一般使用者'] },
+  { label: '使用者管理', href: '../admin-users/index.html', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197', roles: ['管理員'] },
+  { label: 'Email模板', href: '../admin-email-templates/index.html', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', active: true, roles: ['管理員'] },
+];
+
+// REQ-032: 更新可用變數定義（加入 websiteName & contactInfo）
+const templateData = [
+  {
+    id: 'order-confirm',
+    name: '下單確認通知模板',
+    subject: '您的訂單 {{orderNumber}} 已成功建立',
+    body: `<h2>親愛的 {{customerName}} 您好</h2>
+<p>感謝您在 {{websiteName}} 的訂購！您的訂單已成功建立。</p>
+<h3>訂單資訊</h3>
+<p>訂單編號：{{orderNumber}}</p>
+<p>訂單金額：NT${{totalAmount}}</p>
+<h3>商品明細</h3>
+{{orderItems}}
+<p>請盡速完成付款，謝謝！</p>
+<hr/>
+<p style="color:#666;font-size:12px;">{{contactInfo}}</p>`,
+    variables: [
+      { key: 'customerName', label: '顧客姓名', isNew: false },
+      { key: 'orderNumber', label: '訂單編號', isNew: false },
+      { key: 'totalAmount', label: '訂單總金額', isNew: false },
+      { key: 'websiteName', label: '網站名稱', isNew: true },
+      { key: 'contactInfo', label: '店家聯絡資訊', isNew: true },
+    ]
+  },
+  {
+    id: 'payment-success',
+    name: '付款成功通知模板',
+    subject: '付款成功 - 訂單 {{orderNumber}}',
+    body: `<h2>親愛的 {{customerName}} 您好</h2>
+<p>您在 {{websiteName}} 的訂單 {{orderNumber}} 已付款成功！</p>
+<p>付款金額：NT${{totalAmount}}</p>
+<h3>發票資訊</h3>
+<p>發票號碼：{{invoiceNumber}}</p>
+<p>我們將盡快為您出貨。</p>
+<hr/>
+<p style="color:#666;font-size:12px;">{{contactInfo}}</p>`,
+    variables: [
+      { key: 'customerName', label: '顧客姓名', isNew: false },
+      { key: 'orderNumber', label: '訂單編號', isNew: false },
+      { key: 'totalAmount', label: '訂單總金額', isNew: false },
+      { key: 'invoiceNumber', label: '發票號碼', isNew: false },
+      { key: 'websiteName', label: '網站名稱', isNew: true },
+      { key: 'contactInfo', label: '店家聯絡資訊', isNew: true },
+    ]
+  },
+  {
+    id: 'payment-fail',
+    name: '付款失敗通知模板',
+    subject: '付款失敗 - 訂單 {{orderNumber}}',
+    body: `<h2>親愛的 {{customerName}} 您好</h2>
+<p>很抱歉，您在 {{websiteName}} 的訂單 {{orderNumber}} 付款未成功。</p>
+<p>請重新嘗試付款或聯繫客服。</p>
+<hr/>
+<p style="color:#666;font-size:12px;">{{contactInfo}}</p>`,
+    variables: [
+      { key: 'customerName', label: '顧客姓名', isNew: false },
+      { key: 'orderNumber', label: '訂單編號', isNew: false },
+      { key: 'websiteName', label: '網站名稱', isNew: true },
+      { key: 'contactInfo', label: '店家聯絡資訊', isNew: true },
+    ]
+  },
+  {
+    id: 'shipping',
+    name: '發貨通知模板',
+    subject: '您的訂單 {{orderNumber}} 已出貨',
+    body: `<h2>親愛的 {{customerName}} 您好</h2>
+<p>您在 {{websiteName}} 的訂單 {{orderNumber}} 已出貨！</p>
+<h3>出貨資訊</h3>
+<p>收件人：{{receiverName}}</p>
+<p>收件地址：{{receiverAddress}}</p>
+<p>物流單號：{{trackingNumber}}</p>
+<hr/>
+<p style="color:#666;font-size:12px;">{{contactInfo}}</p>`,
+    variables: [
+      { key: 'customerName', label: '顧客姓名', isNew: false },
+      { key: 'orderNumber', label: '訂單編號', isNew: false },
+      { key: 'receiverName', label: '收件人姓名', isNew: false },
+      { key: 'receiverAddress', label: '收件地址', isNew: false },
+      { key: 'trackingNumber', label: '物流單號', isNew: false },
+      { key: 'websiteName', label: '網站名稱', isNew: true },
+      { key: 'contactInfo', label: '店家聯絡資訊', isNew: true },
+    ]
+  },
+];
+
+const sampleData = {
+  customerName: '王小明',
+  orderNumber: 'ORD-20260401-001',
+  totalAmount: '2,170',
+  orderItems: '<ul><li>頂級蜜蘋果 6入禮盒 x 2 = NT$1,360</li><li>台灣香菇乾 300g x 1 = NT$450</li></ul>',
+  invoiceNumber: 'AA-12345678',
+  receiverName: '王小明',
+  receiverAddress: '台北市大安區忠孝東路100號',
+  trackingNumber: 'TW123456789',
+  websiteName: '豐收農場 春季特賣',
+  contactInfo: '聯絡我們：farm@example.com｜02-1234-5678',
+};
+
+function Sidebar({ items, currentRole, onRoleChange }) {
+  const visibleItems = items.filter(item => item.roles.includes(currentRole));
+  return (
+    <aside className="w-56 bg-olive-900 min-h-screen flex-shrink-0 flex flex-col">
+      <div className="p-4 border-b border-olive-800">
+        <h1 className="font-display text-lg text-cream-100 font-bold">豐收農場</h1>
+        <p className="text-olive-400 text-xs font-body">管理後台</p>
+      </div>
+      <div className="px-3 py-2 border-b border-olive-800">
+        <p className="text-olive-500 text-xs font-body mb-1">目前角色（Prototype）</p>
+        <select value={currentRole} onChange={e => onRoleChange(e.target.value)}
+          className="w-full text-xs font-body bg-olive-800 text-cream-200 border border-olive-700 rounded px-2 py-1">
+          <option value="管理員">管理員</option>
+          <option value="一般使用者">一般使用者</option>
+        </select>
+      </div>
+      <nav className="py-2 flex-1">
+        {visibleItems.map(item => (
+          <a key={item.label} href={item.href}
+            className={`sidebar-link flex items-center gap-3 px-4 py-3 font-body text-sm ${item.active ? 'active text-cream-100 font-semibold' : 'text-olive-300 hover:text-cream-100'}`}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d={item.icon}/></svg>
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <div className="p-4 border-t border-olive-800">
+        <a href="../admin-login/index.html" className="flex items-center gap-2 text-olive-400 hover:text-cream-100 font-body text-sm transition-colors">
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          登出
+        </a>
+      </div>
+    </aside>
+  );
+}
+
+function App() {
+  const [currentRole, setCurrentRole] = useState('管理員');
+  const [templates, setTemplates] = useState(templateData);
+  const [selectedId, setSelectedId] = useState('order-confirm');
+  const [showPreview, setShowPreview] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const selected = templates.find(t => t.id === selectedId);
+
+  const updateTemplate = (field, value) => {
+    setTemplates(prev => prev.map(t => t.id === selectedId ? { ...t, [field]: value } : t));
+  };
+
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const getPreviewHtml = () => {
+    let html = selected.body;
+    selected.variables.forEach(v => {
+      html = html.replace(new RegExp(`\\{\\{${v.key}\\}\\}`, 'g'), sampleData[v.key] || `[${v.key}]`);
+    });
+    return html;
+  };
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar items={ALL_NAV_ITEMS} currentRole={currentRole} onRoleChange={setCurrentRole} />
+      <main className="flex-1 flex">
+        {/* Template list */}
+        <div className="w-72 border-r border-cream-300 bg-cream-50 flex-shrink-0">
+          <div className="p-4 border-b border-cream-200">
+            <h2 className="font-display text-lg text-olive-800 font-semibold">Email 模板</h2>
+            <p className="font-body text-olive-400 text-xs mt-0.5">4 個固定模板</p>
+          </div>
+          <div className="py-2">
+            {templates.map(t => (
+              <button key={t.id} onClick={() => setSelectedId(t.id)}
+                className={`w-full text-left px-4 py-3 font-body text-sm transition-colors flex items-center gap-3 ${selectedId === t.id ? 'bg-olive-100 text-olive-800 font-semibold' : 'text-olive-600 hover:bg-cream-100'}`}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                {t.name.replace('模板', '')}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Edit panel */}
+        <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
+          <div className="max-w-3xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-2xl text-olive-900 font-bold">{selected.name}</h2>
+              <div className="flex gap-3">
+                <button onClick={() => setShowPreview(true)}
+                  className="px-5 py-2 rounded-sm font-body border border-olive-300 text-olive-700 hover:bg-olive-50 transition-colors flex items-center gap-2">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  預覽
+                </button>
+                <button onClick={handleSave}
+                  className={`px-5 py-2 rounded-sm font-body font-semibold transition-all ${saved ? 'bg-olive-500 text-white' : 'bg-olive-700 text-white hover:bg-olive-800'}`}>
+                  {saved ? '已儲存' : '儲存'}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Subject */}
+              <div className="bg-white rounded-sm border border-cream-300 p-6">
+                <label className="block font-body font-semibold text-olive-800 mb-2">模板標題</label>
+                <input type="text" value={selected.subject} onChange={e => updateTemplate('subject', e.target.value)}
+                  className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50" />
+              </div>
+
+              {/* Body */}
+              <div className="bg-white rounded-sm border border-cream-300 p-6">
+                <label className="block font-body font-semibold text-olive-800 mb-2">模板內文（HTML）</label>
+                <textarea value={selected.body} onChange={e => updateTemplate('body', e.target.value)}
+                  className="w-full border border-cream-300 rounded-sm px-4 py-3 font-mono text-sm text-olive-800 bg-cream-50 h-64 resize-y" />
+              </div>
+
+              {/* REQ-032: 可用變數說明表格 */}
+              <div className="bg-olive-50 rounded-sm border border-olive-200 p-5">
+                <h3 className="font-body font-semibold text-olive-800 mb-3 flex items-center gap-2">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  可用變數說明
+                </h3>
+                <div className="overflow-hidden rounded-sm border border-olive-200">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-olive-100">
+                        <th className="text-left px-4 py-2 font-body font-semibold text-olive-700 text-sm border-b border-olive-200">變數</th>
+                        <th className="text-left px-4 py-2 font-body font-semibold text-olive-700 text-sm border-b border-olive-200">說明</th>
+                        <th className="text-center px-4 py-2 font-body font-semibold text-olive-700 text-sm border-b border-olive-200">備註</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selected.variables.map((v, i) => (
+                        <tr key={v.key} className={`${i % 2 === 0 ? 'bg-white' : 'bg-olive-50/50'}`}>
+                          <td className="px-4 py-2.5 border-b border-olive-100">
+                            <code className="font-mono text-sm text-olive-700 bg-white border border-olive-200 px-2 py-0.5 rounded">
+                              {`{{${v.key}}}`}
+                            </code>
+                          </td>
+                          <td className="px-4 py-2.5 font-body text-sm text-olive-700 border-b border-olive-100">{v.label}</td>
+                          <td className="px-4 py-2.5 text-center border-b border-olive-100">
+                            {v.isNew && (
+                              <span className="bg-terra-100 text-terra-600 text-xs font-body font-semibold px-2 py-0.5 rounded-sm">REQ-032 新增</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="font-body text-olive-500 text-xs mt-3">在模板內文中使用上述變數，系統將自動替換為實際值。<br/>
+                  <span className="text-olive-600 font-semibold">{`{{websiteName}}`}</span> 替換為所屬網站名稱；
+                  <span className="text-olive-600 font-semibold">{`{{contactInfo}}`}</span> 替換為網站 Footer 副標題內容。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Preview modal */}
+        {showPreview && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-sm max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-cream-300 shadow-xl">
+              <div className="flex items-center justify-between p-4 border-b border-cream-200 sticky top-0 bg-white">
+                <div>
+                  <p className="font-body text-xs text-olive-400 uppercase tracking-wider">預覽（使用範例資料）</p>
+                  <h3 className="font-body font-semibold text-olive-800 mt-0.5">
+                    {selected.subject.replace(/\{\{(.+?)\}\}/g, (_, v) => sampleData[v] || `[${v}]`)}
+                  </h3>
+                </div>
+                <button onClick={() => setShowPreview(false)} className="text-olive-400 hover:text-olive-700 transition-colors">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div className="p-6 font-body text-olive-800 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: getPreviewHtml() }} />
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

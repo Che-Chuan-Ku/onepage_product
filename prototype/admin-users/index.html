@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>後台使用者管理頁 Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        olive: { 50:'#f7f8f0', 100:'#eef0e1', 200:'#dce1c3', 300:'#c4cc9a', 400:'#a8b36e', 500:'#8d9a4f', 600:'#6e7b3b', 700:'#4A5D23', 800:'#3d4c1f', 900:'#2e3a17' },
+        terra: { 50:'#fdf5f2', 100:'#fbe8e0', 200:'#f5cfc0', 300:'#edae96', 400:'#e28a6a', 500:'#C75B39', 600:'#b74a2c', 700:'#993d25', 800:'#7d3422', 900:'#6a2e20' },
+        cream: { 50:'#FEFDFB', 100:'#FAF7F2', 200:'#F5EFE6', 300:'#EDE4D4' }
+      },
+      fontFamily: {
+        display: ['Playfair Display', 'serif'],
+        body: ['Source Sans 3', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Source Sans 3', sans-serif; background: #FAF7F2; }
+  select:focus, input:focus { outline: none; box-shadow: 0 0 0 2px #4A5D23; }
+  .sidebar-link { transition: all 0.2s; }
+  .sidebar-link:hover { background: rgba(74,93,35,0.1); }
+  .sidebar-link.active { background: rgba(74,93,35,0.15); border-right: 3px solid #4A5D23; }
+  .field-error { border-color: #C75B39 !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+// REQ-034: RBAC 側邊選單
+const ALL_NAV_ITEMS = [
+  { label: '商品管理', href: '../admin-products/index.html', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', roles: ['管理員','一般使用者'] },
+  { label: '商品類型', href: '../admin-categories/index.html', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', roles: ['管理員','一般使用者'] },
+  { label: '網站管理', href: '../admin-websites/index.html', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9', roles: ['管理員'] },
+  { label: '訂單管理', href: '../admin-orders/index.html', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', roles: ['管理員','一般使用者'] },
+  { label: '發票管理', href: '../admin-invoices/index.html', icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z', roles: ['管理員'] },
+  { label: '庫存管理', href: '../admin-inventory/index.html', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8', roles: ['管理員','一般使用者'] },
+  { label: '使用者管理', href: '../admin-users/index.html', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197', active: true, roles: ['管理員'] },
+  { label: 'Email模板', href: '../admin-email-templates/index.html', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', roles: ['管理員'] },
+];
+
+function Sidebar({ items, currentRole, onRoleChange }) {
+  const visibleItems = items.filter(item => item.roles.includes(currentRole));
+  return (
+    <aside className="w-56 bg-olive-900 min-h-screen flex-shrink-0 flex flex-col">
+      <div className="p-4 border-b border-olive-800">
+        <h1 className="font-display text-lg text-cream-100 font-bold">豐收農場</h1>
+        <p className="text-olive-400 text-xs font-body">管理後台</p>
+      </div>
+      <div className="px-3 py-2 border-b border-olive-800">
+        <p className="text-olive-500 text-xs font-body mb-1">目前角色（Prototype）</p>
+        <select value={currentRole} onChange={e => onRoleChange(e.target.value)}
+          className="w-full text-xs font-body bg-olive-800 text-cream-200 border border-olive-700 rounded px-2 py-1">
+          <option value="管理員">管理員</option>
+          <option value="一般使用者">一般使用者</option>
+        </select>
+      </div>
+      <nav className="py-2 flex-1">
+        {visibleItems.map(item => (
+          <a key={item.label} href={item.href}
+            className={`sidebar-link flex items-center gap-3 px-4 py-3 font-body text-sm ${item.active ? 'active text-cream-100 font-semibold' : 'text-olive-300 hover:text-cream-100'}`}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d={item.icon}/></svg>
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <div className="p-4 border-t border-olive-800">
+        <a href="../admin-login/index.html" className="flex items-center gap-2 text-olive-400 hover:text-cream-100 font-body text-sm transition-colors">
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          登出
+        </a>
+      </div>
+    </aside>
+  );
+}
+
+function App() {
+  const [currentRole, setCurrentRole] = useState('管理員');
+  const [users, setUsers] = useState([
+    { id: 1, name: '陳管理員', email: 'admin@example.com', role: '管理員' },
+    { id: 2, name: '王店長', email: 'wang@example.com', role: '管理員' },
+    { id: 3, name: '李小姐', email: 'lee@example.com', role: '一般使用者' },
+    { id: 4, name: '張先生', email: 'chang@example.com', role: '一般使用者' },
+  ]);
+
+  const [warning, setWarning] = useState('');
+
+  // REQ-033: 新增使用者 Modal 狀態
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [addForm, setAddForm] = useState({
+    email: '', name: '', password: '', role: '一般使用者', sendWelcome: true
+  });
+  const [addErrors, setAddErrors] = useState({});
+  const [addSuccess, setAddSuccess] = useState(false);
+
+  const handleRoleChange = (id, newRole) => {
+    const adminCount = users.filter(u => u.role === '管理員').length;
+    const currentUser = users.find(u => u.id === id);
+
+    if (currentUser.role === '管理員' && newRole === '一般使用者' && adminCount <= 1) {
+      setWarning('無法降級：系統至少需要一位管理員');
+      setTimeout(() => setWarning(''), 3000);
+      return;
+    }
+
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
+    setWarning('');
+  };
+
+  const validateAddForm = () => {
+    const e = {};
+    if (!addForm.email.trim()) e.email = '請輸入 Email';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addForm.email)) e.email = 'Email 格式不正確';
+    if (!addForm.name.trim()) e.name = '請輸入姓名';
+    if (!addForm.password) e.password = '請輸入密碼';
+    else if (addForm.password.length < 8) e.password = '密碼至少需要 8 個字元';
+    return e;
+  };
+
+  const handleAddUser = () => {
+    const e = validateAddForm();
+    setAddErrors(e);
+    if (Object.keys(e).length > 0) return;
+
+    const newUser = {
+      id: Date.now(),
+      name: addForm.name,
+      email: addForm.email,
+      role: addForm.role,
+    };
+    setUsers(prev => [...prev, newUser]);
+    setAddSuccess(true);
+    setTimeout(() => {
+      setAddSuccess(false);
+      setShowAddUser(false);
+      setAddForm({ email: '', name: '', password: '', role: '一般使用者', sendWelcome: true });
+      setAddErrors({});
+    }, 1200);
+  };
+
+  const openAddModal = () => {
+    setAddForm({ email: '', name: '', password: '', role: '一般使用者', sendWelcome: true });
+    setAddErrors({});
+    setAddSuccess(false);
+    setShowAddUser(true);
+  };
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar items={ALL_NAV_ITEMS} currentRole={currentRole} onRoleChange={setCurrentRole} />
+      <main className="flex-1 p-6 lg:p-8">
+        {/* REQ-033: 頁面頂部「新增使用者」按鈕 */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="font-display text-2xl text-olive-900 font-bold">使用者管理</h2>
+            <p className="font-body text-olive-500 text-sm mt-1">管理系統使用者角色（僅管理員可見此頁）</p>
+          </div>
+          <button
+            onClick={openAddModal}
+            className="bg-olive-700 text-white px-5 py-2.5 rounded-sm font-body font-semibold hover:bg-olive-800 transition-colors flex items-center gap-2"
+          >
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            新增使用者
+          </button>
+        </div>
+
+        {warning && (
+          <div className="bg-terra-50 border border-terra-200 p-4 rounded-sm mb-6 flex items-center gap-3">
+            <svg width="20" height="20" fill="none" stroke="#C75B39" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86l-8.3 14.32A2 2 0 003.72 21h16.56a2 2 0 001.73-2.82l-8.3-14.32a2 2 0 00-3.42 0z"/></svg>
+            <p className="font-body text-terra-700 font-semibold">{warning}</p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-sm border border-cream-300 overflow-hidden max-w-3xl">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-cream-100 border-b border-cream-300">
+                <th className="text-left px-6 py-3 font-body font-semibold text-olive-700 text-sm">使用者名稱</th>
+                <th className="text-left px-6 py-3 font-body font-semibold text-olive-700 text-sm">Email</th>
+                <th className="text-center px-6 py-3 font-body font-semibold text-olive-700 text-sm">角色</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(user => (
+                <tr key={user.id} className="border-b border-cream-200 hover:bg-cream-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-olive-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="font-display text-olive-700 font-bold text-sm">{user.name[0]}</span>
+                      </div>
+                      <span className="font-body font-semibold text-olive-800">{user.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 font-body text-olive-600 text-sm">{user.email}</td>
+                  <td className="px-6 py-4 text-center">
+                    <select
+                      value={user.role}
+                      onChange={e => handleRoleChange(user.id, e.target.value)}
+                      className={`border rounded-sm px-4 py-2 font-body text-sm bg-cream-50 ${user.role === '管理員' ? 'border-olive-300 text-olive-800' : 'border-cream-300 text-olive-600'}`}
+                    >
+                      <option value="管理員">管理員</option>
+                      <option value="一般使用者">一般使用者</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="font-body text-olive-400 text-sm mt-4">提示：角色變更即時生效。不可將最後一位管理員降級為一般使用者。</p>
+      </main>
+
+      {/* REQ-033: 新增使用者 Modal */}
+      {showAddUser && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-sm max-w-md w-full border border-cream-300 shadow-xl">
+            <div className="flex items-center justify-between p-5 border-b border-cream-200">
+              <h3 className="font-display text-xl text-olive-800 font-semibold">新增使用者</h3>
+              <button onClick={() => setShowAddUser(false)} className="text-olive-400 hover:text-olive-700 transition-colors">
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            {addSuccess ? (
+              <div className="p-8 text-center">
+                <div className="w-14 h-14 mx-auto mb-4 bg-olive-100 rounded-full flex items-center justify-center">
+                  <svg width="28" height="28" fill="none" stroke="#4A5D23" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <p className="font-body font-semibold text-olive-800">使用者已新增成功！</p>
+              </div>
+            ) : (
+              <div className="p-5 space-y-4">
+                {/* Email */}
+                <div>
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5 text-sm">
+                    Email <span className="text-terra-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={addForm.email}
+                    onChange={e => { setAddForm({...addForm, email: e.target.value}); setAddErrors({...addErrors, email: undefined}); }}
+                    className={`w-full border rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50 text-sm ${addErrors.email ? 'field-error border-terra-400' : 'border-cream-300'}`}
+                    placeholder="user@example.com"
+                  />
+                  {addErrors.email && <p className="text-terra-500 text-xs font-body mt-1">{addErrors.email}</p>}
+                </div>
+
+                {/* Name */}
+                <div>
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5 text-sm">
+                    姓名 <span className="text-terra-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addForm.name}
+                    onChange={e => { setAddForm({...addForm, name: e.target.value}); setAddErrors({...addErrors, name: undefined}); }}
+                    className={`w-full border rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50 text-sm ${addErrors.name ? 'field-error border-terra-400' : 'border-cream-300'}`}
+                    placeholder="使用者姓名"
+                  />
+                  {addErrors.name && <p className="text-terra-500 text-xs font-body mt-1">{addErrors.name}</p>}
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5 text-sm">
+                    密碼 <span className="text-terra-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={addForm.password}
+                    onChange={e => { setAddForm({...addForm, password: e.target.value}); setAddErrors({...addErrors, password: undefined}); }}
+                    className={`w-full border rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50 text-sm ${addErrors.password ? 'field-error border-terra-400' : 'border-cream-300'}`}
+                    placeholder="至少 8 個字元"
+                  />
+                  {addErrors.password && <p className="text-terra-500 text-xs font-body mt-1">{addErrors.password}</p>}
+                </div>
+
+                {/* Role */}
+                <div>
+                  <label className="block font-body font-semibold text-olive-800 mb-1.5 text-sm">角色</label>
+                  <select
+                    value={addForm.role}
+                    onChange={e => setAddForm({...addForm, role: e.target.value})}
+                    className="w-full border border-cream-300 rounded-sm px-4 py-2.5 font-body text-olive-800 bg-cream-50 text-sm"
+                  >
+                    <option value="管理員">管理員</option>
+                    <option value="一般使用者">一般使用者</option>
+                  </select>
+                </div>
+
+                {/* Send welcome email */}
+                <div>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={addForm.sendWelcome}
+                      onChange={e => setAddForm({...addForm, sendWelcome: e.target.checked})}
+                      className="w-5 h-5 rounded-sm border-cream-300"
+                    />
+                    <div>
+                      <span className="font-body font-semibold text-olive-800 text-sm">寄送歡迎 Email</span>
+                      <p className="font-body text-olive-400 text-xs mt-0.5">系統將自動發送帳號設定通知給新使用者</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setShowAddUser(false)}
+                    className="flex-1 px-4 py-2.5 rounded-sm font-body border border-cream-300 text-olive-600 hover:bg-cream-100 transition-colors text-sm"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleAddUser}
+                    className="flex-1 px-4 py-2.5 rounded-sm font-body bg-olive-700 text-white hover:bg-olive-800 transition-colors font-semibold text-sm"
+                  >
+                    新增使用者
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
