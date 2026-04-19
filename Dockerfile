@@ -20,13 +20,11 @@ WORKDIR /build
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
-COPY frontend/src ./src
-COPY frontend/public ./public
-COPY frontend/next.config.mjs frontend/tsconfig.json frontend/tailwind.config.ts frontend/postcss.config.mjs ./
+COPY frontend/ .
 
 ENV NEXT_PUBLIC_MOCK_ENABLED=false
 ENV NEXT_PUBLIC_API_BASE_URL=
-RUN npm run build
+RUN mkdir -p public && npm run build
 
 # ============================================
 # Stage 3: Runtime
