@@ -175,7 +175,7 @@ export default function AdminInvoicesPage() {
 
       {/* Void Modal */}
       <Modal isOpen={!!voidTarget} onClose={() => { setVoidTarget(null); voidReset() }} title="作廢發票">
-        <form onSubmit={voidHandleSubmit(handleVoid as (data: Record<string, unknown>) => void)} className="space-y-4">
+        <form onSubmit={voidHandleSubmit(handleVoid as unknown as (data: Record<string, unknown>) => void)} className="space-y-4">
           <p className="text-sm text-olive-600">發票號碼：{voidTarget?.invoiceNumber}</p>
           <div>
             <label className="label">作廢原因 *</label>
@@ -191,7 +191,7 @@ export default function AdminInvoicesPage() {
 
       {/* Allowance Modal */}
       <Modal isOpen={!!allowanceTarget} onClose={() => { setAllowanceTarget(null); allowanceReset() }} title="折讓發票">
-        <form onSubmit={allowanceHandleSubmit(handleAllowance as (data: Record<string, unknown>) => void)} className="space-y-4">
+        <form onSubmit={allowanceHandleSubmit(handleAllowance as unknown as (data: Record<string, unknown>) => void)} className="space-y-4">
           <p className="text-sm text-olive-600">發票號碼：{allowanceTarget?.invoiceNumber}，原始金額：NT${allowanceTarget?.amount.toLocaleString()}</p>
           <div>
             <label className="label">折讓金額 *</label>

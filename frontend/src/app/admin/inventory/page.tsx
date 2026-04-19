@@ -137,7 +137,7 @@ export default function AdminInventoryPage() {
 
       {/* Stock Modal */}
       <Modal isOpen={!!stockTarget} onClose={() => { setStockTarget(null); stockReset() }} title="編輯庫存數量">
-        <form onSubmit={stockHandleSubmit(handleUpdateStock as (data: Record<string, unknown>) => void)} className="space-y-4">
+        <form onSubmit={stockHandleSubmit(handleUpdateStock as unknown as (data: Record<string, unknown>) => void)} className="space-y-4">
           <p className="text-sm text-olive-600">{stockTarget?.productName}</p>
           <div>
             <label className="label">庫存數量 *</label>
@@ -153,7 +153,7 @@ export default function AdminInventoryPage() {
 
       {/* Threshold Modal */}
       <Modal isOpen={!!thresholdTarget} onClose={() => { setThresholdTarget(null); thresholdReset() }} title="設定低庫存門檻">
-        <form onSubmit={thresholdHandleSubmit(handleUpdateThreshold as (data: Record<string, unknown>) => void)} className="space-y-4">
+        <form onSubmit={thresholdHandleSubmit(handleUpdateThreshold as unknown as (data: Record<string, unknown>) => void)} className="space-y-4">
           <p className="text-sm text-olive-600">{thresholdTarget?.productName}</p>
           <div>
             <label className="label">低庫存門檻 *</label>
