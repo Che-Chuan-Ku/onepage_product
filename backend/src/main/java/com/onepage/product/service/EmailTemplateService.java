@@ -37,7 +37,7 @@ public class EmailTemplateService {
     );
 
     // REQ-034: RBAC - 每位使用者各自擁有一套獨立模板
-    @Transactional(readOnly = true)
+    @Transactional
     public List<EmailTemplateDTO> listTemplates() {
         String email = SecurityUtils.getCurrentUserEmail();
         User currentUser = findUserByEmailOrThrow(email);
