@@ -11,7 +11,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,8 +27,9 @@ public class AuthController {
     }
 
     @PostMapping("/auth/refresh")
-    public ResponseEntity<TokenResponse> refreshToken(@RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(authService.refreshToken(body.get("refreshToken")));
+    public ResponseEntity<TokenResponse> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request.getRefreshToken()));
     }
 
     @GetMapping("/users")
@@ -49,7 +49,7 @@ public class AuthController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> updateUserRole(
             @PathVariable Long userId,
-            @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(authService.updateUserRole(userId, body.get("role")));
+            @Valid @RequestBody UpdateUserRoleRequest request) {
+        return ResponseEntity.ok(authService.updateUserRole(userId, request.getRole()));
     }
 }

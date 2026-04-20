@@ -3,6 +3,7 @@ package com.onepage.product.dto.product;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +31,7 @@ public class UpdateProductRequest {
     @NotNull
     private Long categoryId;
 
+    @Size(max = 5, message = "最多上傳5張圖片")
     private List<MultipartFile> images;
 
     private Boolean isBundle;

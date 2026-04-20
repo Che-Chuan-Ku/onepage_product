@@ -41,6 +41,14 @@ services:
         value: "kksjkdkk9933@gmail.com"
       - key: MAIL_PASSWORD
         sync: false
+      - key: AWS_S3_BUCKET
+        value: "kudreambuck"
+      - key: AWS_S3_REGION
+        value: "ap-east-2"
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
       - key: ECPAY_MERCHANT_ID
         sync: false
       - key: ECPAY_HASH_KEY

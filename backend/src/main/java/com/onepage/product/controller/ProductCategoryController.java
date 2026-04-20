@@ -2,6 +2,7 @@ package com.onepage.product.controller;
 
 import com.onepage.product.dto.product.CreateProductCategoryRequest;
 import com.onepage.product.dto.product.ProductCategoryDTO;
+import com.onepage.product.dto.product.UpdateProductCategoryRequest;
 import com.onepage.product.service.ProductCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/product-categories")
@@ -33,8 +33,8 @@ public class ProductCategoryController {
     @PutMapping("/{categoryId}")
     public ResponseEntity<ProductCategoryDTO> updateCategory(
             @PathVariable Long categoryId,
-            @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(categoryService.updateCategory(categoryId, body.get("name")));
+            @Valid @RequestBody UpdateProductCategoryRequest request) {
+        return ResponseEntity.ok(categoryService.updateCategory(categoryId, request.getName()));
     }
 
     @DeleteMapping("/{categoryId}")

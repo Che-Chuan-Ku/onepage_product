@@ -12,6 +12,10 @@ const nextConfig = {
         hostname: 'localhost',
         port: '8080',
       },
+      {
+        protocol: 'https',
+        hostname: 'kudreambuck.s3.ap-east-2.amazonaws.com',
+      },
     ],
   },
   async rewrites() {

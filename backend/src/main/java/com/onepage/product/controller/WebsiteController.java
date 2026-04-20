@@ -63,7 +63,7 @@ public class WebsiteController {
     @PutMapping("/{websiteId}/products")
     public ResponseEntity<List<WebsiteProductDTO>> updateWebsiteProducts(
             @PathVariable Long websiteId,
-            @RequestBody List<WebsiteProductInput> inputs) {
+            @Valid @RequestBody List<WebsiteProductInput> inputs) {
         return ResponseEntity.ok(websiteService.updateWebsiteProducts(websiteId, inputs));
     }
 }

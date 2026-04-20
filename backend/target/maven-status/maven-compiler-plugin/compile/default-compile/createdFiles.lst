@@ -15,6 +15,7 @@ com\onepage\product\service\FileStorageService.class
 com\onepage\product\controller\PaymentController.class
 com\onepage\product\exception\BusinessException.class
 com\onepage\product\dto\payment\PaymentDTO.class
+com\onepage\product\dto\auth\RefreshTokenRequest.class
 com\onepage\product\controller\WebsiteController.class
 com\onepage\product\model\ProductImage$ProductImageBuilder.class
 com\onepage\product\config\SecurityConfig.class
@@ -41,6 +42,7 @@ com\onepage\product\dto\product\CreateProductCategoryRequest.class
 com\onepage\product\model\Invoice$InvoiceStatus.class
 com\onepage\product\config\WebMvcConfig.class
 com\onepage\product\model\Website.class
+com\onepage\product\dto\inventory\UpdateLowStockThresholdRequest.class
 com\onepage\product\dto\website\CreateWebsiteRequest.class
 com\onepage\product\dto\auth\CreateUserRequest.class
 com\onepage\product\dto\inventory\InventoryDTO$InventoryDTOBuilder.class
@@ -52,6 +54,7 @@ com\onepage\product\service\InvoiceService.class
 com\onepage\product\service\OrderService.class
 com\onepage\product\model\ProductCategory.class
 com\onepage\product\service\WebsiteService.class
+com\onepage\product\dto\auth\UpdateUserRoleRequest.class
 com\onepage\product\repository\EmailNotificationRepository.class
 com\onepage\product\model\Invoice$InvoiceBuilder.class
 com\onepage\product\model\ProductCategory$ProductCategoryBuilder.class
@@ -64,6 +67,7 @@ com\onepage\product\model\Invoice$CarrierType.class
 com\onepage\product\dto\inventory\InventoryDTO.class
 com\onepage\product\dto\product\BundleItemDTO.class
 com\onepage\product\config\JacksonConfig.class
+com\onepage\product\dto\invoice\VoidInvoiceRequest.class
 com\onepage\product\dto\website\WebsiteProductDTO$WebsiteProductDTOBuilder.class
 com\onepage\product\dto\storefront\StorefrontWebsiteDTO.class
 com\onepage\product\dto\auth\TokenResponse$TokenResponseBuilder.class
@@ -90,6 +94,7 @@ com\onepage\product\model\Website$WebsiteBuilder.class
 com\onepage\product\dto\product\ProductCategoryDTO$ProductCategoryDTOBuilder.class
 com\onepage\product\dto\product\ProductCategoryDTO.class
 com\onepage\product\model\Product.class
+com\onepage\product\dto\invoice\AllowanceInvoiceRequest.class
 com\onepage\product\dto\order\OrderDTO$OrderDTOBuilder.class
 com\onepage\product\model\EmailNotification.class
 com\onepage\product\repository\OrderRepository.class
@@ -104,6 +109,7 @@ com\onepage\product\repository\UserRepository.class
 com\onepage\product\dto\invoice\InvoiceDTO.class
 com\onepage\product\dto\email\EmailTemplateDTO.class
 com\onepage\product\service\EmailNotificationService.class
+com\onepage\product\dto\inventory\UpdateInventoryRequest.class
 com\onepage\product\model\LowStockAlert$LowStockAlertBuilder.class
 com\onepage\product\model\LowStockAlert.class
 com\onepage\product\model\OrderItem.class
@@ -123,6 +129,7 @@ com\onepage\product\dto\order\PagedOrders$PagedOrdersBuilder.class
 com\onepage\product\model\Payment$PaymentBuilder.class
 com\onepage\product\dto\order\CreateOrderRequest.class
 com\onepage\product\dto\email\TemplateVariableDTO.class
+com\onepage\product\dto\product\UpdateProductCategoryRequest.class
 com\onepage\product\model\User.class
 com\onepage\product\model\Product$PriceUnit.class
 com\onepage\product\service\InventoryService.class

@@ -1,6 +1,7 @@
 package com.onepage.product.dto.website;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +31,7 @@ public class CreateWebsiteRequest {
 
     private LocalDateTime publishEndAt;
 
+    @NotNull(message = "Banner 圖片為必填")
     private MultipartFile bannerImage;
 
     private MultipartFile promoImage;

@@ -98,7 +98,7 @@ public class StorefrontService {
         }
 
         // Check outer islands
-        if (request.getRecipientCity() != null && OUTER_ISLANDS.contains(request.getRecipientCity())) {
+        if (request.getAddress() != null && OUTER_ISLANDS.contains(extractCity(request.getAddress()))) {
             return ShippingCalculateResponse.builder()
                     .shippingFee(null)
                     .freeShipping(false)
@@ -111,7 +111,7 @@ public class StorefrontService {
                 .orElseThrow(() -> new BusinessException("網站不存在", HttpStatus.NOT_FOUND));
 
         BigDecimal threshold = website.getFreeShippingThreshold();
-        if (request.getSubtotal().compareTo(threshold) >= 0) {
+        if (request.getOrderAmount() != null && request.getOrderAmount().compareTo(threshold) >= 0) {
             return ShippingCalculateResponse.builder()
                     .shippingFee(BigDecimal.ZERO)
                     .freeShipping(true)
@@ -172,5 +172,15 @@ public class StorefrontService {
                                 .build())
                         .collect(Collectors.toList()))
                 .build();
+    }
+
+    private String extractCity(String address) {
+        if (address == null) return null;
+        for (String island : OUTER_ISLANDS) {
+            if (address.contains(island)) {
+                return island;
+            }
+        }
+        return address;
     }
 }

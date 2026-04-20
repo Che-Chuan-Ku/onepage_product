@@ -31,15 +31,16 @@ public class CreateProductRequest {
     @Min(value = 0, message = "庫存數量必須 >= 0")
     private int stockQuantity;
 
+    @Size(max = 5, message = "最多上傳5張圖片")
     private List<MultipartFile> images;
 
-    private boolean bundle = false;
+    private boolean isBundle = false;
 
     private BigDecimal bundleDiscountPercent;
 
     private List<Long> bundleProductIds;
 
-    private boolean preorder = false;
+    private boolean isPreorder = false;
 
     private LocalDate preorderStartDate;
 

@@ -16,6 +16,19 @@ spring:
   jpa:
     show-sql: false
 
+file:
+  upload:
+    storage-type: s3
+    base-url: ${FILE_BASE_URL:https://onepage-product.onrender.com/api/v1}
+    local-path: ${FILE_LOCAL_PATH:uploads}
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET:kudreambuck}
+    region: ${AWS_S3_REGION:ap-east-2}
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
+
 logging:
   level:
     com.onepage: INFO

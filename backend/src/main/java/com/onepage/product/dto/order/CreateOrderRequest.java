@@ -1,9 +1,7 @@
 package com.onepage.product.dto.order;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.util.List;
@@ -31,9 +29,11 @@ public class CreateOrderRequest {
 
     private String note;
 
+    @Pattern(regexp = "^\\d{8}$", message = "統一編號必須為8碼數字")
     private String taxId;
 
     @NotEmpty
+    @Valid
     private List<OrderItemRequest> items;
 
     @Data
@@ -43,6 +43,7 @@ public class CreateOrderRequest {
         private Long productId;
 
         @NotNull
-        private int quantity;
+        @Min(1)
+        private Integer quantity;
     }
 }

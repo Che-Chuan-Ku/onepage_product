@@ -62,11 +62,15 @@ export default function AdminWebsitesPage() {
   useEffect(() => { load() }, [])
 
   const onSubmit = async (data: CreateWebsiteInput) => {
+    if (!bannerFile) {
+      toast.error('請上傳 Banner 主視覺圖片')
+      return
+    }
     const formData = new FormData()
     Object.entries(data).forEach(([k, v]) => {
       if (v !== undefined && v !== '') formData.append(k, String(v))
     })
-    if (bannerFile) formData.append('bannerImage', bannerFile)
+    formData.append('bannerImage', bannerFile)
     if (promoFile) formData.append('promoImage', promoFile)
     try {
       await websiteApi.create(formData)
@@ -124,6 +128,8 @@ export default function AdminWebsitesPage() {
       subtitle: website.subtitle ?? '',
       browserTitle: website.browserTitle ?? '',
       subscriptionPlan: website.subscriptionPlan,
+      publishStartAt: website.publishStartAt ? website.publishStartAt.slice(0, 16) : '',
+      publishEndAt: website.publishEndAt ? website.publishEndAt.slice(0, 16) : '',
       freeShippingThreshold: website.freeShippingThreshold,
       footerTitle: website.footerTitle ?? '',
       footerSubtitle: website.footerSubtitle ?? '',
@@ -236,6 +242,14 @@ export default function AdminWebsitesPage() {
             {errors.title && <p className="text-terra-500 text-xs mt-1">{errors.title.message}</p>}
           </div>
           <div>
+            <label className="label">頁面副標題</label>
+            <input className="input-field" placeholder="集合頁副標" {...register('subtitle')} />
+          </div>
+          <div>
+            <label className="label">瀏覽器標籤標題</label>
+            <input className="input-field" placeholder="<title> 標籤內容" {...register('browserTitle')} />
+          </div>
+          <div>
             <label className="label">訂閱方案</label>
             <input className="input-field" {...register('subscriptionPlan')} />
           </div>
@@ -254,10 +268,21 @@ export default function AdminWebsitesPage() {
             </div>
           </div>
           <div className="border-t border-cream-200 pt-3">
+            <p className="text-sm font-semibold text-olive-700 mb-3">Footer 設定</p>
+            <div>
+              <label className="label">Footer 標題</label>
+              <input className="input-field" placeholder="店家名稱" {...register('footerTitle')} />
+            </div>
+            <div className="mt-3">
+              <label className="label">Footer 副標題</label>
+              <textarea rows={2} className="input-field" placeholder="聯絡資訊、地址等" {...register('footerSubtitle')} />
+            </div>
+          </div>
+          <div className="border-t border-cream-200 pt-3">
             <p className="text-sm font-semibold text-olive-700 mb-3">圖片設定</p>
             <div className="space-y-3">
               <div>
-                <label className="label">Banner 主視覺圖片（建議 1200×400px）</label>
+                <label className="label">Banner 主視覺圖片 *（建議 1200×400px）</label>
                 {bannerFile && <p className="text-xs text-olive-500 mb-1">已選擇：{bannerFile.name}</p>}
                 <input
                   type="file" accept="image/jpeg,image/png,image/webp"
@@ -313,6 +338,14 @@ export default function AdminWebsitesPage() {
             <div>
               <label className="label">免運門檻（NT$）</label>
               <input type="number" className="input-field" {...editForm.register('freeShippingThreshold', { valueAsNumber: true })} />
+            </div>
+            <div>
+              <label className="label">上架開始時間</label>
+              <input type="datetime-local" className="input-field" {...editForm.register('publishStartAt')} />
+            </div>
+            <div>
+              <label className="label">上架結束時間</label>
+              <input type="datetime-local" className="input-field" {...editForm.register('publishEndAt')} />
             </div>
             <div className="col-span-2 border-t border-cream-200 pt-4">
               <p className="text-sm font-semibold text-olive-700 mb-3">圖片設定</p>

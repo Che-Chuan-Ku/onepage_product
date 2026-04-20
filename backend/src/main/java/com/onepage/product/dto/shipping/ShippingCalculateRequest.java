@@ -15,8 +15,7 @@ public class ShippingCalculateRequest {
     @NotBlank
     private String shippingMethod;
 
-    private String recipientCity;
+    private String address;
 
-    @NotNull
-    private BigDecimal subtotal;
+    private BigDecimal orderAmount;
 }

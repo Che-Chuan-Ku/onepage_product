@@ -44,13 +44,13 @@ public class ShippingSteps {
         ensureWebsiteExists();
         shippingRequest.put("websiteId", context.getId("websiteId"));
         shippingRequest.put("shippingMethod", "DELIVERY");
-        shippingRequest.put("subtotal", 500);
+        shippingRequest.put("orderAmount", 500);
     }
 
     @Given("顧客已填寫外島地址")
     public void 顧客已填寫外島地址() {
         顧客已填寫地址();
-        shippingRequest.put("recipientCity", "澎湖縣");
+        shippingRequest.put("address", "澎湖縣");
     }
 
     @Given("顧客選擇宅配且填寫地址為 {string}")
@@ -58,20 +58,18 @@ public class ShippingSteps {
         ensureWebsiteExists();
         shippingRequest.put("websiteId", context.getId("websiteId"));
         shippingRequest.put("shippingMethod", "DELIVERY");
-        shippingRequest.put("subtotal", 500);
-        // Extract city from address
-        String city = extractCity(address);
-        shippingRequest.put("recipientCity", city);
+        shippingRequest.put("orderAmount", 500);
+        shippingRequest.put("address", address);
     }
 
     @Given("訂單金額未達滿額免運門檻")
     public void 訂單金額未達滿額免運門檻() {
-        shippingRequest.put("subtotal", 500);
+        shippingRequest.put("orderAmount", 500);
     }
 
     @Given("訂單金額為 {int} 元")
     public void 訂單金額為N元(int amount) {
-        shippingRequest.put("subtotal", amount);
+        shippingRequest.put("orderAmount", amount);
     }
 
     @Given("所屬網站滿額免運門檻為 {int} 元")
@@ -87,7 +85,7 @@ public class ShippingSteps {
         ensureWebsiteExists();
         shippingRequest.put("websiteId", context.getId("websiteId"));
         shippingRequest.put("shippingMethod", "PICKUP");
-        shippingRequest.put("subtotal", 500);
+        shippingRequest.put("orderAmount", 500);
     }
 
     @Given("顧客已填寫地址為 {string} 且運費為 NT${int}")

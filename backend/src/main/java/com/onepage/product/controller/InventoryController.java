@@ -1,13 +1,15 @@
 package com.onepage.product.controller;
 
 import com.onepage.product.dto.inventory.InventoryDTO;
+import com.onepage.product.dto.inventory.UpdateInventoryRequest;
+import com.onepage.product.dto.inventory.UpdateLowStockThresholdRequest;
 import com.onepage.product.service.InventoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/inventory")
@@ -24,14 +26,14 @@ public class InventoryController {
     @PutMapping("/{productId}")
     public ResponseEntity<InventoryDTO> updateInventory(
             @PathVariable Long productId,
-            @RequestBody Map<String, Integer> body) {
-        return ResponseEntity.ok(inventoryService.updateInventory(productId, body.get("stockQuantity")));
+            @Valid @RequestBody UpdateInventoryRequest request) {
+        return ResponseEntity.ok(inventoryService.updateInventory(productId, request.getStockQuantity()));
     }
 
     @PutMapping("/{productId}/threshold")
     public ResponseEntity<InventoryDTO> updateLowStockThreshold(
             @PathVariable Long productId,
-            @RequestBody Map<String, Integer> body) {
-        return ResponseEntity.ok(inventoryService.updateLowStockThreshold(productId, body.get("threshold")));
+            @Valid @RequestBody UpdateLowStockThresholdRequest request) {
+        return ResponseEntity.ok(inventoryService.updateLowStockThreshold(productId, request.getThreshold()));
     }
 }

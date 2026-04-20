@@ -76,13 +76,11 @@ export default function AdminProductsPage() {
     const formData = new FormData()
     Object.entries(data).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '') {
-        // Map frontend camelCase boolean flags to backend field names
-        const fieldName = k === 'isPreorder' ? 'preorder' : k === 'isBundle' ? 'bundle' : k
         if (Array.isArray(v)) {
           // For arrays (e.g., bundleProductIds), append each item separately
-          v.forEach((item) => formData.append(fieldName, String(item)))
+          v.forEach((item) => formData.append(k, String(item)))
         } else {
-          formData.append(fieldName, String(v))
+          formData.append(k, String(v))
         }
       }
     })

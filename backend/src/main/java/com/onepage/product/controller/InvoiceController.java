@@ -1,14 +1,14 @@
 package com.onepage.product.controller;
 
+import com.onepage.product.dto.invoice.AllowanceInvoiceRequest;
 import com.onepage.product.dto.invoice.InvoiceDTO;
 import com.onepage.product.dto.invoice.PagedInvoices;
+import com.onepage.product.dto.invoice.VoidInvoiceRequest;
 import com.onepage.product.service.InvoiceService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/invoices")
@@ -33,16 +33,15 @@ public class InvoiceController {
     @PostMapping("/{invoiceId}/void")
     public ResponseEntity<InvoiceDTO> voidInvoice(
             @PathVariable Long invoiceId,
-            @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(invoiceService.voidInvoice(invoiceId, body.get("reason")));
+            @Valid @RequestBody VoidInvoiceRequest request) {
+        return ResponseEntity.ok(invoiceService.voidInvoice(invoiceId, request.getReason()));
     }
 
     @PostMapping("/{invoiceId}/allowance")
     public ResponseEntity<InvoiceDTO> allowanceInvoice(
             @PathVariable Long invoiceId,
-            @RequestBody Map<String, Object> body) {
-        BigDecimal amount = new BigDecimal(body.get("amount").toString());
-        return ResponseEntity.ok(invoiceService.allowanceInvoice(invoiceId, amount));
+            @Valid @RequestBody AllowanceInvoiceRequest request) {
+        return ResponseEntity.ok(invoiceService.allowanceInvoice(invoiceId, request.getAmount()));
     }
 
     @PostMapping("/{invoiceId}/sync")

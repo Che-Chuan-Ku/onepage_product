@@ -57,6 +57,8 @@ export const CreateProductSchema = CreateProductBaseSchema
   )
 
 export const UpdateProductSchema = CreateProductBaseSchema.omit({ stockQuantity: true }).extend({
+  isBundle: z.boolean().optional(),
+  isPreorder: z.boolean().optional(),
   shippingDeadline: z.string().optional(),
 })
 
@@ -84,7 +86,7 @@ export const CreateUserSchema = z.object({
   name: z.string().min(1, '請輸入姓名'),
   password: z.string().min(8, '密碼至少需要 8 個字元'),
   role: z.enum(['ADMIN', 'GENERAL_USER']),
-  sendWelcomeEmail: z.boolean().default(true),
+  sendWelcomeEmail: z.boolean().default(false),
 })
 
 // ─── Order Schemas ────────────────────────────────────────────────────────────
