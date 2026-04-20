@@ -231,6 +231,11 @@ export default function AdminWebsitesPage() {
             {errors.name && <p className="text-terra-500 text-xs mt-1">{errors.name.message}</p>}
           </div>
           <div>
+            <label className="label">網站標題 *</label>
+            <input className="input-field" placeholder="集合頁大標題" {...register('title')} />
+            {errors.title && <p className="text-terra-500 text-xs mt-1">{errors.title.message}</p>}
+          </div>
+          <div>
             <label className="label">訂閱方案</label>
             <input className="input-field" {...register('subscriptionPlan')} />
           </div>

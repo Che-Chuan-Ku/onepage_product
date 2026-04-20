@@ -64,7 +64,7 @@ export const UpdateProductSchema = CreateProductBaseSchema.omit({ stockQuantity:
 
 export const CreateWebsiteSchema = z.object({
   name: z.string().min(1, '請輸入網站名稱'),
-  title: z.string().optional(),
+  title: z.string().min(1, '請輸入網站標題'),
   subtitle: z.string().optional(),
   browserTitle: z.string().optional(),
   subscriptionPlan: z.string().optional(),
