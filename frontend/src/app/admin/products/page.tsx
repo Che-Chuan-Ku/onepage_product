@@ -108,6 +108,21 @@ export default function AdminProductsPage() {
     setDeactivateTarget(null)
   }
 
+  const handleDeleteImage = async (imageId: number) => {
+    if (!imageUploadTarget) return
+    try {
+      await productApi.deleteImage(imageUploadTarget.id, imageId)
+      setImageUploadTarget({
+        ...imageUploadTarget,
+        images: imageUploadTarget.images.filter((img) => img.id !== imageId),
+      })
+      toast.success('圖片已刪除')
+      loadProducts()
+    } catch {
+      toast.error('刪除失敗')
+    }
+  }
+
   const handleUploadImages = async () => {
     if (!imageUploadTarget || pendingImages.length === 0) return
     setUploadingImages(true)
@@ -351,12 +366,20 @@ export default function AdminProductsPage() {
               <p className="label mb-2">現有圖片（{imageUploadTarget.images.length} 張）</p>
               <div className="flex flex-wrap gap-2">
                 {imageUploadTarget.images.map((img, idx) => (
-                  <div key={img.id} className="relative w-20 h-20 border border-cream-300">
+                  <div key={img.id} className="relative w-20 h-20 border border-cream-300 group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img.imageUrl} alt={`圖片 ${idx + 1}`} className="w-full h-full object-cover" />
                     {idx === 0 && (
                       <div className="absolute bottom-0 left-0 right-0 bg-olive-700/80 text-white text-center text-xs py-0.5">主圖</div>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(img.id)}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-terra-500 text-white rounded-full text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="刪除圖片"
+                    >
+                      x
+                    </button>
                   </div>
                 ))}
               </div>

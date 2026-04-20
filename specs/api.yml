@@ -445,6 +445,32 @@ paths:
         '404':
           description: 商品不存在
 
+  /products/{productId}/images/{imageId}:
+    delete:
+      tags: [Product]
+      summary: 刪除商品圖片
+      operationId: deleteProductImage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: 圖片刪除成功
+        '404':
+          description: 商品或圖片不存在
+
   /products/{productId}/deactivate:
     post:
       tags: [Product]

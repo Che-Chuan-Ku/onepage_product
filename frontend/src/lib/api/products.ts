@@ -60,6 +60,10 @@ export const productApi = {
     return res.data
   },
 
+  deleteImage: async (productId: number, imageId: number): Promise<void> => {
+    await apiClient.delete(`/products/${productId}/images/${imageId}`)
+  },
+
   uploadImages: async (productId: number, files: File[]): Promise<ProductDTO> => {
     const formData = new FormData()
     files.forEach((file) => formData.append('images', file))

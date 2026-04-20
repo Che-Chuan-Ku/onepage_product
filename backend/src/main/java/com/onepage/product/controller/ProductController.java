@@ -50,6 +50,14 @@ public class ProductController {
         return ResponseEntity.ok(productService.deactivateProduct(productId));
     }
 
+    @DeleteMapping("/{productId}/images/{imageId}")
+    public ResponseEntity<Void> deleteProductImage(
+            @PathVariable Long productId,
+            @PathVariable Long imageId) {
+        productService.deleteProductImage(productId, imageId);
+        return ResponseEntity.noContent().build();
+    }
+
     // REQ-026: 商品圖片上傳
     @PostMapping("/{productId}/images")
     public ResponseEntity<List<ProductImageDTO>> uploadProductImages(

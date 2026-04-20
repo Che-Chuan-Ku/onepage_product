@@ -268,6 +268,19 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void deleteProductImage(Long productId, Long imageId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException("商品不存在", HttpStatus.NOT_FOUND));
+
+        boolean removed = product.getImages().removeIf(img -> img.getId().equals(imageId));
+        if (!removed) {
+            throw new BusinessException("圖片不存在", HttpStatus.NOT_FOUND);
+        }
+
+        productRepository.save(product);
+    }
+
     public ProductDTO toDTO(Product product) {
         return ProductDTO.builder()
                 .id(product.getId())
