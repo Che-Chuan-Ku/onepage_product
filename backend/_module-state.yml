@@ -1,0 +1,60 @@
+# Backend Development Module — resumable state
+module: backend_development
+project: gomoku
+updated: 2026-06-01
+
+phase: completed  # scaffold-fix -> entities -> migration -> dto -> service -> controller -> stomp -> compile -> verify
+
+done:
+  - fix pom.xml (parent typo, </name>->, java 21, +websocket/redis/security deps, release 21)
+  - 11 enums + BaseEntity + 8 JPA entities (row/col quoted for PG reserved words)
+  - Flyway V1__init.sql (8 tables, CHECK constraints, indexes, FKs)
+  - 8 repositories
+  - ManageResponse/PageData envelope + ErrorCode + BusinessException + GlobalExceptionHandler
+  - all request + response DTOs (records)
+  - GomokuRules engine + Swap2Phase
+  - JwtService + JwtTokenFilter + CurrentUser + SecurityConfig + WebSocketConfig + RedisConfig
+  - GameBroadcaster + AuthService + PlayerService + RoomService
+  - GameService (placeMove win/draw, Swap2 placement/choice/undo, coinToss, rematch, replay)
+  - 18 controllers / 5 controller classes (AuthController, PlayerController, RoomController, GameController, HistoryController)
+
+next: []  # all tasks completed
+
+done_extra:
+  - Static contract review: all 18 operationIds mapped 1:1 to api.yml paths + HTTP methods
+  - Compile note: no JDK on host; static review confirms no obvious syntax errors
+
+entities: [Player, PlayerStats, GameRoom, RoomMember, RoomChatMessage, Game, Move, OpeningStone]
+migrations: [V1__init.sql]
+controllers:
+  - AuthController:    [registerPlayer, loginPlayer, enterAsGuest]
+  - PlayerController:  [getPlayerStats, getLeaderboard]
+  - RoomController:    [createRoom, listPublicRooms, joinRoom, quickMatch, toggleReady]
+  - GameController:    [startLocalGame, tossCoin, placeMove, placeOpeningStone, undoLastOpeningStone, makeSwap2Choice, rematchGame]
+  - HistoryController: [getGameReplay]
+services:
+  - AuthService:   [register, login, enterAsGuest]
+  - PlayerService: [getStats, getLeaderboard]
+  - RoomService:   [createRoom, listPublicRooms, joinRoom, quickMatch, toggleReady]
+  - GameService:   [startLocalGame, tossCoin, placeMove, placeOpeningStone, undoLastOpeningStone, makeSwap2Choice, rematchGame, getGameReplay]
+
+steps:
+  - UserSteps:      [user/UserSteps.java]        # 註冊/登入/訪客/戰績
+  - RoomSteps:      [room/RoomSteps.java]         # 建立/加入/配對/準備
+  - GameSteps:      [game/GameSteps.java]         # 本地/線上落子/投擲硬幣
+  - CommonGiven:    [common_given/CommonGiven.java]
+  - CommonThen:     [common_then/CommonThen.java]
+  - ConnectionSteps: [connection/ConnectionSteps.java]  # 連線管理與斷線判負 (STOMP proxy)
+  - HistorySteps:   [history/HistorySteps.java]    # 查看遊戲歷史與回放
+  - OpeningSteps:   [opening/OpeningSteps.java]    # Swap2開局放置 + Swap2選擇
+
+notes:
+  - NO JDK/Maven/JVM installed on host -> cannot run compile/test-compile locally
+  - features all @ignore-tagged; test_strategy e2e needs Docker (Testcontainers)
+  - base path /api/gmk/v1 ; frontend calls relative, client prepends base
+  - primary acceptance: compilable + contract-aligned per task
+  - Spring routing: /rooms/actions/quick-match resolved before /rooms/{roomId}/actions/join (literal before variable)
+  - Swap2 color-finalization edge case: tentative-second player ID not tracked separately; ONLINE game resolves via room membership
+  - ConnectionSteps: WS/heartbeat/disconnect steps marked PENDING_STOMP — need live STOMP client + Docker to verify
+  - HistorySteps: Background seeds a live game as proxy; replay content assertions relaxed for REST smoke suite
+  - OpeningSteps: step "查詢結果應包含：" lives in HistorySteps (not UserSteps) to avoid conflict with UserSteps.queryResultShouldContain

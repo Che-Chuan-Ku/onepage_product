@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — 大廳</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page">
+  <div class="layout">
+    <section>
+      <div class="row gap-12 wrap" style="margin-bottom:18px">
+        <h1 style="font-size:24px">公開房間</h1>
+        <span class="grow"></span>
+        <button class="btn btn-ghost" onclick="refresh()">↻ 重新整理</button>
+      </div>
+      <div id="rooms" class="col gap-12"></div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="card pad">
+        <h3 style="margin-bottom:12px">建立房間</h3>
+        <button class="btn btn-primary btn-block" onclick="createRoom()">＋ 建立房間</button>
+      </div>
+      <div class="card pad">
+        <h3 style="margin-bottom:12px">輸入房間碼加入</h3>
+        <div class="row gap-8">
+          <input class="input grow" id="code" placeholder="房間碼 如 7F3K" maxlength="6" style="text-transform:uppercase">
+          <button class="btn btn-accent" onclick="joinByCode()">加入</button>
+        </div>
+      </div>
+      <div class="card pad">
+        <h3 style="margin-bottom:12px">快速配對</h3>
+        <button class="btn btn-accent btn-block" id="qm" onclick="quickMatch()">⚡ 快速配對</button>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script>
+document.getElementById('hdr').innerHTML=renderHeader({identity:'registered',nickname:'KuPlayer'});
+const ROOMS=[
+  {code:'7F3K',host:'阿哲',players:1,spec:2,mode:'swap2'},
+  {code:'A12X',host:'小美',players:2,spec:5,mode:'normal'},
+  {code:'QQ88',host:'老張',players:1,spec:0,mode:'normal'},
+  {code:'KU99',host:'快手小王',players:0,spec:1,mode:'swap2'},
+];
+function renderRooms(){
+  document.getElementById('rooms').innerHTML=ROOMS.map(r=>`
+    <div class="card pad row gap-16 wrap">
+      <div><div class="dim" style="font-size:12px">房間碼</div><div class="num" style="font-size:20px;font-weight:700">${r.code}</div></div>
+      <div><div class="dim" style="font-size:12px">房主</div><div>${r.host}</div></div>
+      <div><div class="dim" style="font-size:12px">對戰</div><div class="num">${r.players}/2</div></div>
+      <div><div class="dim" style="font-size:12px">觀戰</div><div class="num">${r.spec} 人</div></div>
+      <span class="badge ${r.mode==='swap2'?'badge-swap2':'badge-normal'}">${r.mode==='swap2'?'Swap2':'普通'}</span>
+      <span class="grow"></span>
+      <button class="btn ${r.players>=2?'btn-ghost':'btn-primary'}" onclick="enter('${r.code}',${r.players})">
+        ${r.players>=2?'觀戰':'加入'}
+      </button>
+    </div>`).join('');
+}
+renderRooms();
+function refresh(){toast('房間列表已更新');renderRooms();}
+
+function createRoom(){
+  showModal(`<h2 style="margin-bottom:14px">建立房間</h2>
+    <div class="field"><label>可見性</label>
+      <div class="tabs"><div class="tab active" onclick="pick(this,'vis')">公開</div><div class="tab" onclick="pick(this,'vis')">私人</div></div></div>
+    <div class="field"><label>開局模式</label>
+      <div class="tabs"><div class="tab active" onclick="pick(this,'mode')">普通</div><div class="tab" onclick="pick(this,'mode')">Swap2</div></div></div>
+    <button class="btn btn-primary btn-block mt-8" onclick="location.href='../room/index.html'">建立並進入房間</button>`);
+}
+function pick(el,grp){[...el.parentElement.children].forEach(c=>c.classList.remove('active'));el.classList.add('active');}
+
+function joinByCode(){
+  const c=$('#code').value.trim().toUpperCase();
+  if(!c){toast('請輸入房間碼','error');return;}
+  const r=ROOMS.find(x=>x.code===c);
+  if(!r){toast('房間不存在，請確認房間碼','error');return;}
+  enter(c,r.players);
+}
+function enter(code,players){
+  if(players>=2){toast('對戰席已滿，已以觀戰者身份進入','success');setTimeout(()=>location.href='../room/index.html?role=spectator',700);}
+  else location.href='../room/index.html';
+}
+
+let qmTimer;
+function quickMatch(){
+  let s=60;
+  const ov=showModal(`<div class="center col" style="text-align:center">
+    <div class="coin-scene center"><div style="font-size:50px;animation:pulse 1.2s infinite">⚡</div></div>
+    <h2 class="mt-16">配對中…</h2>
+    <p class="dim">正在為你尋找對手 · <span id="cd" class="num">60</span>s</p>
+    <button class="btn btn-ghost mt-16" onclick="cancelQM(this)">取消配對</button>
+  </div>`);
+  ov.dataset.dismiss='0';
+  qmTimer=setInterval(()=>{ s--; const cd=document.getElementById('cd'); if(cd)cd.textContent=s;
+    if(s===56){clearInterval(qmTimer);toast('配對成功！','success');setTimeout(()=>location.href='../room/index.html',600);}
+    if(s<=0){clearInterval(qmTimer);ov.remove();toast('排隊過久，請重新開始配對','error');}
+  },120);
+}
+function cancelQM(el){clearInterval(qmTimer);closeModal(el);toast('已退出配對佇列');}
+</script>
+</body>
+</html>

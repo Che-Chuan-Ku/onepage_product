@@ -1,0 +1,46 @@
+# Full-stack integration environment: backend + PG + Redis.
+# Frontend runs on host (npm run dev) with NEXT_PUBLIC_API_MOCKING=disabled,
+# Next.js rewrites /api/gmk/* and /ws to backend at 127.0.0.1:18080.
+#
+# Usage (from gomoku/):
+#   docker compose -f integration-test/docker-compose.fullstack.yml up -d --build
+#   docker compose -f integration-test/docker-compose.fullstack.yml down -v
+name: gomoku-fullstack
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: gomoku
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: integration-test/backend.Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gomoku
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATA_REDIS_HOST: redis
+    ports:
+      - "127.0.0.1:18080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

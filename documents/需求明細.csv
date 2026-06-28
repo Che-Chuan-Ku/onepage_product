@@ -1,0 +1,34 @@
+編號,功能分類,功能名稱,描述,優先級,技術實現建議,相關事件 / 狀態機,備註
+1,使用者管理,註冊 / 登入 (JWT),Email/Username + Password 註冊，登入後發 JWT,MVP,Spring Security + JWT,PlayerRegistered, PlayerLoggedIn,支援訪客模式
+2,使用者管理,訪客模式,無註冊即可輸入暱稱遊玩（本地全支援，線上僅限單場）,MVP,臨時 Player 實體 + localStorage,-,降低門檻
+3,使用者管理,個人戰績與排行榜,勝敗場、勝率、最近對戰紀錄,Should,JPA + PostgreSQL；Redis 排行快取,GameEnded,MVP 只記勝敗
+4,大廳與房間,遊戲模式選擇首頁,清楚區分「本地雙人」與「線上連線」兩個大按鈕,MVP,React Router + Tailwind RWD,-,響應式設計
+5,大廳與房間,建立 / 加入房間,建立私人房間（產生房間碼）或輸入碼加入,MVP,GameRoom Aggregate + JPA,RoomCreated, PlayerJoinedRoom,支援公開房間列表
+6,大廳與房間,快速配對,一鍵進入等待區，系統自動配對,Should,GameRoom 狀態機 + 配對佇列,PlayerJoinedRoom,MVP 先手動房間
+7,大廳與房間,房間內準備與聊天,玩家標記 Ready，簡單即時聊天,Should,WebSocket /topic/room/{id},PlayerReadyToggled,聊天 MVP 後加
+8,線上連線模式,投擲硬幣決定先手 / 假先方,普通模式決定黑白；Swap2 模式決定誰是假先方（放置三子者）,MVP,沿用 CoinToss 機制 + 新事件,CoinTossCompleted → Swap2OpeningStarted,已確認：線上 Swap2 用硬幣動畫
+9,線上連線模式,即時遊戲進行,點擊落子 → 後端驗證 → 廣播給雙方,MVP,STOMP /topic/game/{id},MovePlaced, GameStateUpdated,Server-authoritative
+10,遊戲邏輯 (共用),15×15 棋盤渲染與互動,繪製標準五子棋盤，支援滑鼠/觸控落子,MVP,React + Canvas/SVG + Tailwind RWD,-,手機觸控友好
+11,遊戲邏輯 (共用),落子驗證與勝負判定,後端統一檢查位置合法、輪次、5子或以上連線即勝,MVP,獨立 GameLogic Service,MovePlaced, WinConditionMet, GameDraw,長連算勝，無禁手
+12,遊戲邏輯 (共用),勝負高亮與結束畫面,連五位置高亮動畫，顯示勝者、和局、落子數、耗時,MVP,前端根據事件渲染,WinConditionMet, GameEnded,再戰按鈕
+13,本地雙人模式,同裝置輪流下棋,無需網路，直接在同一頁面輪流落子,MVP,純前端狀態機或呼叫 GameLogic Service,LocalGameStarted,簡單模式
+14,本地雙人模式,本地再戰與重置,一鍵重新開始，保留玩家名稱,MVP,前端狀態重置,-,-
+15,即時通訊,WebSocket 連線管理,連線、心跳、斷線重連機制,MVP,Spring WebSocket + STOMP,PlayerDisconnected, PlayerReconnected,線上模式核心
+16,即時通訊,遊戲狀態同步與廣播,每合法落子即時推播給房間內玩家,MVP,STOMP topic per game,GameStateUpdated,避免全量傳輸
+17,資料持久化,遊戲歷史與回放,結束後保存完整落子序列（含開局 stones）,Should,JPA + PostgreSQL JSONB,GameEnded,支援開局重播
+18,前端 UI/UX,RWD 響應式設計,手機/平板/桌機皆流暢，棋盤觸控友好,MVP,Tailwind + 媒體查詢,-,-
+19,前端 UI/UX,投擲硬幣動畫,優美 3D 硬幣翻轉動畫，結果由後端決定,MVP,Framer Motion,CoinTossCompleted,與 Swap2 共用
+20,非功能性,防作弊機制,所有落子與勝負判定必須經後端,MVP,Server-authoritative + 驗證邏輯,InvalidMoveRejected,線上強制
+21,非功能性,斷線與超時處理,線上遊戲中一方斷線 30 秒未重連 → 對手勝利,Should,WebSocket 狀態監聽 + 定時任務,PlayerDisconnected,MVP 可簡化
+22,非功能性,效能與擴展,單場遊戲狀態用 Redis；多實例時考慮 Sticky Session,Should,Redis + Spring Session,-,目前可先記憶體
+23,非功能性,錯誤處理與使用者體驗,Loading、Toast 錯誤提示、非法操作防呆,MVP,React Toastify / shadcn,InvalidMoveRejected,-
+24,遊戲邏輯 (共用),Swap2 開局支援,GameLogic Service 支援開局模式與標準模式切換，嚴格依照標準 Swap2 規則,MVP,獨立 OpeningService + GameSession 狀態機,Swap2OpeningStarted, ColorAssignmentFinalized, OpeningCompleted,核心，已確認採用標準規則
+25,本地雙人模式,本地 Swap2 可選開局,開始本地遊戲時可勾選「啟用 Swap2」，假先方由系統隨機決定,MVP,前端狀態 + 同一 GameLogic Service,LocalGameStarted (帶 useSwap2),已確認：本地用隨機
+26,線上連線模式,線上 Swap2 特殊房間模式,建立房間時可選擇「Swap2 模式」，雙方 Ready 後強制使用,MVP,GameRoom.isSwap2Mode + 設定驗證,RoomCreated, AllPlayersReady,與普通房間可標籤區分
+27,線上連線模式,開局假先方投擲硬幣,Swap2 模式下，Ready 後先投擲硬幣動畫決定誰是假先方,MVP,沿用 CoinToss 機制,CoinTossCompleted → Swap2OpeningStarted,已確認：線上用硬幣動畫
+28,即時通訊,開局即時同步與權限控制,開局階段只有假先方可放置，假後方只能觀看；每子確認 + 放置動畫,MVP,STOMP /topic/game/{id}/opening + 權限檢查,OpeningStonePlaced, Swap2ChoiceMade,已確認：每子確認 + 動畫
+29,前端 UI/UX,Swap2 開局放置與選擇介面,假先方每子確認 + 動畫；假後方看到按鈕 + 簡短說明的三個選項,MVP,React Modal + Framer Motion + Canvas,-,已確認：按鈕 + 簡短說明
+30,遊戲邏輯 (共用),開局後顏色分配與輪次設定,根據 Swap2 選擇結果，正確設定最終黑白與 currentTurn（嚴格標準規則）,MVP,GameLogic 統一方法,ColorAssignmentFinalized,已確認：嚴格標準規則
+31,遊戲邏輯 (共用),開局悔最後一子,開局階段只允許悔「最後放置的一子」,Should,GameSession 額外 lastOpeningMove 欄位 + 回復邏輯,OpeningStonePlaced（可逆）,已確認：只悔最後一子
+32,非功能性,開局記錄與重播支援,開局 3~5 子完整記錄在 openingStones，支援賽後重播,Should,開局 stones 單獨存或標記 moveNumber < 0,GameEnded,方便教學與 review
+33,前端 UI/UX,Swap2 第一次教學提示,第一次進入 Swap2 模式時顯示簡單規則說明（可跳過）,Should,前端 Markdown / Tooltip + localStorage 記錄,-,提升新手體驗

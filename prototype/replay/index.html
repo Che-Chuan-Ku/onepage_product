@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — 對局回放</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page">
+  <div class="layout">
+    <section>
+      <div class="board-wrap"><canvas class="board" id="board"></canvas></div>
+      <!-- replay controls -->
+      <div class="card pad mt-16">
+        <div class="row gap-8">
+          <button class="btn btn-ghost" onclick="step(-1)" aria-label="上一步">⏮ 上一步</button>
+          <button class="btn btn-primary grow" id="playBtn" onclick="togglePlay()">▶ 播放</button>
+          <button class="btn btn-ghost" onclick="step(1)" aria-label="下一步">下一步 ⏭</button>
+        </div>
+        <input type="range" id="bar" min="0" max="0" value="0" style="width:100%;margin-top:14px" oninput="seek(this.value)">
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim num" id="pos">0 / 0</span>
+          <span class="dim" id="cur"></span></div>
+      </div>
+    </section>
+    <aside class="sidebar">
+      <div class="card pad">
+        <h3 style="margin-bottom:12px">對局資訊</h3>
+        <div class="row" style="justify-content:space-between"><span class="dim">勝者</span><span>阿哲（黑）</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">落子數</span><span class="num" id="total">—</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">開局</span><span class="badge badge-swap2">Swap2</span></div>
+      </div>
+      <div class="card pad"><p class="dim" style="font-size:13px">⭕ 帶金圈者為 Swap2 開局子（序列起始可識別並重播）。</p></div>
+    </aside>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script src="../assets/board.js"></script>
+<script>
+document.getElementById('hdr').innerHTML=renderHeader({identity:'registered',nickname:'KuPlayer'});
+const board=new GomokuBoard(document.getElementById('board'),{interactive:false});
+
+// move sequence: openingStones first (swap2), then regular moves
+const moves=[
+  {r:7,c:7,color:'black',opening:true},
+  {r:7,c:8,color:'white',opening:true},
+  {r:8,c:7,color:'black',opening:true},
+  {r:8,c:8,color:'white'},
+  {r:6,c:7,color:'black'},
+  {r:9,c:6,color:'white'},
+  {r:5,c:7,color:'black'},
+  {r:8,c:6,color:'white'},
+  {r:4,c:7,color:'black'},   // black wins vertical 4..8 col7
+];
+document.getElementById('total').textContent=moves.length;
+document.getElementById('bar').max=moves.length;
+let idx=0, playing=false, timer;
+
+function render(){
+  const sub=moves.slice(0,idx);
+  board.set(sub.map(m=>({r:m.r,c:m.c,color:m.color})),{
+    opening:moves.filter(m=>m.opening),
+    last: idx>0?[moves[idx-1].r,moves[idx-1].c]:null
+  });
+  document.getElementById('bar').value=idx;
+  document.getElementById('pos').textContent=idx+' / '+moves.length;
+  const c=document.getElementById('cur');
+  c.textContent = idx>0 ? ('第 '+idx+' 手 · '+(moves[idx-1].opening?'開局子':(moves[idx-1].color==='black'?'黑':'白'))) : '起始';
+}
+function step(d){idx=Math.max(0,Math.min(moves.length,idx+d));render();}
+function seek(v){idx=+v;render();}
+function togglePlay(){
+  playing=!playing;
+  document.getElementById('playBtn').textContent=playing?'⏸ 暫停':'▶ 播放';
+  if(playing){ if(idx>=moves.length)idx=0;
+    timer=setInterval(()=>{ if(idx>=moves.length){togglePlay();return;} idx++;render(); },800);
+  } else clearInterval(timer);
+}
+render();
+</script>
+</body>
+</html>

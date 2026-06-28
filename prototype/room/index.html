@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — 房間</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page">
+  <div class="row gap-12 wrap" style="margin-bottom:18px">
+    <h1 style="font-size:22px">房間</h1>
+    <button class="badge badge-normal" id="codeBadge" onclick="copyCode()" style="cursor:pointer;border:none">房間碼：7F3K（點擊複製）</button>
+    <span class="badge badge-swap2" id="modeBadge">Swap2</span>
+    <span class="grow"></span>
+    <span class="conn online"><span class="led"></span>已連線</span>
+  </div>
+
+  <div class="layout">
+    <section class="col gap-16">
+      <div class="card pad">
+        <h3 style="margin-bottom:12px">對戰席</h3>
+        <div class="col gap-12">
+          <div class="row gap-12 card pad" style="background:var(--c-surface-2)">
+            <span class="stone-dot black" style="width:22px;height:22px;border-radius:50%"></span>
+            <b>阿哲</b><span class="dim">（房主）</span><span class="grow"></span>
+            <span class="badge badge-ready" id="p1ready">已準備</span>
+          </div>
+          <div class="row gap-12 card pad" style="background:var(--c-surface-2)">
+            <span class="stone-dot white" style="width:22px;height:22px;border-radius:50%"></span>
+            <b>你 (KuPlayer)</b><span class="grow"></span>
+            <span class="badge badge-wait" id="p2ready">未準備</span>
+          </div>
+        </div>
+        <button class="btn btn-success btn-block mt-16" id="readyBtn" onclick="toggleReady()">標記 Ready</button>
+        <p class="dim mt-8" id="readyHint" style="font-size:13px;text-align:center">雙方皆 Ready 後自動進入開局</p>
+      </div>
+
+      <div class="card pad">
+        <div class="row gap-8" style="margin-bottom:10px"><h3>觀戰席</h3><span class="badge badge-spec" id="specCount">觀戰中 2 人</span></div>
+        <div class="dim" style="font-size:14px">小美 · 路人甲</div>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="card pad">
+        <div class="row" style="margin-bottom:8px"><h3>即時聊天</h3><span class="grow"></span>
+          <button class="btn btn-ghost collapse-toggle" onclick="toggleChat(this)" style="min-height:32px;padding:0 12px">收合</button></div>
+        <div class="chat collapsible" id="chat">
+          <div class="chat-msgs" id="msgs">
+            <div class="chat-msg"><span class="who">阿哲</span>準備好了嗎？</div>
+            <div class="chat-msg"><span class="who">小美</span>觀戰學習中 👀</div>
+          </div>
+          <form class="chat-input" onsubmit="return send(event)">
+            <input class="input grow" id="chatIn" placeholder="輸入訊息…">
+            <button class="btn btn-accent">送出</button>
+          </form>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script>
+const params=new URLSearchParams(location.search);
+const isSpectator=params.get('role')==='spectator';
+document.getElementById('hdr').innerHTML=renderHeader({identity:'registered',nickname:'KuPlayer'});
+
+if(isSpectator){
+  // observer cannot ready
+  document.getElementById('readyBtn').remove();
+  document.getElementById('readyHint').textContent='你以觀戰者身份在此房間（唯讀，可聊天）';
+  document.getElementById('p2ready').parentElement.querySelector('b').textContent='（空位 — 等待對手）';
+}
+
+function copyCode(){navigator.clipboard?.writeText('7F3K');toast('房間碼已複製：7F3K','success');}
+let ready=false;
+function toggleReady(){
+  ready=!ready;
+  const b=document.getElementById('p2ready');
+  b.className='badge '+(ready?'badge-ready':'badge-wait');b.textContent=ready?'已準備':'未準備';
+  document.getElementById('readyBtn').textContent=ready?'取消 Ready':'標記 Ready';
+  if(ready){ // both ready -> coin/opening
+    toast('雙方皆已準備，進入開局…','success');
+    setTimeout(()=>location.href='../opening/index.html?ctx=online',900);
+  }
+}
+function send(e){e.preventDefault();const v=$('#chatIn').value.trim();if(!v)return false;
+  const m=document.createElement('div');m.className='chat-msg';m.innerHTML='<span class="who">你</span>'+v;
+  $('#msgs').appendChild(m);$('#msgs').scrollTop=1e9;$('#chatIn').value='';return false;}
+function toggleChat(btn){const c=document.getElementById('chat');c.classList.toggle('collapsed');btn.textContent=c.classList.contains('collapsed')?'展開':'收合';}
+</script>
+</body>
+</html>

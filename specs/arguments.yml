@@ -1,96 +1,47 @@
+# ── AIBDD arguments.yml ───────────────────────────────
+# 由 demand_analysis 模組（aibdd-kickoff 等效流程）產出
+# 技術堆疊：Java（Spring Boot + JPA + Cucumber）E2E + Frontend（React/Next.js）
+# 來源：documents/需求明細.csv 技術實現建議欄已明示後端 Spring + 前端 React/Tailwind
+
 # ── 共用 ──────────────────────────────────────────────
-
-# 所有規格產出物的根目錄
 SPECS_ROOT_DIR: specs
-
-# 澄清紀錄目錄（所有 prompt 共用，見 shared/clarify-loop.md）
 CLARIFY_DIR: ${SPECS_ROOT_DIR}/clarify
-
-# 每回合最多提問數（Sub-question 不計入）
 MAX_QUESTIONS_PER_ROUND: 10
-
-# ── discovery 用 ────────────────────────────────────
-
-# Activity 檔案的存放目錄
 ACTIVITIES_DIR: ${SPECS_ROOT_DIR}/activities
-
-# Feature 檔案的存放目錄
 FEATURE_SPECS_DIR: ${SPECS_ROOT_DIR}/features
-
-# api.yml 的存放目錄
 API_SPECS_DIR: ${SPECS_ROOT_DIR}
-
-# erm.dbml 的存放目錄
 ENTITY_SPECS_DIR: ${SPECS_ROOT_DIR}
 
-# ── java automation 共用 ─────────────────────────────
+# ── API 契約用 ───────────────────────────────────────
+# system-code：寫入 api.yml servers.url；本專案為五子棋對戰平台 → gmk
+system-code: gmk
+api-version: v1
 
-# Maven GAV
-GROUP_ID: com.onepage
-ARTIFACT_ID: product
-BASE_PACKAGE: com.onepage.product
+# ── Activity 格式 ───────────────────────────────────
+activity-format: .mmd
 
-# Java 應用程式根目錄
-JAVA_APP_DIR: backend/src/main/java/com/onepage/product
-
-# ORM Models
+# ── Java backend ────────────────────────────────────
+GROUP_ID: com.gomoku
+ARTIFACT_ID: platform
+BASE_PACKAGE: com.gomoku.platform
+JAVA_APP_DIR: src/main/java/com/gomoku/platform
 JAVA_MODEL_DIR: ${JAVA_APP_DIR}/model
-
-# Repository 層
 JAVA_REPOSITORY_DIR: ${JAVA_APP_DIR}/repository
-
-# Service 層
 JAVA_SERVICE_DIR: ${JAVA_APP_DIR}/service
-
-# Controller 層
 JAVA_CONTROLLER_DIR: ${JAVA_APP_DIR}/controller
-
-# Security 層
 JAVA_SECURITY_DIR: ${JAVA_APP_DIR}/security
-
-# Test 根目錄
-JAVA_TEST_DIR: backend/src/test/java/com/onepage/product
-
-# Cucumber Feature 檔案目錄
-JAVA_TEST_FEATURES_DIR: backend/src/test/resources/features
-
-# Step Definitions 目錄
+JAVA_TEST_DIR: src/test/java/com/gomoku/platform
+JAVA_TEST_FEATURES_DIR: src/test/resources/features
 JAVA_STEPS_DIR: ${JAVA_TEST_DIR}/steps
-
-# Cucumber 設定目錄
 JAVA_CUCUMBER_DIR: ${JAVA_TEST_DIR}/cucumber
+FLYWAY_MIGRATION_DIR: src/main/resources/db/migration
 
-# Flyway 遷移目錄
-FLYWAY_MIGRATION_DIR: backend/src/main/resources/db/migration
-
-# ── frontend automation 共用 ──────────────────────────
-
-# Frontend 原始碼根目錄
-SRC_DIR: frontend/src
-
-# API 規格檔案
-API_SPEC_FILE: ${API_SPECS_DIR}/api.yml
-
-# Entity 規格檔案
-ENTITY_SPEC_FILE: ${ENTITY_SPECS_DIR}/erm.dbml
-
-# TypeScript 類型定義目錄
+# ── Frontend (React + Next.js + MSW) ────────────────
+SRC_DIR: src
 TYPES_DIR: ${SRC_DIR}/lib/types
-
-# API Client 目錄
 API_CLIENT_DIR: ${SRC_DIR}/lib/api
-
-# MSW Mock 目錄
 MSW_DIR: ${SRC_DIR}/mocks
-
-# MSW Handlers 目錄
 HANDLERS_DIR: ${MSW_DIR}/handlers
-
-# Frontend Feature 檔案目錄
-FRONTEND_FEATURES_DIR: frontend/features
-
-# Page Objects 目錄
-PAGE_OBJECTS_DIR: frontend/page-objects
-
-# Frontend Steps 目錄
-STEPS_DIR: frontend/steps
+FRONTEND_FEATURES_DIR: features
+PAGE_OBJECTS_DIR: page-objects
+STEPS_DIR: steps

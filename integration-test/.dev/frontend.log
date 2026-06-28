@@ -1,0 +1,71 @@
+
+> gomoku-frontend@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.15
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1056ms
+ ✓ Compiled / in 399ms (1011 modules)
+(node:21988) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET / 200 in 464ms
+ ✓ Compiled /lobby in 57ms (1017 modules)
+ GET /lobby 200 in 75ms
+ ✓ Compiled /user in 74ms (1023 modules)
+ GET /user 200 in 92ms
+ GET / 200 in 21ms
+(node:21988) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+ ⚠ ./node_modules/debug/src/node.js
+Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
+
+Import trace for requested module:
+./node_modules/debug/src/node.js
+./node_modules/debug/src/index.js
+./node_modules/sockjs-client/lib/main.js
+./node_modules/sockjs-client/lib/entry.js
+./src/lib/stomp/client.ts
+./src/app/game/[gameId]/page.tsx
+ ○ Compiling /game/[gameId] ...
+ ⚠ ./node_modules/debug/src/node.js
+Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
+
+Import trace for requested module:
+./node_modules/debug/src/node.js
+./node_modules/debug/src/index.js
+./node_modules/sockjs-client/lib/main.js
+./node_modules/sockjs-client/lib/entry.js
+./src/lib/stomp/client.ts
+./src/app/game/[gameId]/page.tsx
+ ⚠ ./node_modules/debug/src/node.js
+Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
+
+Import trace for requested module:
+./node_modules/debug/src/node.js
+./node_modules/debug/src/index.js
+./node_modules/sockjs-client/lib/main.js
+./node_modules/sockjs-client/lib/entry.js
+./src/lib/stomp/client.ts
+./src/app/game/[gameId]/page.tsx
+ ⚠ ./node_modules/debug/src/node.js
+Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
+
+Import trace for requested module:
+./node_modules/debug/src/node.js
+./node_modules/debug/src/index.js
+./node_modules/sockjs-client/lib/main.js
+./node_modules/sockjs-client/lib/entry.js
+./src/lib/stomp/client.ts
+./src/app/game/[gameId]/page.tsx
+ ⚠ ./node_modules/debug/src/node.js
+Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
+
+Import trace for requested module:
+./node_modules/debug/src/node.js
+./node_modules/debug/src/index.js
+./node_modules/sockjs-client/lib/main.js
+./node_modules/sockjs-client/lib/entry.js
+./src/lib/stomp/client.ts
+./src/app/opening/[gameId]/page.tsx
+ GET / 200 in 55ms

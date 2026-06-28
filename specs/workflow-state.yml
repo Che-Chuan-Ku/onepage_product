@@ -1,23 +1,27 @@
 # ── AIBDD Workflow State v2.0 ─────────────────────
 # 由 /aiworkflow (Hub) 的專用工具管理
 # 模組不得直接修改此檔案
-# 所有寫入透過 tools/update-workflow-state 執行
+# 所有寫入透過 tools/update-workflow-state.sh 執行
 
 version: "3.0"
-project_root: "D:/my/onepage_test"
-created_at: "2026-04-14"
-updated_at: "2026-04-16"
+project_root: "/Users/chechuanku/Documents/aiproject/gomoku"
+created_at: "2026-05-24T03:40:48Z"
+updated_at: "2026-06-23T06:14:39Z"
 
 # ── 模組 DAG（所有模組一視同仁）────────────────────
 # 階段管理由人透過 Git PR/MR 控制，Hub 不追蹤階段狀態
 modules:
   demand_analysis:
-    status: "completed"          # pending / in_progress / partial / completed / error
-    audit: "passed"              # pending / in_progress / passed / failed
+    status: "completed"
+    audit: "passed"
     depends_on: []
-    options: {mode: "CHANGE", knowledge_base: "document/需求明細表_0418.csv"}
+    options: {"knowledge_base": "documents/"}
     input:  ["document/"]
     output: ["specs/"]
+    token_usage_total:           # 模組累計 token（含審核），由工具自動累加
+      input_tokens: 180600
+      output_tokens: 36520
+      total_tokens: 217120
 
   uiux_design:
     status: "completed"
@@ -26,42 +30,63 @@ modules:
     options: {}
     input:  ["specs/activities/", "specs/ui/", "specs/actors/"]
     output: ["prototype/"]
+    token_usage_total:
+      input_tokens: 126200
+      output_tokens: 17871
+      total_tokens: 144071
 
   document_generate_sa:
-    status: "pending"
-    audit: "pending"
+    status: "completed"
+    audit: "passed"
     depends_on: ["demand_analysis"]
-    options: {}                  # Hub 問人選文件種類
+    options: {"doc_type":"SA/SD 系統分析暨設計書","skill":"aibdd-doc-plan","output":"specs/document/sa-sd/系統分析暨設計書.docx"}
     input:  []                   # 依文件種類決定
     output: ["specs/document/"]
+    token_usage_total:
+      input_tokens: 191000
+      output_tokens: 86000
+      total_tokens: 277000
 
   backend_development:
-    status: "in_progress"
-    audit: "pending"
+    status: "completed"
+    audit: "passed"
     depends_on: ["demand_analysis"]
-    options: {stack: "java", framework: "Spring Boot 3.2 + JPA + Cucumber 7.15 + Testcontainers", database: "PostgreSQL"}
-    input:  ["specs/features/", "specs/api.yml", "specs/erm.dbml"]
+    options: {"language":"Java 21","framework":"Spring Boot 3.2 + Security(JWT) + JPA + WebSocket(STOMP) + Flyway; PostgreSQL + Redis; Cucumber 7.15 + Testcontainers (e2e)"}
+    input:  []                   # 依技術棧決定
     output: ["backend/"]
+    token_usage_total:
+      input_tokens: 140800
+      output_tokens: 25120
+      total_tokens: 165920
 
   frontend_development:
     status: "completed"
-    audit: "in_progress"
+    audit: "passed"
     depends_on: ["uiux_design"]
-    options: {framework: "Next.js 14 + React 18 + MSW 2.x + Playwright"}
+    options: {"framework":"Next.js 14 (App Router) + TypeScript + Tailwind"}
     input:  ["specs/", "prototype/"]
     output: ["frontend/"]
+    token_usage_total:
+      input_tokens: 153000
+      output_tokens: 45200
+      total_tokens: 198200
 
   integration_test:
-    status: "in_progress"
+    status: "completed"
     audit: "pending"
     depends_on: ["frontend_development", "backend_development"]
-    options: {method: "全端 E2E", driver: "Playwright + Testcontainers"}
+    options: {"method":"staged full-stack E2E","auto_fix":true,"stages":"backend compile -> cucumber e2e -> compose full stack -> playwright real API"}
     input:  ["specs/", "frontend/", "backend/"]
     output: []                   # 測試腳本 + pass/fail，可觸發 document_generate
+    token_usage_total:
+      input_tokens: 850000
+      output_tokens: 75000
+      total_tokens: 925000
 
 # ── 當前 interrupt（Hub 工具寫入）─────────────────
 # 模組回傳 interrupt 後，Hub 工具將內容寫在此段
-# 人回應後由 Hub 工具清除或更新
+# 人回應後由 Hub 工具寫入 user_response，啟動新 Sub-agent 時帶入
+# 新 Sub-agent 啟動後由 Hub 工具清除此段
 interrupt:
   active: false
   module: ""

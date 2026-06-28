@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — 登入 / 註冊</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page page-narrow">
+  <div class="card pad-lg">
+    <div class="tabs" role="tablist">
+      <div class="tab active" role="tab" data-t="login" onclick="tab('login')">登入</div>
+      <div class="tab" role="tab" data-t="register" onclick="tab('register')">註冊</div>
+      <div class="tab" role="tab" data-t="guest" onclick="tab('guest')">訪客</div>
+    </div>
+
+    <!-- Login -->
+    <form id="login" class="pane" onsubmit="return doLogin(event)">
+      <div class="field"><label for="lu">帳號 Username</label><input class="input" id="lu" autocomplete="username" required></div>
+      <div class="field"><label for="lp">密碼</label><input class="input" id="lp" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primary btn-block">登入</button>
+    </form>
+
+    <!-- Register -->
+    <form id="register" class="pane" hidden onsubmit="return doReg(event)">
+      <div class="field"><label for="ru">帳號 Username</label><input class="input" id="ru" autocomplete="username" required></div>
+      <div class="field"><label for="re">Email</label><input class="input" id="re" type="email" autocomplete="email" required aria-describedby="reErr"></div>
+      <div class="field"><label for="rp">密碼</label><input class="input" id="rp" type="password" autocomplete="new-password" required></div>
+      <button class="btn btn-primary btn-block">建立帳號</button>
+    </form>
+
+    <!-- Guest -->
+    <form id="guest" class="pane" hidden onsubmit="return doGuest(event)">
+      <p class="dim" style="margin-bottom:14px">輸入暱稱，立即開玩。線上模式僅限單場，戰績不保存。</p>
+      <div class="field"><label for="gn">暱稱</label><input class="input" id="gn" placeholder="例如：快手小王" autocomplete="nickname"></div>
+      <button class="btn btn-primary btn-block">以訪客進入</button>
+    </form>
+  </div>
+  <p class="dim center mt-16" style="font-size:13px"><a href="../home/index.html">← 回首頁</a></p>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script>
+document.getElementById('hdr').innerHTML=renderHeader({identity:'none'});
+function tab(t){
+  $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.t===t));
+  $$('.pane').forEach(p=>p.hidden=p.id!==t);
+}
+if(location.hash==='#guest')tab('guest');
+
+function doLogin(e){e.preventDefault();
+  if(!$('#lu').value||!$('#lp').value){toast('帳號或密碼錯誤','error');return false;}
+  toast('歡迎回來，'+$('#lu').value+'！','success');
+  setTimeout(()=>location.href='../home/index.html',700);return false;}
+
+function doReg(e){e.preventDefault();
+  const email=$('#re').value;
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){toast('Email 格式不正確','error');$('#re').focus();return false;}
+  if($('#ru').value.toLowerCase()==='admin'){toast('此帳號或 Email 已被使用','error');return false;}
+  toast('註冊成功，已自動登入','success');
+  setTimeout(()=>location.href='../home/index.html',700);return false;}
+
+function doGuest(e){e.preventDefault();
+  if(!$('#gn').value.trim()){toast('請先輸入暱稱','error');return false;}
+  toast('以訪客身份進入','success');
+  setTimeout(()=>location.href='../home/index.html',600);return false;}
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+# demand_analysis 模組內部狀態（Hub 不碰）
+module: demand_analysis
+project_root: /Users/chechuanku/Documents/aiproject/gomoku
+mode: CHANGE                              # 既有 specs/ → Reconciler 增量更新
+last_run: "2026-05-24"
+
+discovery_steps:
+  step1_composition: completed
+  step2_flow_alignment: completed        # 三條主流程已組裝（無人確認步驟，採 CSV 為準）
+  step3_structural_read: completed        # greenfield，空集
+  step4_execution_plan: completed         # plans/gomoku/execution-plan.md
+  step5a_bfs: completed                   # Actor 行為矩陣（2 actors + 觀戰者角色）
+  step6a_clarify_asm: completed           # A1-A6 使用者確認接受預設（2026-05-24）
+  step5_lock: locked                      # Strategic Scope Lock 正式鎖定
+  step5b_dfs: completed                    # 路徑完整性掃描，GAP/BDY 已澄清
+  step6b_clarify_gap_bdy: completed       # Q1-Q6 已回覆並 Reconciler 傳導（2026-05-24）
+  step7_quality_gate: passed              # CiC(GAP)/CiC(BDY) 歸零；四視圖一致性掃描通過
+
+tactical_layer:
+  erm_dbml: completed
+  api_yml: completed
+  bdd_examples: completed                 # Rule 皆已確認，Examples 隨 feature 產出
+
+open_sticky_notes: 0                      # 全數歸零：6 GAP/BDY 已決策、6 ASM 已確認
+resolved_clarifications:                  # 2026-05-24 Reconciler 增量傳導
+  Q1_disconnect: "心跳2s / 斷線閾值6s / 30s寬限 / 雙方斷線判和 / 對局未開始斷線不判負"
+  Q2_leaderboard: "主鍵 wins DESC、次鍵 winRate DESC；門檻 wins+losses>=10"
+  Q3_password: "minLength 8 + 須含小寫字母與數字（pattern）"
+  Q4_guest_rematch: "不可直接再戰；重新輸入暱稱進新局 + 強烈建議註冊提示"
+  Q5_spectator: "room_member_role(PLAYER/SPECTATOR)；對戰席滿後加入成觀戰者(唯讀)"
+  Q6_quickmatch_timeout: "60s 逾時退出佇列 + 提示排隊過久請重新開始配對"
+  ASM_A1_A6: "全部確認接受預設"
+affected_artifacts:                       # 本輪 Reconciler 實際異動
+  erm: ["room_member_role enum", "room_members.role", "player_stats.draws + leaderboard index"]
+  features: ["連線管理與斷線判負", "查看戰績與排行榜", "註冊帳號", "訪客模式進入", "快速配對", "加入房間", "標記準備與聊天", "+4 ASM 註記轉確認"]
+  api: ["RegisterRequest password", "getLeaderboard order", "joinRoom 觀戰", "toggleReady 403", "quickMatch 逾時", "RoomMemberItem/RoomDetail/RoomList role", "PlayerStatsResponse draws"]
+  actors: ["訪客玩家(Q4/Q5)", "註冊玩家(Q2/Q5)"]
+  ui: ["房間頁", "棋盤對局頁", "排行榜頁", "大廳與房間列表", "對局結束畫面"]
+artifacts_summary:
+  activities: 3
+  actors: 2
+  features: 17
+  ui_pages: 11
+  erm: 1
+  api: 1
+  infrastructure: 1
+  arguments: 1
+
+next_action: >
+  全部 8 類規格已通過 Quality Gate（CiC 歸零、四視圖一致）。
+  等待 Hub 進入後續實作模組（Phase 05-08）或下一輪 CHANGE。
+rollback_count: 0

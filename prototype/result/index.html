@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — 對局結束</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<main class="page">
+  <div class="info-bar" style="margin-bottom:14px">
+    <h1 style="font-size:20px">對局結束畫面（連五高亮示意）</h1>
+    <span class="grow"></span>
+    <span class="dim">切換情境：</span>
+    <button class="btn btn-ghost" style="min-height:36px" onclick="scene('win')">勝利</button>
+    <button class="btn btn-ghost" style="min-height:36px" onclick="scene('draw')">和局</button>
+    <button class="btn btn-ghost" style="min-height:36px" onclick="scene('guest')">訪客線上</button>
+    <button class="btn btn-ghost" style="min-height:36px" onclick="scene('spec')">觀戰者</button>
+  </div>
+
+  <div class="board-wrap" id="bw" style="max-width:min(70vh,520px)"><canvas class="board" id="board"></canvas></div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script src="../assets/board.js"></script>
+<script>
+const board=new GomokuBoard(document.getElementById('board'),{interactive:false});
+// preload a board with a winning line highlighted
+const stones=[
+  {r:7,c:4,color:'black'},{r:7,c:5,color:'black'},{r:7,c:6,color:'black'},{r:7,c:7,color:'black'},{r:7,c:8,color:'black'},
+  {r:6,c:5,color:'white'},{r:8,c:6,color:'white'},{r:6,c:7,color:'white'},{r:9,c:8,color:'white'}
+];
+const winLine=[[7,4],[7,5],[7,6],[7,7],[7,8]];
+board.set(stones,{highlight:winLine,last:[7,8]});
+
+let ov;
+function scene(kind){
+  ov?.remove();
+  let body;
+  if(kind==='win'){
+    body=`<div class="result-banner">阿哲 獲勝！</div>
+      <div class="win-stat"><div><div class="dim" style="font-size:12px">落子數</div><b class="num">9</b></div>
+        <div><div class="dim" style="font-size:12px">耗時</div><b class="num">04:12</b></div></div>
+      <div class="col gap-8 mt-16">
+        <button class="btn btn-primary btn-block" onclick="toast('發起 rematch…','success')">再戰</button>
+        <a class="btn btn-ghost btn-block" href="../home/index.html">回首頁</a></div>`;
+  } else if(kind==='draw'){
+    body=`<div class="result-banner">和局</div>
+      <p class="dim" style="text-align:center;margin-top:6px">（含雙方同時斷線判和）</p>
+      <div class="win-stat"><div><div class="dim" style="font-size:12px">落子數</div><b class="num">112</b></div>
+        <div><div class="dim" style="font-size:12px">耗時</div><b class="num">18:30</b></div></div>
+      <div class="col gap-8 mt-16">
+        <button class="btn btn-primary btn-block" onclick="toast('再戰','success')">再戰</button>
+        <a class="btn btn-ghost btn-block" href="../home/index.html">回首頁</a></div>`;
+  } else if(kind==='guest'){
+    body=`<div class="result-banner">對手 獲勝</div>
+      <div class="win-stat"><div><div class="dim" style="font-size:12px">落子數</div><b class="num">21</b></div>
+        <div><div class="dim" style="font-size:12px">耗時</div><b class="num">06:48</b></div></div>
+      <div class="col gap-8 mt-16">
+        <a class="btn btn-primary btn-block" href="../user/index.html#guest">重新輸入暱稱進新局</a>
+        <div class="card pad" style="background:#3a3018;border-color:#5a4a1e">
+          <p style="font-size:13px">💡 想保存戰績、登上排行榜？<b>強烈建議註冊一個帳號</b></p>
+          <a class="btn btn-accent btn-block mt-8" href="../user/index.html">立即註冊</a></div>
+        <a class="btn btn-ghost btn-block" href="../home/index.html">回首頁</a></div>`;
+  } else { // spectator
+    body=`<div class="result-banner">阿哲 獲勝！</div>
+      <div class="win-stat"><div><div class="dim" style="font-size:12px">落子數</div><b class="num">9</b></div>
+        <div><div class="dim" style="font-size:12px">耗時</div><b class="num">04:12</b></div></div>
+      <p class="dim mt-16" style="text-align:center">觀戰者僅顯示結果，無再戰／重新進局操作</p>
+      <a class="btn btn-ghost btn-block mt-8" href="../home/index.html">離開觀戰</a>`;
+  }
+  ov=showModal(body); ov.dataset.dismiss='0';
+}
+scene('win');
+</script>
+</body>
+</html>

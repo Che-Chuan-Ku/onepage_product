@@ -1,30 +1,24 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig, devices } from "@playwright/test";
 
+/**
+ * E2E config — runs against the dev server with MSW enabled (backend not yet
+ * online). Scenarios derived from specs/activities/*.mmd + specs/ui.
+ */
 export default defineConfig({
-  testDir: './steps',
-  timeout: 30000,
-  expect: {
-    timeout: 5000,
-  },
+  testDir: "./e2e",
+  timeout: 30_000,
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  reporter: 'html',
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'on-first-retry',
+    baseURL: "http://localhost:3000",
+    trace: "on-first-retry",
   },
   projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
+    command: "npm run dev",
+    url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    timeout: 60_000,
   },
-})
+});

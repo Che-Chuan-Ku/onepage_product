@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — 戰績與排行榜</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page">
+  <div class="layout">
+    <section>
+      <h1 style="font-size:24px;margin-bottom:16px">排行榜</h1>
+      <div class="card pad">
+        <table class="tbl">
+          <thead><tr><th>名次</th><th>暱稱</th><th>勝場</th><th>勝率</th></tr></thead>
+          <tbody id="lb"></tbody>
+        </table>
+        <p class="dim mt-16" style="font-size:13px">排序：勝場數 ↓，勝率 ↓（並列）。上榜門檻：累計 10 場對局。</p>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="card pad">
+        <h3 style="margin-bottom:14px">我的戰績</h3>
+        <div class="win-stat" style="margin:0 0 8px">
+          <div><div class="dim" style="font-size:12px">勝場</div><b class="num">28</b></div>
+          <div><div class="dim" style="font-size:12px">敗場</div><b class="num">14</b></div>
+          <div><div class="dim" style="font-size:12px">勝率</div><b class="num">66.7%</b></div>
+        </div>
+        <h4 class="dim mt-16" style="font-size:13px">最近對戰</h4>
+        <div class="col gap-8 mt-8" id="recent"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script>
+document.getElementById('hdr').innerHTML=renderHeader({identity:'registered',nickname:'KuPlayer'});
+const board=[
+  {rank:1,name:'棋聖阿哲',win:152,rate:'81.3%'},
+  {rank:2,name:'小美',win:140,rate:'76.0%'},
+  {rank:3,name:'老張',win:120,rate:'70.2%'},
+  {rank:4,name:'快手小王',win:95,rate:'64.0%'},
+  {rank:5,name:'KuPlayer（你）',win:28,rate:'66.7%'},
+];
+document.getElementById('lb').innerHTML=board.map(r=>`
+  <tr><td class="num rank-${r.rank<=3?r.rank:''}">${r.rank<=3?['','🥇','🥈','🥉'][r.rank]:r.rank}</td>
+  <td>${r.name}</td><td class="num">${r.win}</td><td class="num">${r.rate}</td></tr>`).join('');
+
+const recent=[
+  {res:'勝',opp:'小美',swap2:true,gid:'g1'},
+  {res:'負',opp:'老張',swap2:false,gid:'g2'},
+  {res:'勝',opp:'路人甲',swap2:false,gid:'g3'},
+];
+document.getElementById('recent').innerHTML=recent.map(m=>`
+  <a class="card pad row gap-8" style="cursor:pointer;text-decoration:none" href="../replay/index.html?gid=${m.gid}">
+    <span class="badge ${m.res==='勝'?'badge-ready':'badge-wait'}" style="${m.res==='負'?'background:#3a1f19;color:#ffd0c6':''}">${m.res}</span>
+    <span>vs ${m.opp}</span>
+    ${m.swap2?'<span class="badge badge-swap2">Swap2</span>':''}
+    <span class="grow"></span><span class="dim" style="font-size:12px">看回放 →</span>
+  </a>`).join('');
+</script>
+</body>
+</html>

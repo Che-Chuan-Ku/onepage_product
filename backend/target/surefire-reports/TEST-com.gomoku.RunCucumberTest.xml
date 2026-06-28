@@ -1,0 +1,1042 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.gomoku.RunCucumberTest" time="17.247" tests="64" errors="0" skipped="0" failures="0">
+  <properties>
+    <property name="java.specification.version" value="21"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.class.path" value="/app/target/test-classes:/app/target/classes:/root/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.2.0/spring-boot-starter-web-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter/3.2.0/spring-boot-starter-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot/3.2.0/spring-boot-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.2.0/spring-boot-autoconfigure-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.2.0/spring-boot-starter-logging-3.2.0.jar:/root/.m2/repository/ch/qos/logback/logback-classic/1.4.11/logback-classic-1.4.11.jar:/root/.m2/repository/ch/qos/logback/logback-core/1.4.11/logback-core-1.4.11.jar:/root/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.21.1/log4j-to-slf4j-2.21.1.jar:/root/.m2/repository/org/apache/logging/log4j/log4j-api/2.21.1/log4j-api-2.21.1.jar:/root/.m2/repository/org/slf4j/jul-to-slf4j/2.0.9/jul-to-slf4j-2.0.9.jar:/root/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar:/root/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.2.0/spring-boot-starter-json-3.2.0.jar:/root/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.15.3/jackson-datatype-jdk8-2.15.3.jar:/root/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.3/jackson-datatype-jsr310-2.15.3.jar:/root/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.15.3/jackson-module-parameter-names-2.15.3.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.2.0/spring-boot-starter-tomcat-3.2.0.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.16/tomcat-embed-core-10.1.16.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.16/tomcat-embed-websocket-10.1.16.jar:/root/.m2/repository/org/springframework/spring-web/6.1.1/spring-web-6.1.1.jar:/root/.m2/repository/org/springframework/spring-beans/6.1.1/spring-beans-6.1.1.jar:/root/.m2/repository/io/micrometer/micrometer-observation/1.12.0/micrometer-observation-1.12.0.jar:/root/.m2/repository/io/micrometer/micrometer-commons/1.12.0/micrometer-commons-1.12.0.jar:/root/.m2/repository/org/springframework/spring-webmvc/6.1.1/spring-webmvc-6.1.1.jar:/root/.m2/repository/org/springframework/spring-context/6.1.1/spring-context-6.1.1.jar:/root/.m2/repository/org/springframework/spring-expression/6.1.1/spring-expression-6.1.1.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-data-jpa/3.2.0/spring-boot-starter-data-jpa-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-aop/3.2.0/spring-boot-starter-aop-3.2.0.jar:/root/.m2/repository/org/aspectj/aspectjweaver/1.9.20.1/aspectjweaver-1.9.20.1.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.2.0/spring-boot-starter-jdbc-3.2.0.jar:/root/.m2/repository/com/zaxxer/HikariCP/5.0.1/HikariCP-5.0.1.jar:/root/.m2/repository/org/springframework/spring-jdbc/6.1.1/spring-jdbc-6.1.1.jar:/root/.m2/repository/org/hibernate/orm/hibernate-core/6.3.1.Final/hibernate-core-6.3.1.Final.jar:/root/.m2/repository/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.jar:/root/.m2/repository/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar:/root/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar:/root/.m2/repository/org/hibernate/common/hibernate-commons-annotations/6.0.6.Final/hibernate-commons-annotations-6.0.6.Final.jar:/root/.m2/repository/io/smallrye/jandex/3.1.2/jandex-3.1.2.jar:/root/.m2/repository/com/fasterxml/classmate/1.6.0/classmate-1.6.0.jar:/root/.m2/repository/net/bytebuddy/byte-buddy/1.14.10/byte-buddy-1.14.10.jar:/root/.m2/repository/org/glassfish/jaxb/jaxb-runtime/4.0.4/jaxb-runtime-4.0.4.jar:/root/.m2/repository/org/glassfish/jaxb/jaxb-core/4.0.4/jaxb-core-4.0.4.jar:/root/.m2/repository/org/eclipse/angus/angus-activation/2.0.1/angus-activation-2.0.1.jar:/root/.m2/repository/org/glassfish/jaxb/txw2/4.0.4/txw2-4.0.4.jar:/root/.m2/repository/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar:/root/.m2/repository/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar:/root/.m2/repository/org/antlr/antlr4-runtime/4.10.1/antlr4-runtime-4.10.1.jar:/root/.m2/repository/org/springframework/data/spring-data-jpa/3.2.0/spring-data-jpa-3.2.0.jar:/root/.m2/repository/org/springframework/data/spring-data-commons/3.2.0/spring-data-commons-3.2.0.jar:/root/.m2/repository/org/springframework/spring-orm/6.1.1/spring-orm-6.1.1.jar:/root/.m2/repository/org/springframework/spring-tx/6.1.1/spring-tx-6.1.1.jar:/root/.m2/repository/org/springframework/spring-aspects/6.1.1/spring-aspects-6.1.1.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.2.0/spring-boot-starter-validation-3.2.0.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.16/tomcat-embed-el-10.1.16.jar:/root/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar:/root/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-security/3.2.0/spring-boot-starter-security-3.2.0.jar:/root/.m2/repository/org/springframework/spring-aop/6.1.1/spring-aop-6.1.1.jar:/root/.m2/repository/org/springframework/security/spring-security-config/6.2.0/spring-security-config-6.2.0.jar:/root/.m2/repository/org/springframework/security/spring-security-core/6.2.0/spring-security-core-6.2.0.jar:/root/.m2/repository/org/springframework/security/spring-security-crypto/6.2.0/spring-security-crypto-6.2.0.jar:/root/.m2/repository/org/springframework/security/spring-security-web/6.2.0/spring-security-web-6.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/3.2.0/spring-boot-starter-websocket-3.2.0.jar:/root/.m2/repository/org/springframework/spring-messaging/6.1.1/spring-messaging-6.1.1.jar:/root/.m2/repository/org/springframework/spring-websocket/6.1.1/spring-websocket-6.1.1.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-data-redis/3.2.0/spring-boot-starter-data-redis-3.2.0.jar:/root/.m2/repository/io/lettuce/lettuce-core/6.3.0.RELEASE/lettuce-core-6.3.0.RELEASE.jar:/root/.m2/repository/io/netty/netty-common/4.1.101.Final/netty-common-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-handler/4.1.101.Final/netty-handler-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-resolver/4.1.101.Final/netty-resolver-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-buffer/4.1.101.Final/netty-buffer-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-transport-native-unix-common/4.1.101.Final/netty-transport-native-unix-common-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-codec/4.1.101.Final/netty-codec-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-transport/4.1.101.Final/netty-transport-4.1.101.Final.jar:/root/.m2/repository/io/projectreactor/reactor-core/3.6.0/reactor-core-3.6.0.jar:/root/.m2/repository/org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar:/root/.m2/repository/org/springframework/data/spring-data-redis/3.2.0/spring-data-redis-3.2.0.jar:/root/.m2/repository/org/springframework/data/spring-data-keyvalue/3.2.0/spring-data-keyvalue-3.2.0.jar:/root/.m2/repository/org/springframework/spring-oxm/6.1.1/spring-oxm-6.1.1.jar:/root/.m2/repository/org/springframework/spring-context-support/6.1.1/spring-context-support-6.1.1.jar:/root/.m2/repository/org/postgresql/postgresql/42.6.0/postgresql-42.6.0.jar:/root/.m2/repository/org/checkerframework/checker-qual/3.31.0/checker-qual-3.31.0.jar:/root/.m2/repository/org/flywaydb/flyway-core/9.22.3/flyway-core-9.22.3.jar:/root/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-toml/2.15.3/jackson-dataformat-toml-2.15.3.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.15.3/jackson-core-2.15.3.jar:/root/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar:/root/.m2/repository/io/jsonwebtoken/jjwt-api/0.12.3/jjwt-api-0.12.3.jar:/root/.m2/repository/io/jsonwebtoken/jjwt-impl/0.12.3/jjwt-impl-0.12.3.jar:/root/.m2/repository/io/jsonwebtoken/jjwt-jackson/0.12.3/jjwt-jackson-0.12.3.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.15.3/jackson-databind-2.15.3.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.15.3/jackson-annotations-2.15.3.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.2.0/spring-boot-starter-test-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-test/3.2.0/spring-boot-test-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.2.0/spring-boot-test-autoconfigure-3.2.0.jar:/root/.m2/repository/com/jayway/jsonpath/json-path/2.8.0/json-path-2.8.0.jar:/root/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.1/jakarta.xml.bind-api-4.0.1.jar:/root/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.2/jakarta.activation-api-2.1.2.jar:/root/.m2/repository/net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar:/root/.m2/repository/net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar:/root/.m2/repository/org/ow2/asm/asm/9.3/asm-9.3.jar:/root/.m2/repository/org/assertj/assertj-core/3.24.2/assertj-core-3.24.2.jar:/root/.m2/repository/org/awaitility/awaitility/4.2.0/awaitility-4.2.0.jar:/root/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.1/junit-jupiter-5.10.1.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.1/junit-jupiter-params-5.10.1.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.1/junit-jupiter-engine-5.10.1.jar:/root/.m2/repository/org/mockito/mockito-core/5.7.0/mockito-core-5.7.0.jar:/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.10/byte-buddy-agent-1.14.10.jar:/root/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/root/.m2/repository/org/mockito/mockito-junit-jupiter/5.7.0/mockito-junit-jupiter-5.7.0.jar:/root/.m2/repository/org/skyscreamer/jsonassert/1.5.1/jsonassert-1.5.1.jar:/root/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar:/root/.m2/repository/org/springframework/spring-core/6.1.1/spring-core-6.1.1.jar:/root/.m2/repository/org/springframework/spring-jcl/6.1.1/spring-jcl-6.1.1.jar:/root/.m2/repository/org/springframework/spring-test/6.1.1/spring-test-6.1.1.jar:/root/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar:/root/.m2/repository/org/apache/httpcomponents/client5/httpclient5/5.2.1/httpclient5-5.2.1.jar:/root/.m2/repository/org/apache/httpcomponents/core5/httpcore5/5.2.3/httpcore5-5.2.3.jar:/root/.m2/repository/org/apache/httpcomponents/core5/httpcore5-h2/5.2.3/httpcore5-h2-5.2.3.jar:/root/.m2/repository/org/slf4j/slf4j-api/2.0.9/slf4j-api-2.0.9.jar:/root/.m2/repository/io/cucumber/cucumber-java/7.15.0/cucumber-java-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-core/7.15.0/cucumber-core-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-gherkin/7.15.0/cucumber-gherkin-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-gherkin-messages/7.15.0/cucumber-gherkin-messages-7.15.0.jar:/root/.m2/repository/io/cucumber/gherkin/26.2.0/gherkin-26.2.0.jar:/root/.m2/repository/io/cucumber/messages/22.0.0/messages-22.0.0.jar:/root/.m2/repository/io/cucumber/tag-expressions/6.0.0/tag-expressions-6.0.0.jar:/root/.m2/repository/io/cucumber/cucumber-expressions/17.0.1/cucumber-expressions-17.0.1.jar:/root/.m2/repository/io/cucumber/datatable/7.15.0/datatable-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-plugin/7.15.0/cucumber-plugin-7.15.0.jar:/root/.m2/repository/io/cucumber/docstring/7.15.0/docstring-7.15.0.jar:/root/.m2/repository/io/cucumber/html-formatter/20.4.0/html-formatter-20.4.0.jar:/root/.m2/repository/io/cucumber/junit-xml-formatter/0.2.0/junit-xml-formatter-0.2.0.jar:/root/.m2/repository/io/cucumber/ci-environment/10.0.0/ci-environment-10.0.0.jar:/root/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/root/.m2/repository/io/cucumber/cucumber-spring/7.15.0/cucumber-spring-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-junit-platform-engine/7.15.0/cucumber-junit-platform-engine-7.15.0.jar:/root/.m2/repository/org/junit/platform/junit-platform-engine/1.10.1/junit-platform-engine-1.10.1.jar:/root/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/root/.m2/repository/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-suite/1.10.1/junit-platform-suite-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-suite-api/1.10.1/junit-platform-suite-api-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-suite-engine/1.10.1/junit-platform-suite-engine-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-suite-commons/1.10.1/junit-platform-suite-commons-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-launcher/1.10.1/junit-platform-launcher-1.10.1.jar:/root/.m2/repository/org/testcontainers/testcontainers/1.19.3/testcontainers-1.19.3.jar:/root/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar:/root/.m2/repository/org/hamcrest/hamcrest-core/2.2/hamcrest-core-2.2.jar:/root/.m2/repository/org/apache/commons/commons-compress/1.24.0/commons-compress-1.24.0.jar:/root/.m2/repository/org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar:/root/.m2/repository/org/jetbrains/annotations/17.0.0/annotations-17.0.0.jar:/root/.m2/repository/com/github/docker-java/docker-java-api/3.3.4/docker-java-api-3.3.4.jar:/root/.m2/repository/com/github/docker-java/docker-java-transport-zerodep/3.3.4/docker-java-transport-zerodep-3.3.4.jar:/root/.m2/repository/com/github/docker-java/docker-java-transport/3.3.4/docker-java-transport-3.3.4.jar:/root/.m2/repository/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar:/root/.m2/repository/org/testcontainers/postgresql/1.19.3/postgresql-1.19.3.jar:/root/.m2/repository/org/testcontainers/jdbc/1.19.3/jdbc-1.19.3.jar:/root/.m2/repository/org/testcontainers/database-commons/1.19.3/database-commons-1.19.3.jar:/root/.m2/repository/org/testcontainers/junit-jupiter/1.19.3/junit-jupiter-1.19.3.jar:/root/.m2/repository/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar:"/>
+    <property name="java.vm.vendor" value="Eclipse Adoptium"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="catalina.useNaming" value="false"/>
+    <property name="java.vendor.url" value="https://adoptium.net/"/>
+    <property name="user.timezone" value="Etc/UTC"/>
+    <property name="org.jboss.logging.provider" value="slf4j"/>
+    <property name="os.name" value="Linux"/>
+    <property name="java.vm.specification.version" value="21"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.boot.library.path" value="/opt/java/openjdk/lib"/>
+    <property name="sun.java.command" value="/app/target/surefire/surefirebooter-20260615145803080_3.jar /app/target/surefire 2026-06-15T14-58-03_038-jvmRun1 surefire-20260615145803080_1tmp surefire_0-20260615145803080_2tmp"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="surefire.test.class.path" value="/app/target/test-classes:/app/target/classes:/root/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.2.0/spring-boot-starter-web-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter/3.2.0/spring-boot-starter-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot/3.2.0/spring-boot-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.2.0/spring-boot-autoconfigure-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.2.0/spring-boot-starter-logging-3.2.0.jar:/root/.m2/repository/ch/qos/logback/logback-classic/1.4.11/logback-classic-1.4.11.jar:/root/.m2/repository/ch/qos/logback/logback-core/1.4.11/logback-core-1.4.11.jar:/root/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.21.1/log4j-to-slf4j-2.21.1.jar:/root/.m2/repository/org/apache/logging/log4j/log4j-api/2.21.1/log4j-api-2.21.1.jar:/root/.m2/repository/org/slf4j/jul-to-slf4j/2.0.9/jul-to-slf4j-2.0.9.jar:/root/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar:/root/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.2.0/spring-boot-starter-json-3.2.0.jar:/root/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.15.3/jackson-datatype-jdk8-2.15.3.jar:/root/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.3/jackson-datatype-jsr310-2.15.3.jar:/root/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.15.3/jackson-module-parameter-names-2.15.3.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.2.0/spring-boot-starter-tomcat-3.2.0.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.16/tomcat-embed-core-10.1.16.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.16/tomcat-embed-websocket-10.1.16.jar:/root/.m2/repository/org/springframework/spring-web/6.1.1/spring-web-6.1.1.jar:/root/.m2/repository/org/springframework/spring-beans/6.1.1/spring-beans-6.1.1.jar:/root/.m2/repository/io/micrometer/micrometer-observation/1.12.0/micrometer-observation-1.12.0.jar:/root/.m2/repository/io/micrometer/micrometer-commons/1.12.0/micrometer-commons-1.12.0.jar:/root/.m2/repository/org/springframework/spring-webmvc/6.1.1/spring-webmvc-6.1.1.jar:/root/.m2/repository/org/springframework/spring-context/6.1.1/spring-context-6.1.1.jar:/root/.m2/repository/org/springframework/spring-expression/6.1.1/spring-expression-6.1.1.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-data-jpa/3.2.0/spring-boot-starter-data-jpa-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-aop/3.2.0/spring-boot-starter-aop-3.2.0.jar:/root/.m2/repository/org/aspectj/aspectjweaver/1.9.20.1/aspectjweaver-1.9.20.1.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.2.0/spring-boot-starter-jdbc-3.2.0.jar:/root/.m2/repository/com/zaxxer/HikariCP/5.0.1/HikariCP-5.0.1.jar:/root/.m2/repository/org/springframework/spring-jdbc/6.1.1/spring-jdbc-6.1.1.jar:/root/.m2/repository/org/hibernate/orm/hibernate-core/6.3.1.Final/hibernate-core-6.3.1.Final.jar:/root/.m2/repository/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.jar:/root/.m2/repository/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar:/root/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar:/root/.m2/repository/org/hibernate/common/hibernate-commons-annotations/6.0.6.Final/hibernate-commons-annotations-6.0.6.Final.jar:/root/.m2/repository/io/smallrye/jandex/3.1.2/jandex-3.1.2.jar:/root/.m2/repository/com/fasterxml/classmate/1.6.0/classmate-1.6.0.jar:/root/.m2/repository/net/bytebuddy/byte-buddy/1.14.10/byte-buddy-1.14.10.jar:/root/.m2/repository/org/glassfish/jaxb/jaxb-runtime/4.0.4/jaxb-runtime-4.0.4.jar:/root/.m2/repository/org/glassfish/jaxb/jaxb-core/4.0.4/jaxb-core-4.0.4.jar:/root/.m2/repository/org/eclipse/angus/angus-activation/2.0.1/angus-activation-2.0.1.jar:/root/.m2/repository/org/glassfish/jaxb/txw2/4.0.4/txw2-4.0.4.jar:/root/.m2/repository/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar:/root/.m2/repository/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar:/root/.m2/repository/org/antlr/antlr4-runtime/4.10.1/antlr4-runtime-4.10.1.jar:/root/.m2/repository/org/springframework/data/spring-data-jpa/3.2.0/spring-data-jpa-3.2.0.jar:/root/.m2/repository/org/springframework/data/spring-data-commons/3.2.0/spring-data-commons-3.2.0.jar:/root/.m2/repository/org/springframework/spring-orm/6.1.1/spring-orm-6.1.1.jar:/root/.m2/repository/org/springframework/spring-tx/6.1.1/spring-tx-6.1.1.jar:/root/.m2/repository/org/springframework/spring-aspects/6.1.1/spring-aspects-6.1.1.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.2.0/spring-boot-starter-validation-3.2.0.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.16/tomcat-embed-el-10.1.16.jar:/root/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar:/root/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-security/3.2.0/spring-boot-starter-security-3.2.0.jar:/root/.m2/repository/org/springframework/spring-aop/6.1.1/spring-aop-6.1.1.jar:/root/.m2/repository/org/springframework/security/spring-security-config/6.2.0/spring-security-config-6.2.0.jar:/root/.m2/repository/org/springframework/security/spring-security-core/6.2.0/spring-security-core-6.2.0.jar:/root/.m2/repository/org/springframework/security/spring-security-crypto/6.2.0/spring-security-crypto-6.2.0.jar:/root/.m2/repository/org/springframework/security/spring-security-web/6.2.0/spring-security-web-6.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/3.2.0/spring-boot-starter-websocket-3.2.0.jar:/root/.m2/repository/org/springframework/spring-messaging/6.1.1/spring-messaging-6.1.1.jar:/root/.m2/repository/org/springframework/spring-websocket/6.1.1/spring-websocket-6.1.1.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-data-redis/3.2.0/spring-boot-starter-data-redis-3.2.0.jar:/root/.m2/repository/io/lettuce/lettuce-core/6.3.0.RELEASE/lettuce-core-6.3.0.RELEASE.jar:/root/.m2/repository/io/netty/netty-common/4.1.101.Final/netty-common-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-handler/4.1.101.Final/netty-handler-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-resolver/4.1.101.Final/netty-resolver-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-buffer/4.1.101.Final/netty-buffer-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-transport-native-unix-common/4.1.101.Final/netty-transport-native-unix-common-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-codec/4.1.101.Final/netty-codec-4.1.101.Final.jar:/root/.m2/repository/io/netty/netty-transport/4.1.101.Final/netty-transport-4.1.101.Final.jar:/root/.m2/repository/io/projectreactor/reactor-core/3.6.0/reactor-core-3.6.0.jar:/root/.m2/repository/org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar:/root/.m2/repository/org/springframework/data/spring-data-redis/3.2.0/spring-data-redis-3.2.0.jar:/root/.m2/repository/org/springframework/data/spring-data-keyvalue/3.2.0/spring-data-keyvalue-3.2.0.jar:/root/.m2/repository/org/springframework/spring-oxm/6.1.1/spring-oxm-6.1.1.jar:/root/.m2/repository/org/springframework/spring-context-support/6.1.1/spring-context-support-6.1.1.jar:/root/.m2/repository/org/postgresql/postgresql/42.6.0/postgresql-42.6.0.jar:/root/.m2/repository/org/checkerframework/checker-qual/3.31.0/checker-qual-3.31.0.jar:/root/.m2/repository/org/flywaydb/flyway-core/9.22.3/flyway-core-9.22.3.jar:/root/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-toml/2.15.3/jackson-dataformat-toml-2.15.3.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.15.3/jackson-core-2.15.3.jar:/root/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar:/root/.m2/repository/io/jsonwebtoken/jjwt-api/0.12.3/jjwt-api-0.12.3.jar:/root/.m2/repository/io/jsonwebtoken/jjwt-impl/0.12.3/jjwt-impl-0.12.3.jar:/root/.m2/repository/io/jsonwebtoken/jjwt-jackson/0.12.3/jjwt-jackson-0.12.3.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.15.3/jackson-databind-2.15.3.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.15.3/jackson-annotations-2.15.3.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.2.0/spring-boot-starter-test-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-test/3.2.0/spring-boot-test-3.2.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.2.0/spring-boot-test-autoconfigure-3.2.0.jar:/root/.m2/repository/com/jayway/jsonpath/json-path/2.8.0/json-path-2.8.0.jar:/root/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.1/jakarta.xml.bind-api-4.0.1.jar:/root/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.2/jakarta.activation-api-2.1.2.jar:/root/.m2/repository/net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar:/root/.m2/repository/net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar:/root/.m2/repository/org/ow2/asm/asm/9.3/asm-9.3.jar:/root/.m2/repository/org/assertj/assertj-core/3.24.2/assertj-core-3.24.2.jar:/root/.m2/repository/org/awaitility/awaitility/4.2.0/awaitility-4.2.0.jar:/root/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.1/junit-jupiter-5.10.1.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.1/junit-jupiter-params-5.10.1.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.1/junit-jupiter-engine-5.10.1.jar:/root/.m2/repository/org/mockito/mockito-core/5.7.0/mockito-core-5.7.0.jar:/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.10/byte-buddy-agent-1.14.10.jar:/root/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/root/.m2/repository/org/mockito/mockito-junit-jupiter/5.7.0/mockito-junit-jupiter-5.7.0.jar:/root/.m2/repository/org/skyscreamer/jsonassert/1.5.1/jsonassert-1.5.1.jar:/root/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar:/root/.m2/repository/org/springframework/spring-core/6.1.1/spring-core-6.1.1.jar:/root/.m2/repository/org/springframework/spring-jcl/6.1.1/spring-jcl-6.1.1.jar:/root/.m2/repository/org/springframework/spring-test/6.1.1/spring-test-6.1.1.jar:/root/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar:/root/.m2/repository/org/apache/httpcomponents/client5/httpclient5/5.2.1/httpclient5-5.2.1.jar:/root/.m2/repository/org/apache/httpcomponents/core5/httpcore5/5.2.3/httpcore5-5.2.3.jar:/root/.m2/repository/org/apache/httpcomponents/core5/httpcore5-h2/5.2.3/httpcore5-h2-5.2.3.jar:/root/.m2/repository/org/slf4j/slf4j-api/2.0.9/slf4j-api-2.0.9.jar:/root/.m2/repository/io/cucumber/cucumber-java/7.15.0/cucumber-java-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-core/7.15.0/cucumber-core-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-gherkin/7.15.0/cucumber-gherkin-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-gherkin-messages/7.15.0/cucumber-gherkin-messages-7.15.0.jar:/root/.m2/repository/io/cucumber/gherkin/26.2.0/gherkin-26.2.0.jar:/root/.m2/repository/io/cucumber/messages/22.0.0/messages-22.0.0.jar:/root/.m2/repository/io/cucumber/tag-expressions/6.0.0/tag-expressions-6.0.0.jar:/root/.m2/repository/io/cucumber/cucumber-expressions/17.0.1/cucumber-expressions-17.0.1.jar:/root/.m2/repository/io/cucumber/datatable/7.15.0/datatable-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-plugin/7.15.0/cucumber-plugin-7.15.0.jar:/root/.m2/repository/io/cucumber/docstring/7.15.0/docstring-7.15.0.jar:/root/.m2/repository/io/cucumber/html-formatter/20.4.0/html-formatter-20.4.0.jar:/root/.m2/repository/io/cucumber/junit-xml-formatter/0.2.0/junit-xml-formatter-0.2.0.jar:/root/.m2/repository/io/cucumber/ci-environment/10.0.0/ci-environment-10.0.0.jar:/root/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/root/.m2/repository/io/cucumber/cucumber-spring/7.15.0/cucumber-spring-7.15.0.jar:/root/.m2/repository/io/cucumber/cucumber-junit-platform-engine/7.15.0/cucumber-junit-platform-engine-7.15.0.jar:/root/.m2/repository/org/junit/platform/junit-platform-engine/1.10.1/junit-platform-engine-1.10.1.jar:/root/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/root/.m2/repository/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-suite/1.10.1/junit-platform-suite-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-suite-api/1.10.1/junit-platform-suite-api-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-suite-engine/1.10.1/junit-platform-suite-engine-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-suite-commons/1.10.1/junit-platform-suite-commons-1.10.1.jar:/root/.m2/repository/org/junit/platform/junit-platform-launcher/1.10.1/junit-platform-launcher-1.10.1.jar:/root/.m2/repository/org/testcontainers/testcontainers/1.19.3/testcontainers-1.19.3.jar:/root/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar:/root/.m2/repository/org/hamcrest/hamcrest-core/2.2/hamcrest-core-2.2.jar:/root/.m2/repository/org/apache/commons/commons-compress/1.24.0/commons-compress-1.24.0.jar:/root/.m2/repository/org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar:/root/.m2/repository/org/jetbrains/annotations/17.0.0/annotations-17.0.0.jar:/root/.m2/repository/com/github/docker-java/docker-java-api/3.3.4/docker-java-api-3.3.4.jar:/root/.m2/repository/com/github/docker-java/docker-java-transport-zerodep/3.3.4/docker-java-transport-zerodep-3.3.4.jar:/root/.m2/repository/com/github/docker-java/docker-java-transport/3.3.4/docker-java-transport-3.3.4.jar:/root/.m2/repository/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar:/root/.m2/repository/org/testcontainers/postgresql/1.19.3/postgresql-1.19.3.jar:/root/.m2/repository/org/testcontainers/jdbc/1.19.3/jdbc-1.19.3.jar:/root/.m2/repository/org/testcontainers/database-commons/1.19.3/database-commons-1.19.3.jar:/root/.m2/repository/org/testcontainers/junit-jupiter/1.19.3/junit-jupiter-1.19.3.jar:/root/.m2/repository/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar:"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="user.home" value="/root"/>
+    <property name="user.language" value="en"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.version.date" value="2026-04-21"/>
+    <property name="java.home" value="/opt/java/openjdk"/>
+    <property name="file.separator" value="/"/>
+    <property name="basedir" value="/app"/>
+    <property name="java.vm.compressedOopsMode" value="Zero based"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="FILE_LOG_CHARSET" value="UTF-8"/>
+    <property name="java.awt.headless" value="true"/>
+    <property name="surefire.real.class.path" value="/app/target/surefire/surefirebooter-20260615145803080_3.jar"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="java.runtime.version" value="21.0.11+10-LTS"/>
+    <property name="user.name" value="root"/>
+    <property name="stdout.encoding" value="UTF-8"/>
+    <property name="path.separator" value=":"/>
+    <property name="os.version" value="6.12.76-linuxkit"/>
+    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+    <property name="java.vendor.version" value="Temurin-21.0.11+10"/>
+    <property name="localRepository" value="/root/.m2/repository"/>
+    <property name="java.vendor.url.bug" value="https://github.com/adoptium/adoptium-support/issues"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="catalina.home" value="/tmp/tomcat.0.8058736852810039438"/>
+    <property name="com.zaxxer.hikari.pool_number" value="1"/>
+    <property name="java.version" value="21.0.11"/>
+    <property name="user.dir" value="/app"/>
+    <property name="os.arch" value="aarch64"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="PID" value="91"/>
+    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
+    <property name="catalina.base" value="/tmp/tomcat.0.8058736852810039438"/>
+    <property name="native.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="stderr.encoding" value="UTF-8"/>
+    <property name="java.vendor" value="Eclipse Adoptium"/>
+    <property name="java.vm.version" value="21.0.11+10-LTS"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="java.class.version" value="65.0"/>
+    <property name="LOGGED_APPLICATION_NAME" value="[gomoku] "/>
+  </properties>
+  <testcase name="連續 6 秒未收到心跳時判定玩家斷線" classname="後置（狀態）- 以 2 秒心跳偵測連線；連續 6 秒無心跳判定為斷線" time="4.724">
+    <system-out><![CDATA[14:58:03.949 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:58:04.003 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.0)
+
+2026-06-15T14:58:04.245Z  INFO 91 --- [gomoku] [           main] c.g.c.CucumberSpringConfiguration        : Starting CucumberSpringConfiguration using Java 21.0.11 with PID 91 (started by root in /app)
+2026-06-15T14:58:04.245Z  INFO 91 --- [gomoku] [           main] c.g.c.CucumberSpringConfiguration        : The following 1 profile is active: "test"
+2026-06-15T14:58:04.746Z  INFO 91 --- [gomoku] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-06-15T14:58:04.747Z  INFO 91 --- [gomoku] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-06-15T14:58:04.858Z  INFO 91 --- [gomoku] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 105 ms. Found 8 JPA repository interfaces.
+2026-06-15T14:58:04.874Z  INFO 91 --- [gomoku] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-06-15T14:58:04.875Z  INFO 91 --- [gomoku] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-06-15T14:58:04.885Z  INFO 91 --- [gomoku] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.gomoku.repository.GameRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-06-15T14:58:04.885Z  INFO 91 --- [gomoku] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.gomoku.repository.GameRoomRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-06-15T14:58:04.886Z  INFO 91 --- [gomoku] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.gomoku.repository.MoveRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-06-15T14:58:04.886Z  INFO 91 --- [gomoku] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.gomoku.repository.OpeningStoneRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-06-15T14:58:04.886Z  INFO 91 --- [gomoku] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.gomoku.repository.PlayerRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-06-15T14:58:04.886Z  INFO 91 --- [gomoku] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.gomoku.repository.PlayerStatsRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-06-15T14:58:04.886Z  INFO 91 --- [gomoku] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.gomoku.repository.RoomChatMessageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-06-15T14:58:04.886Z  INFO 91 --- [gomoku] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.gomoku.repository.RoomMemberRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-06-15T14:58:04.886Z  INFO 91 --- [gomoku] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 6 ms. Found 0 Redis repository interfaces.
+2026-06-15T14:58:05.147Z  INFO 91 --- [gomoku] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 0 (http)
+2026-06-15T14:58:05.153Z  INFO 91 --- [gomoku] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-15T14:58:05.153Z  INFO 91 --- [gomoku] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.16]
+2026-06-15T14:58:05.176Z  INFO 91 --- [gomoku] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-06-15T14:58:05.176Z  INFO 91 --- [gomoku] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 921 ms
+2026-06-15T14:58:05.233Z  INFO 91 --- [gomoku] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-15T14:58:05.322Z  INFO 91 --- [gomoku] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@79144d0e
+2026-06-15T14:58:05.323Z  INFO 91 --- [gomoku] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-06-15T14:58:05.360Z  INFO 91 --- [gomoku] [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-06-15T14:58:05.360Z  INFO 91 --- [gomoku] [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-06-15T14:58:05.360Z  INFO 91 --- [gomoku] [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-06-15T14:58:05.366Z  INFO 91 --- [gomoku] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://postgres:5432/gomoku_ctest (PostgreSQL 15.18)
+2026-06-15T14:58:05.382Z  INFO 91 --- [gomoku] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
+2026-06-15T14:58:05.383Z  INFO 91 --- [gomoku] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.008s)
+2026-06-15T14:58:05.390Z  INFO 91 --- [gomoku] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
+2026-06-15T14:58:05.412Z  INFO 91 --- [gomoku] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-06-15T14:58:05.421Z  INFO 91 --- [gomoku] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - init"
+2026-06-15T14:58:05.469Z  INFO 91 --- [gomoku] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "public", now at version v1 (execution time 00:00.042s)
+2026-06-15T14:58:05.540Z  INFO 91 --- [gomoku] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-06-15T14:58:05.575Z  INFO 91 --- [gomoku] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.3.1.Final
+2026-06-15T14:58:05.591Z  INFO 91 --- [gomoku] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-06-15T14:58:05.715Z  INFO 91 --- [gomoku] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-06-15T14:58:05.742Z  WARN 91 --- [gomoku] [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-06-15T14:58:06.291Z  INFO 91 --- [gomoku] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-06-15T14:58:06.311Z  INFO 91 --- [gomoku] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-06-15T14:58:06.469Z  INFO 91 --- [gomoku] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-06-15T14:58:06.957Z  WARN 91 --- [gomoku] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-06-15T14:58:06.969Z  WARN 91 --- [gomoku] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: c55c0f71-be11-4ec0-9337-183b51c5e76b
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-06-15T14:58:07.115Z  INFO 91 --- [gomoku] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@139c2c19, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@75380a14, org.springframework.security.web.context.SecurityContextHolderFilter@2a48f570, org.springframework.security.web.header.HeaderWriterFilter@20b42094, org.springframework.security.web.authentication.logout.LogoutFilter@4c740874, com.gomoku.security.JwtTokenFilter@261a66b8, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@7a625e2e, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@1812086, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@18e0d125, org.springframework.security.web.session.SessionManagementFilter@2a769291, org.springframework.security.web.access.ExceptionTranslationFilter@8f08b5, org.springframework.security.web.access.intercept.AuthorizationFilter@5376b688]
+2026-06-15T14:58:07.377Z  INFO 91 --- [gomoku] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 32777 (http) with context path ''
+2026-06-15T14:58:07.378Z  INFO 91 --- [gomoku] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-06-15T14:58:07.379Z  INFO 91 --- [gomoku] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@31f7fbec]]
+2026-06-15T14:58:07.379Z  INFO 91 --- [gomoku] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-06-15T14:58:07.381Z  INFO 91 --- [gomoku] [           main] c.g.c.CucumberSpringConfiguration        : Started CucumberSpringConfiguration in 3.299 seconds (process running for 4.27)
+
+@ignore @command
+Example: 連續 6 秒未收到心跳時判定玩家斷線      &amp#27;[90m# features/connection/連線管理與斷線判負.feature:13&amp#27;[0m
+2026-06-15T14:58:07.983Z  INFO 91 --- [gomoku] [o-auto-1-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-15T14:58:07.983Z  INFO 91 --- [gomoku] [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-06-15T14:58:07.983Z  INFO 91 --- [gomoku] [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 0 ms
+2026-06-15T14:58:07.993Z  WARN 91 --- [gomoku] [o-auto-1-exec-1] o.s.w.s.h.HandlerMappingIntrospector     : Cache miss for REQUEST dispatch to '/api/gmk/v1/auth/register' (previous null). Performing MatchableHandlerMapping lookup. This is logged once only at WARN level, and every time at TRACE.
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.onlineGameInProgress()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m（黑）與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m（白）&amp#27;[0m   &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playersAreBlackAndWhite(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32mWebSocket 心跳間隔為 2 秒&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.webSocketHeartbeatIntervalIs2Seconds()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m系統連續 6 秒未收到 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 的心跳&amp#27;[0m   &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemReceivesNoHeartbeatFor6Seconds(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統判定 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 已斷線&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemDeterminesPlayerDisconnected(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 PlayerDisconnected 事件&amp#27;[0m &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemPublishesPlayerDisconnectedEvent()&amp#27;[0m
+]]></system-out>
+    <system-err><![CDATA[WARNING: A Java agent has been loaded dynamically (/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.10/byte-buddy-agent-1.14.10.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+  </testcase>
+  <testcase name="玩家斷線後啟動 30 秒寬限計時" classname="後置（狀態）- 偵測到玩家斷線時標記其為離線並啟動重連寬限計時" time="0.268">
+    <system-out><![CDATA[2026-06-15T14:58:08.630Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:08.631Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 玩家斷線後啟動 30 秒寬限計時          &amp#27;[90m# features/connection/連線管理與斷線判負.feature:21&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中&amp#27;[0m                  &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.onlineGameInProgress()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m（黑）與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m（白）&amp#27;[0m     &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playersAreBlackAndWhite(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 的 WebSocket 連線中斷&amp#27;[0m &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playerWebSocketConnectionDropped(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統發布 PlayerDisconnected 事件&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemPublishesPlayerDisconnectedEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統對 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 啟動 30 秒重連寬限計時&amp#27;[0m    &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemStartsGracePeriodTimer(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="斷線後於寬限期內重連恢復對局" classname="後置（狀態）- 玩家於寬限期內重連則恢復對局" time="0.265">
+    <system-out><![CDATA[2026-06-15T14:58:08.898Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:08.899Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 斷線後於寬限期內重連恢復對局          &amp#27;[90m# features/connection/連線管理與斷線判負.feature:28&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.onlineGameInProgress()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m（黑）與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m（白）&amp#27;[0m   &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playersAreBlackAndWhite(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 斷線且重連寬限計時進行中&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playerDisconnectedAndGracePeriodRunning(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 在 30 秒內重新連線&amp#27;[0m    &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playerReconnectsWithinGracePeriod(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統發布 PlayerReconnected 事件&amp#27;[0m &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemPublishesPlayerReconnectedEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m對局恢復進行，棋盤狀態與斷線前一致&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.gameResumesWithUnchangedBoardState()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="斷線逾 30 秒未重連時判對手勝" classname="後置（狀態）- 斷線方逾 30 秒未重連則判對手勝" time="0.261">
+    <system-out><![CDATA[2026-06-15T14:58:09.163Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:09.163Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 斷線逾 30 秒未重連時判對手勝       &amp#27;[90m# features/connection/連線管理與斷線判負.feature:36&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.onlineGameInProgress()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m（黑）與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m（白）&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playersAreBlackAndWhite(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 斷線且重連寬限計時進行中&amp#27;[0m &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playerDisconnectedAndGracePeriodRunning(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m30 秒過後 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 仍未重連&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.gracePeriodExpiredPlayerDidNotReconnect(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統判 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 勝&amp#27;[0m              &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemDeclaresWinner(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 GameEnded 事件&amp#27;[0m         &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesGameEndedEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="雙方同時斷線皆逾 30 秒未重連時判和局" classname="後置（狀態）- 雙方同時斷線且皆逾寬限期未重連則判和局" time="0.251">
+    <system-out><![CDATA[2026-06-15T14:58:09.424Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:09.424Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 雙方同時斷線皆逾 30 秒未重連時判和局          &amp#27;[90m# features/connection/連線管理與斷線判負.feature:44&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中&amp#27;[0m                      &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.onlineGameInProgress()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m（黑）與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m（白）&amp#27;[0m         &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playersAreBlackAndWhite(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 於同一寬限視窗內皆斷線&amp#27;[0m &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.bothPlayersDisconnectedInSameWindow(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m30 秒過後雙方皆未重連&amp#27;[0m                    &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.gracePeriodExpiredBothPlayersDidNotReconnect()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統判該局為和局（DRAW）&amp#27;[0m                  &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemDeclaresGameDraw()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 GameEnded 事件&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesGameEndedEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="對局尚未開始即斷線時不判負" classname="後置（狀態）- 對局尚未開始（開局/Ready 階段）即斷線不判負，僅退出房間" time="0.305">
+    <system-out><![CDATA[2026-06-15T14:58:09.675Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:09.675Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 對局尚未開始即斷線時不判負                                             &amp#27;[90m# features/connection/連線管理與斷線判負.feature:52&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中&amp#27;[0m                                                  &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.onlineGameInProgress()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m（黑）與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m（白）&amp#27;[0m                                     &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.playersAreBlackAndWhite(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ABC123"&amp#27;[0m&amp#27;[32m 尚在 WAITING / READY / OPENING 階段（對局未進入 PLAYING）&amp#27;[0m &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.roomIsInPrePlayingPhase(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m對戰玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 斷線且逾寬限期未重連&amp#27;[0m                                     &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.combatantDisconnectsAndGraceExpires(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統不判任一方勝負&amp#27;[0m                                                   &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemDoesNotDeclarWinner()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統將 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 移出對戰席，房間退回等待狀態&amp#27;[0m                                   &amp#27;[90m# com.gomoku.steps.connection.ConnectionSteps.systemRemovesPlayerAndRoomReverts(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="普通模式投擲後指派黑白" classname="後置（狀態）- 普通模式硬幣結果決定誰執黑（先手）" time="0.045">
+    <system-out><![CDATA[2026-06-15T14:58:09.981Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:09.981Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 普通模式投擲後指派黑白                &amp#27;[90m# features/game/投擲硬幣決定先手.feature:8&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ABC123"&amp#27;[0m&amp#27;[32m 為普通模式且雙方皆 Ready&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.roomIsNormalModeAndBothReady(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m系統投擲硬幣&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemTossesCoin()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                         &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統指派一方執黑（先手）、另一方執白&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemAssignsBlackAndWhite()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 CoinTossCompleted 事件&amp#27;[0m     &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesCoinTossCompletedEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="Swap2 模式投擲後指派假先方並進入開局" classname="後置（狀態）- Swap2 模式硬幣結果決定誰是假先方（放置開局三子者）" time="0.03">
+    <system-out><![CDATA[2026-06-15T14:58:10.026Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.027Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: Swap2 模式投擲後指派假先方並進入開局           &amp#27;[90m# features/game/投擲硬幣決定先手.feature:17&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"SWAP01"&amp#27;[0m&amp#27;[32m 為 Swap2 模式且雙方皆 Ready&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.roomIsSwap2ModeAndBothReady(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m系統投擲硬幣&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemTossesCoin()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                              &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統指派一方為假先方（tentative-first）&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemAssignsTentativeFirst()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 CoinTossCompleted 事件&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesCoinTossCompletedEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m隨後發布 Swap2OpeningStarted 事件&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesSwap2OpeningStarted()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="前端動畫結果與後端判定一致" classname="後置（回應）- 硬幣結果由後端決定，前端僅播放動畫呈現" time="0.028">
+    <system-out><![CDATA[2026-06-15T14:58:10.056Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.056Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 前端動畫結果與後端判定一致     &amp#27;[90m# features/game/投擲硬幣決定先手.feature:27&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m後端已判定硬幣結果為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"HEADS"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.backendDeterminedCoinResult(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m前端播放硬幣翻轉動畫&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.game.GameSteps.frontendPlaysCoinAnimation()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m動畫最終呈現結果為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"HEADS"&amp#27;[0m   &amp#27;[90m# com.gomoku.steps.game.GameSteps.animationResultIs(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="對局結束後再戰" classname="後置（狀態）- 一鍵再戰時清空棋盤但保留雙方玩家名稱" time="0.108">
+    <system-out><![CDATA[2026-06-15T14:58:10.084Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.084Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 對局結束後再戰                  &amp#27;[90m# features/game/本地再戰重置.feature:7&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場本地對局已結束，玩家名稱為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"甲"&amp#27;[0m&amp#27;[32m 與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"乙"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.localGameEndedWithPlayers(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家點擊再戰&amp#27;[0m                     &amp#27;[90m# com.gomoku.steps.game.GameSteps.playerClicksRematch()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m棋盤清空為空盤&amp#27;[0m                     &amp#27;[90m# com.gomoku.steps.game.GameSteps.boardClearedToEmpty()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家名稱仍為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"甲"&amp#27;[0m&amp#27;[32m 與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"乙"&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.game.GameSteps.playerNamesRemain(java.lang.String,java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="在已有棋子的位置落子時遭拒" classname="前置（參數）- 落子位置必須在棋盤範圍內且為空位" time="0.04">
+    <system-out><![CDATA[2026-06-15T14:58:10.192Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.193Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 在已有棋子的位置落子時遭拒        &amp#27;[90m# features/game/本地落子.feature:13&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場本地雙人對局進行中，棋盤為 15×15&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.localGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                  &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m(&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 已有黑子&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.game.GameSteps.positionHasBlackStone(int,int)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 落子&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.game.GameSteps.placeStonAtPosition(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"該位置已有棋子"&amp#27;[0m     &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="在已有棋子的位置落子時遭拒" classname="前置（參數）- 落子位置必須在棋盤範圍內且為空位" time="0.033">
+    <system-out><![CDATA[2026-06-15T14:58:10.608Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.609Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 在已有棋子的位置落子時遭拒                  &amp#27;[90m# features/game/線上落子.feature:20&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中，棋盤為 15×15&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.game.GameSteps.onlineGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m(&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 已有黑子&amp#27;[0m                      &amp#27;[90m# com.gomoku.steps.game.GameSteps.positionHasBlackStone(int,int)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m黑方嘗試在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 落子&amp#27;[0m                   &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackAttempsToPlaceStone(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，系統發布 InvalidMoveRejected 事件&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.operationFailedWithInvalidMoveRejected()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"該位置已有棋子"&amp#27;[0m                     &amp#27;[90m# com.gomoku.steps.game.GameSteps.errorIs(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="在棋盤外的位置落子時遭拒" classname="前置（參數）- 落子位置必須在棋盤範圍內且為空位" time="0.032">
+    <system-out><![CDATA[2026-06-15T14:58:10.641Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.642Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 在棋盤外的位置落子時遭拒                   &amp#27;[90m# features/game/線上落子.feature:26&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中，棋盤為 15×15&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.game.GameSteps.onlineGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m黑方嘗試在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m15&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m15&amp#27;[0m&amp#27;[32m) 落子&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackAttempsToPlaceStone(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，系統發布 InvalidMoveRejected 事件&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.operationFailedWithInvalidMoveRejected()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"落子超出棋盤範圍"&amp#27;[0m                    &amp#27;[90m# com.gomoku.steps.game.GameSteps.errorIs(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="合法落子後回合切換" classname="後置（狀態）- 合法落子後切換回合並更新本地棋盤" time="0.033">
+    <system-out><![CDATA[2026-06-15T14:58:10.233Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.234Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 合法落子後回合切換            &amp#27;[90m# features/game/本地落子.feature:20&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場本地雙人對局進行中，棋盤為 15×15&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.localGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                  &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m黑方在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 落子&amp#27;[0m           &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackPlacesStone(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                   &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 MovePlaced 事件&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesMovePlacedEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m回合切換為白方&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.game.GameSteps.turnSwitchesToWhite()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="黑方連成五子時判黑方勝" classname="後置（狀態）- 同色達成五子或以上連線即判該方勝" time="0.086">
+    <system-out><![CDATA[2026-06-15T14:58:10.267Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.267Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 黑方連成五子時判黑方勝                      &amp#27;[90m# features/game/本地落子.feature:28&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場本地雙人對局進行中，棋盤為 15×15&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.game.GameSteps.localGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                              &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m黑方已在 &amp#27;[0m&amp#27;[32m&amp#27;[1m(7,3),(7,4),(7,5),(7,6)&amp#27;[0m&amp#27;[32m 連續落子&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackHasPlacedStonesAt(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m黑方在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 落子形成水平五連&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackPlacesWinningFifthStone(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                               &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 WinConditionMet 事件，勝方為黑方&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesWinConditionMetBlack()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="非當前回合方落子時遭拒" classname="前置（狀態）- 必須輪到該玩家才能落子（伺服器權威）" time="0.255">
+    <system-out><![CDATA[2026-06-15T14:58:10.354Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.355Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 非當前回合方落子時遭拒                    &amp#27;[90m# features/game/線上落子.feature:13&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中，棋盤為 15×15&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.game.GameSteps.onlineGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m白方嘗試在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 落子&amp#27;[0m                   &amp#27;[90m# com.gomoku.steps.game.GameSteps.whiteAttempsToPlaceStone(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，系統發布 InvalidMoveRejected 事件&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.operationFailedWithInvalidMoveRejected()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"尚未輪到你"&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.game.GameSteps.errorIs(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="合法落子後廣播狀態更新" classname="後置（狀態）- 合法落子後後端記錄並廣播給房內雙方" time="0.029">
+    <system-out><![CDATA[2026-06-15T14:58:10.673Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.674Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 合法落子後廣播狀態更新                &amp#27;[90m# features/game/線上落子.feature:33&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中，棋盤為 15×15&amp#27;[0m         &amp#27;[90m# com.gomoku.steps.game.GameSteps.onlineGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                        &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m黑方在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 落子&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackPlacesStone(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                         &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 MovePlaced 事件&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesMovePlacedEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 GameStateUpdated 事件廣播給雙方&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesGameStateUpdated()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m回合切換為白方&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.game.GameSteps.turnSwitchesToWhite()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="黑方連成五子時判黑方勝" classname="後置（狀態）- 同色達成五子或以上連線即判該方勝（長連算勝、無禁手）" time="0.074">
+    <system-out><![CDATA[2026-06-15T14:58:10.703Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.704Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 黑方連成五子時判黑方勝                      &amp#27;[90m# features/game/線上落子.feature:42&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中，棋盤為 15×15&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.game.GameSteps.onlineGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                              &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m黑方已在 &amp#27;[0m&amp#27;[32m&amp#27;[1m(7,3),(7,4),(7,5),(7,6)&amp#27;[0m&amp#27;[32m 連續落子&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackHasPlacedStonesAt(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m黑方在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 落子形成水平五連&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackPlacesWinningFifthStone(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                               &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 WinConditionMet 事件，勝方為黑方&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesWinConditionMetBlack()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 GameEnded 事件&amp#27;[0m                   &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesGameEndedEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="黑方連成六子（長連）時仍判黑方勝" classname="後置（狀態）- 同色達成五子或以上連線即判該方勝（長連算勝、無禁手）" time="0.068">
+    <system-out><![CDATA[2026-06-15T14:58:10.778Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.779Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 黑方連成六子（長連）時仍判黑方勝                       &amp#27;[90m# features/game/線上落子.feature:49&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中，棋盤為 15×15&amp#27;[0m                     &amp#27;[90m# com.gomoku.steps.game.GameSteps.onlineGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                                    &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m黑方已在 &amp#27;[0m&amp#27;[32m&amp#27;[1m(7,2),(7,3),(7,4),(7,5),(7,6)&amp#27;[0m&amp#27;[32m 連續落子&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackHasPlacedStonesAt(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m黑方在 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 落子形成水平六連&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackPlacesWinningSixthStone(int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                     &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 WinConditionMet 事件，勝方為黑方&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesWinConditionMetBlack()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="棋盤填滿無五連時判和局" classname="後置（狀態）- 棋盤填滿且無人連線即判和局" time="0.032">
+    <system-out><![CDATA[2026-06-15T14:58:10.847Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.847Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 棋盤填滿無五連時判和局         &amp#27;[90m# features/game/線上落子.feature:57&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場線上對局進行中，棋盤為 15×15&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.game.GameSteps.onlineGameInProgress15x15()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m目前輪到黑方&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.game.GameSteps.currentTurnIsBlack()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m棋盤已落滿 225 子且無任一方達成五連&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.boardFilledWithoutWinner()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m最後一子落下&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.game.GameSteps.lastStoneIsPlaced()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統發布 GameDraw 事件&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesGameDrawEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 GameEnded 事件&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesGameEndedEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="開始標準本地遊戲" classname="後置（狀態）- 開始本地遊戲時可選擇是否啟用 Swap2" time="0.022">
+    <system-out><![CDATA[2026-06-15T14:58:10.879Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.879Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 開始標準本地遊戲                               &amp#27;[90m# features/game/開始本地遊戲.feature:8&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家開始本地遊戲，useSwap2 為 false&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.game.GameSteps.startLocalGameNoSwap2()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                     &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 LocalGameStarted 事件，useSwap2 為 false&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesLocalGameStartedNoSwap2()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m黑方先手開始落子&amp#27;[0m                                  &amp#27;[90m# com.gomoku.steps.game.GameSteps.blackGoesFirst()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="開始啟用 Swap2 的本地遊戲" classname="後置（狀態）- 開始本地遊戲時可選擇是否啟用 Swap2" time="0.021">
+    <system-out><![CDATA[2026-06-15T14:58:10.901Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.901Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 開始啟用 Swap2 的本地遊戲                      &amp#27;[90m# features/game/開始本地遊戲.feature:14&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家開始本地遊戲，useSwap2 為 true&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.game.GameSteps.startLocalGameWithSwap2Step()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                    &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 LocalGameStarted 事件，useSwap2 為 true&amp#27;[0m &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemPublishesLocalGameStartedWithSwap2()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統隨機指派一方為假先方&amp#27;[0m                             &amp#27;[90m# com.gomoku.steps.game.GameSteps.systemRandomlyAssignsTentativeFirst()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="對局結束後落子序列被保存" classname="後置（狀態）- 對局結束後保存完整落子序列（含開局 stones）" time="0.045">
+    <system-out><![CDATA[2026-06-15T14:58:10.924Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.925Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @query
+Example: 對局結束後落子序列被保存            &amp#27;[90m# features/history/查看遊戲歷史與回放.feature:13&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有一場已結束的對局：&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.history.HistorySteps.systemHasFinishedGame(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | gameId | winner | moveCount | useSwap2 |
+    | g-001  | alice  | 42        | true     |
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m對局 &amp#27;[0m&amp#27;[32m&amp#27;[1m"g-001"&amp#27;[0m&amp#27;[32m 已發布 GameEnded&amp#27;[0m &amp#27;[90m# com.gomoku.steps.history.HistorySteps.gameHasPublishedGameEnded(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統保存該局完整落子序列&amp#27;[0m              &amp#27;[90m# com.gomoku.steps.history.HistorySteps.systemSavesCompleteMoveSequence()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m落子序列包含開局 openingStones&amp#27;[0m     &amp#27;[90m# com.gomoku.steps.history.HistorySteps.moveSequenceContainsOpeningStones()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="查詢對局 g-001 取得回放資料" classname="後置（回應）- 查詢歷史對局可取得可重播的完整落子序列" time="0.031">
+    <system-out><![CDATA[2026-06-15T14:58:10.969Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:10.969Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @query
+Example: 查詢對局 g-001 取得回放資料        &amp#27;[90m# features/history/查看遊戲歷史與回放.feature:20&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有一場已結束的對局：&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.history.HistorySteps.systemHasFinishedGame(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | gameId | winner | moveCount | useSwap2 |
+    | g-001  | alice  | 42        | true     |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m查詢對局 &amp#27;[0m&amp#27;[32m&amp#27;[1m"g-001"&amp#27;[0m&amp#27;[32m 的回放&amp#27;[0m           &amp#27;[90m# com.gomoku.steps.history.HistorySteps.queryGameReplay(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m查詢結果應包含：&amp#27;[0m                    &amp#27;[90m# com.gomoku.steps.user.UserSteps.queryResultShouldContain(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | gameId | winner | moveCount |
+    | g-001  | alice  | 42        |
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m回放序列依 moveNumber 排序，開局子可被識別&amp#27;[0m &amp#27;[90m# com.gomoku.steps.history.HistorySteps.replaySequenceOrderedAndOpeningIdentifiable()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="假先方於選擇階段嘗試選擇時遭拒" classname="前置（狀態）- 僅假後方可在選擇階段做出 Swap2 選擇" time="0.28">
+    <system-out><![CDATA[2026-06-15T14:58:11.000Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:11.000Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 假先方於選擇階段嘗試選擇時遭拒         &amp#27;[90m# features/opening/Swap2選擇.feature:13&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m假先方已完成標準 Swap2 三子開局&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstCompletedStandardThreeStoneOpening()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m    &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesRecordedChoice(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統進入假後方選擇階段&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemEntersChoicePhase()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假先方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 嘗試做出 Swap2 選擇&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstTriesToMakeSwap2Choice(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"僅假後方可選擇"&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="假後方選擇執黑時顏色分配定案" classname="後置（狀態）- 假後方三選一，每個選項依標準規則確定最終黑白與輪次" time="0.267">
+    <system-out><![CDATA[2026-06-15T14:58:11.280Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:11.280Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 假後方選擇執黑時顏色分配定案                &amp#27;[90m# features/opening/Swap2選擇.feature:19&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m假先方已完成標準 Swap2 三子開局&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstCompletedStandardThreeStoneOpening()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesRecordedChoice(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統進入假後方選擇階段&amp#27;[0m                      &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemEntersChoicePhase()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假後方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 選擇 &amp#27;[0m&amp#27;[32m&amp#27;[1m"執黑"&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeSecondMakesSwap2Choice(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 Swap2ChoiceMade 事件&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemPublishesSwap2ChoiceMadeEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假後方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 最終執黑，&amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 執白&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeSecondFinallyTakesBlack(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 ColorAssignmentFinalized 事件&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemPublishesColorAssignmentFinalizedEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 OpeningCompleted 事件，輪到白方落子&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemPublishesOpeningCompletedWithWhiteTurn()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="假後方選擇執白時顏色分配定案" classname="後置（狀態）- 假後方三選一，每個選項依標準規則確定最終黑白與輪次" time="0.263">
+    <system-out><![CDATA[2026-06-15T14:58:11.547Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:11.547Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 假後方選擇執白時顏色分配定案                                   &amp#27;[90m# features/opening/Swap2選擇.feature:27&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m假先方已完成標準 Swap2 三子開局&amp#27;[0m                               &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstCompletedStandardThreeStoneOpening()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m                             &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesRecordedChoice(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統進入假後方選擇階段&amp#27;[0m                                         &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemEntersChoicePhase()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假後方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 選擇 &amp#27;[0m&amp#27;[32m&amp#27;[1m"執白"&amp#27;[0m                                  &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeSecondMakesSwap2Choice(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                               &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假後方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 最終執白，&amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 執黑&amp#27;[0m                           &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeSecondFinallyTakesWhite(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 ColorAssignmentFinalized 與 OpeningCompleted 事件&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemPublishesColorFinalizedAndOpeningCompleted()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="假後方選擇放第四五子轉嫁選擇權時進入二階段" classname="後置（狀態）- 假後方三選一，每個選項依標準規則確定最終黑白與輪次" time="0.274">
+    <system-out><![CDATA[2026-06-15T14:58:11.810Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:11.810Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 假後方選擇放第四五子轉嫁選擇權時進入二階段        &amp#27;[90m# features/opening/Swap2選擇.feature:33&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m假先方已完成標準 Swap2 三子開局&amp#27;[0m           &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstCompletedStandardThreeStoneOpening()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m         &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesRecordedChoice(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統進入假後方選擇階段&amp#27;[0m                     &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemEntersChoicePhase()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假後方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 選擇 &amp#27;[0m&amp#27;[32m&amp#27;[1m"放置第四、五子(再由對手選色)"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeSecondMakesSwap2Choice(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                           &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假後方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 放置一白一黑兩顆子&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeSecondPlacesTwoAdditionalStones(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m選色權轉回假先方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.colorChoiceTransferredBackToTentativeFirst(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="假後方於開局階段嘗試放置時遭拒" classname="前置（狀態）- 開局階段僅假先方可放置，假後方僅能觀看" time="0.246">
+    <system-out><![CDATA[2026-06-15T14:58:12.084Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:12.084Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 假後方於開局階段嘗試放置時遭拒           &amp#27;[90m# features/opening/Swap2開局放置.feature:13&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場 Swap2 模式對局已完成投擲硬幣&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.swap2GameCoinTossCompleted()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesAssigned(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m開局階段已開始（Swap2OpeningStarted）&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.openingPhaseStarted()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假後方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 嘗試放置開局子&amp#27;[0m           &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeSecondTriesToPlaceOpeningStone(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"開局階段僅假先方可放置"&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="假先方放置第一顆開局子後同步雙方" classname="後置（狀態）- 假先方依標準 Swap2 放置三子（黑·白·黑），每子確認並同步雙方" time="0.256">
+    <system-out><![CDATA[2026-06-15T14:58:12.329Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:12.330Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 假先方放置第一顆開局子後同步雙方            &amp#27;[90m# features/opening/Swap2開局放置.feature:19&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場 Swap2 模式對局已完成投擲硬幣&amp#27;[0m         &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.swap2GameCoinTossCompleted()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m    &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesAssigned(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m開局階段已開始（Swap2OpeningStarted）&amp#27;[0m   &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.openingPhaseStarted()&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假先方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 放置開局黑子於 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m) 並確認&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstPlacesBlackOpeningStone(java.lang.String,int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                          &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 OpeningStonePlaced 事件&amp#27;[0m     &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.systemPublishesOpeningStonePlacedEvent()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m該開局子記錄於 openingStones&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.openingStoneRecordedInOpeningStones()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m雙方畫面同步顯示落子動畫&amp#27;[0m                   &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.bothPlayersReceiveStonePlacedAnimation()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="假先方完成三子開局後進入假後方選擇" classname="後置（狀態）- 假先方依標準 Swap2 放置三子（黑·白·黑），每子確認並同步雙方" time="0.268">
+    <system-out><![CDATA[2026-06-15T14:58:12.586Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:12.586Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 假先方完成三子開局後進入假後方選擇              &amp#27;[90m# features/opening/Swap2開局放置.feature:26&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場 Swap2 模式對局已完成投擲硬幣&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.swap2GameCoinTossCompleted()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesAssigned(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m開局階段已開始（Swap2OpeningStarted）&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.openingPhaseStarted()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m假先方已放置開局子 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m)黑 與 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m8&amp#27;[0m&amp#27;[32m)白&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstHasPlacedTwoOpeningStones(int,int,int,int)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假先方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 放置第三顆開局黑子於 (&amp#27;[0m&amp#27;[32m&amp#27;[1m8&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m8&amp#27;[0m&amp#27;[32m) 並確認&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstPlacesThirdBlackOpeningStone(java.lang.String,int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                             &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m開局放置階段結束&amp#27;[0m                          &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.openingPlacementPhaseEnded()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m進入假後方 Swap2 選擇階段&amp#27;[0m                  &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.entersTentativeSecondChoicePhase()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="悔最後一子後該子被移除" classname="前置（狀態）- 開局階段僅允許悔「最後放置的一子」" time="0.269">
+    <system-out><![CDATA[2026-06-15T14:58:12.853Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:12.854Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 悔最後一子後該子被移除               &amp#27;[90m# features/opening/Swap2開局放置.feature:35&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場 Swap2 模式對局已完成投擲硬幣&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.swap2GameCoinTossCompleted()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesAssigned(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m開局階段已開始（Swap2OpeningStarted）&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.openingPhaseStarted()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m假先方已放置開局子 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m)黑 與 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m8&amp#27;[0m&amp#27;[32m)白&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstHasPlacedTwoOpeningStones(int,int,int,int)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假先方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 悔棋&amp#27;[0m              &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstUndoesLastOpeningStone(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                        &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m最後放置的 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m8&amp#27;[0m&amp#27;[32m)白 被移除&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.lastWhiteStoneRemoved(int,int)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32mopeningStones 不再包含 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m8&amp#27;[0m&amp#27;[32m)&amp#27;[0m     &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.openingStonesDoesNotContain(int,int)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="嘗試悔非最後一子時操作失敗" classname="前置（狀態）- 開局階段僅允許悔「最後放置的一子」" time="0.259">
+    <system-out><![CDATA[2026-06-15T14:58:13.123Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:13.123Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 嘗試悔非最後一子時操作失敗             &amp#27;[90m# features/opening/Swap2開局放置.feature:42&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m一場 Swap2 模式對局已完成投擲硬幣&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.swap2GameCoinTossCompleted()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m假先方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m，假後方為玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeRolesAssigned(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m開局階段已開始（Swap2OpeningStarted）&amp#27;[0m &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.openingPhaseStarted()&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m假先方已放置開局子 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m)黑 與 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m8&amp#27;[0m&amp#27;[32m)白&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstHasPlacedTwoOpeningStones(int,int,int,int)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m假先方 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 嘗試悔 (&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m,&amp#27;[0m&amp#27;[32m&amp#27;[1m7&amp#27;[0m&amp#27;[32m)黑&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.opening.OpeningSteps.tentativeFirstTriesToUndoNonLastStone(java.lang.String,int,int)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"僅能悔最後放置的一子"&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="輸入不存在的房間碼加入時操作失敗" classname="前置（狀態）- 房間碼必須存在" time="0.486">
+    <system-out><![CDATA[2026-06-15T14:58:13.382Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:13.382Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 輸入不存在的房間碼加入時操作失敗           &amp#27;[90m# features/room/加入房間.feature:14&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下房間：&amp#27;[0m                   &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemHasRooms(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | roomCode | status      | playerSeatCount |
+    | ABC123   | WAITING     | 1               |
+    | FULL99   | IN_PROGRESS | 2               |
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 已登入&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.playerIsLoggedIn(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 以房間碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"NOEXIST"&amp#27;[0m&amp#27;[32m 加入房間&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerJoinsRoomByCode(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"房間不存在"&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="加入有空對戰席的房間後成為對戰玩家" classname="後置（狀態）- 對戰席未滿（上限 2）時加入成為對戰玩家" time="0.476">
+    <system-out><![CDATA[2026-06-15T14:58:13.868Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:13.868Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 加入有空對戰席的房間後成為對戰玩家                   &amp#27;[90m# features/room/加入房間.feature:21&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下房間：&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemHasRooms(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | roomCode | status      | playerSeatCount |
+    | ABC123   | WAITING     | 1               |
+    | FULL99   | IN_PROGRESS | 2               |
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 已登入&amp#27;[0m                         &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.playerIsLoggedIn(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 以房間碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ABC123"&amp#27;[0m&amp#27;[32m 加入房間&amp#27;[0m           &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerJoinsRoomByCode(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                  &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 為房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ABC123"&amp#27;[0m&amp#27;[32m 的成員，角色為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"PLAYER"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerIsRoomMemberWithRole(java.lang.String,java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 PlayerJoinedRoom 事件&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemPublishesPlayerJoinedRoomEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="加入對戰席已滿的房間後成為觀戰者" classname="後置（狀態）- 對戰席已滿（2 人）時加入成為觀戰者" time="0.485">
+    <system-out><![CDATA[2026-06-15T14:58:14.344Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:14.344Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 加入對戰席已滿的房間後成為觀戰者                       &amp#27;[90m# features/room/加入房間.feature:30&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下房間：&amp#27;[0m                               &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemHasRooms(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | roomCode | status      | playerSeatCount |
+    | ABC123   | WAITING     | 1               |
+    | FULL99   | IN_PROGRESS | 2               |
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 已登入&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.playerIsLoggedIn(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 以房間碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"FULL99"&amp#27;[0m&amp#27;[32m 加入房間&amp#27;[0m              &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerJoinsRoomByCode(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                     &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 為房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"FULL99"&amp#27;[0m&amp#27;[32m 的成員，角色為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"SPECTATOR"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerIsRoomMemberWithRole(java.lang.String,java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 SpectatorJoinedRoom 事件&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemPublishesSpectatorJoinedRoomEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="觀戰者嘗試標記 Ready 時操作失敗" classname="前置（狀態）- 觀戰者為唯讀，不可落子且不參與 Ready 判定" time="0.492">
+    <system-out><![CDATA[2026-06-15T14:58:14.829Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:14.830Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 觀戰者嘗試標記 Ready 時操作失敗          &amp#27;[90m# features/room/加入房間.feature:39&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下房間：&amp#27;[0m                     &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemHasRooms(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | roomCode | status      | playerSeatCount |
+    | ABC123   | WAITING     | 1               |
+    | FULL99   | IN_PROGRESS | 2               |
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 以觀戰者身份在房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"FULL99"&amp#27;[0m&amp#27;[32m 中&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerIsSpectatorInRoom(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 標記 Ready&amp#27;[0m              &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerTogglesReady(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"觀戰者不可標記 Ready"&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="建立私人房間後取得房間碼" classname="後置（狀態）- 建立房間後產生唯一房間碼並將建立者加入房間" time="0.147">
+    <system-out><![CDATA[2026-06-15T14:58:15.322Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:15.322Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 建立私人房間後取得房間碼                 &amp#27;[90m# features/room/建立房間.feature:8&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 已登入&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.playerIsLoggedIn(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 建立房間，可見性為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"PRIVATE"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerCreatesRoomWithVisibility(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                           &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統產生一個唯一房間碼&amp#27;[0m                     &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemGeneratesUniqueRoomCode()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m房間狀態為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"WAITING"&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.room.RoomSteps.roomStatusIs(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 為房內成員&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerIsRoomMember(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 RoomCreated 事件&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemPublishesRoomCreatedEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="建立 Swap2 模式房間後 isSwap2Mode 為真" classname="前置（參數）- 建立者可指定房間為普通模式或 Swap2 模式" time="0.15">
+    <system-out><![CDATA[2026-06-15T14:58:15.469Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:15.469Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 建立 Swap2 模式房間後 isSwap2Mode 為真 &amp#27;[90m# features/room/建立房間.feature:19&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 已登入&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.playerIsLoggedIn(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 建立房間並選擇 &amp#27;[0m&amp#27;[32m&amp#27;[1m"Swap2 模式"&amp#27;[0m   &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerCreatesRoomWithMode(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m該房間的 isSwap2Mode 為 true&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.room.RoomSteps.roomIsSwap2ModeTrue()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="建立公開房間後出現在公開列表" classname="後置（狀態）- 公開房間可被列入公開房間列表" time="0.157">
+    <system-out><![CDATA[2026-06-15T14:58:15.619Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:15.619Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 建立公開房間後出現在公開列表              &amp#27;[90m# features/room/建立房間.feature:27&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 已登入&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.playerIsLoggedIn(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 建立房間，可見性為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"PUBLIC"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerCreatesRoomWithVisibility(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                          &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m該房間出現在公開房間列表中&amp#27;[0m                  &amp#27;[90m# com.gomoku.steps.room.RoomSteps.roomAppearsInPublicList()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="配對佇列為空時加入等待" classname="後置（狀態）- 等待區無對手時玩家進入配對佇列等待" time="0.152">
+    <system-out><![CDATA[2026-06-15T14:58:15.777Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:15.777Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 配對佇列為空時加入等待      &amp#27;[90m# features/room/快速配對.feature:8&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m配對佇列為空&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.room.RoomSteps.matchQueueIsEmpty()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 已登入&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.playerIsLoggedIn(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 請求快速配對&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerRequestsQuickMatch(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 進入配對佇列等待&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerEntersMatchQueue(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="佇列中有等待者時自動配對成局" classname="後置（狀態）- 佇列中已有等待者時系統自動配對並建立房間" time="0.291">
+    <system-out><![CDATA[2026-06-15T14:58:15.929Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:15.930Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 佇列中有等待者時自動配對成局           &amp#27;[90m# features/room/快速配對.feature:17&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 已在配對佇列中等待&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerIsWaitingInQueue(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 已登入&amp#27;[0m                &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.playerIsLoggedIn(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 請求快速配對&amp#27;[0m            &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerRequestsQuickMatch(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統將 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 與 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 配對到同一房間&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemMatchesTwoPlayers(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 PlayerJoinedRoom 事件&amp#27;[0m    &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemPublishesPlayerJoinedRoomEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="等待逾 60 秒未配對時退出佇列" classname="後置（狀態）- 在佇列等待逾 60 秒未配對則退出佇列並提示" time="0.159">
+    <system-out><![CDATA[2026-06-15T14:58:16.220Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:16.221Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 等待逾 60 秒未配對時退出佇列       &amp#27;[90m# features/room/快速配對.feature:27&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 已在配對佇列中等待&amp#27;[0m    &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerIsWaitingInQueue(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m&amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 在佇列中已等待 60 秒仍無對手&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerWaited60Seconds(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統將 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 移出配對佇列&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemRemovesPlayerFromQueue(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統提示 &amp#27;[0m&amp#27;[32m&amp#27;[1m"排隊過久請重新開始配對"&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemShowsPrompt(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="玩家標記 Ready 後狀態更新" classname="後置（狀態）- 玩家可切換自己的 Ready 狀態" time="0.283">
+    <system-out><![CDATA[2026-06-15T14:58:16.379Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:16.380Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 玩家標記 Ready 後狀態更新         &amp#27;[90m# features/room/標記準備與聊天.feature:14&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ABC123"&amp#27;[0m&amp#27;[32m 中有玩家：&amp#27;[0m         &amp#27;[90m# com.gomoku.steps.room.RoomSteps.roomHasPlayers(java.lang.String,java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | ready |
+    | alice    | false |
+    | bob      | false |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 標記 Ready&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerTogglesReady(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 的 ready 狀態為 true&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerReadyStatusIsTrue(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 PlayerReadyToggled 事件&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemPublishesPlayerReadyToggledEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="雙方對戰玩家皆 Ready 後進入開局" classname="後置（狀態）- 房內兩名對戰玩家皆 Ready 後觸發開局流程（觀戰者不計入）" time="0.289">
+    <system-out><![CDATA[2026-06-15T14:58:16.663Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:16.663Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 雙方對戰玩家皆 Ready 後進入開局                    &amp#27;[90m# features/room/標記準備與聊天.feature:22&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ABC123"&amp#27;[0m&amp#27;[32m 中有玩家：&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.room.RoomSteps.roomHasPlayers(java.lang.String,java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | ready |
+    | alice    | false |
+    | bob      | false |
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 已標記 Ready&amp#27;[0m                    &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerAlreadyMarkedReady(java.lang.String)&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 標記 Ready&amp#27;[0m                        &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerTogglesReady(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                     &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統判定 AllPlayersReady（僅統計 role=PLAYER 的成員）&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.systemDeterminesAllPlayersReady()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m普通模式房間進入投擲硬幣決定黑白；Swap2 模式房間進入投擲硬幣決定假先方&amp#27;[0m    &amp#27;[90m# com.gomoku.steps.room.RoomSteps.roomEntersCoinTossPhase()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="玩家發送聊天訊息後廣播給房內成員" classname="後置（狀態）- 玩家可在房內發送即時聊天訊息" time="0.265">
+    <system-out><![CDATA[2026-06-15T14:58:16.951Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:16.952Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 玩家發送聊天訊息後廣播給房內成員      &amp#27;[90m# features/room/標記準備與聊天.feature:31&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ABC123"&amp#27;[0m&amp#27;[32m 中有玩家：&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.room.RoomSteps.roomHasPlayers(java.lang.String,java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | ready |
+    | alice    | false |
+    | bob      | false |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 在房間發送訊息 &amp#27;[0m&amp#27;[32m&amp#27;[1m"hi"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.room.RoomSteps.playerSendsChatMessage(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                    &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m房間 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ABC123"&amp#27;[0m&amp#27;[32m 內所有成員收到該訊息&amp#27;[0m   &amp#27;[90m# com.gomoku.steps.room.RoomSteps.allRoomMembersReceiveMessage(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="查詢 alice 的個人戰績" classname="後置（回應）- 個人戰績應包含勝場、敗場、勝率與最近對戰紀錄" time="0.405">
+    <system-out><![CDATA[2026-06-15T14:58:17.217Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:17.218Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @query
+Example: 查詢 alice 的個人戰績          &amp#27;[90m# features/user/查看戰績與排行榜.feature:15&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下玩家戰績：&amp#27;[0m              &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemHasPlayerStats(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | wins | losses |
+    | alice    | 8    | 2      |
+    | bob      | 5    | 5      |
+    | carol    | 4    | 3      |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m查詢 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 的個人戰績&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.queryPlayerStats(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                      &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m查詢結果應包含：&amp#27;[0m                   &amp#27;[90m# com.gomoku.steps.user.UserSteps.queryResultShouldContain(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | wins | losses | winRate |
+    | 8    | 2      | 0.80    |
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m查詢結果包含最近對戰紀錄列表&amp#27;[0m             &amp#27;[90m# com.gomoku.steps.user.UserSteps.queryResultContainsRecentGames()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="查詢排行榜時 alice（勝場多）排在 bob 之前" classname="後置（回應）- 排行榜以勝場數為主鍵由高到低排序，並列以勝率為次鍵" time="0.376">
+    <system-out><![CDATA[2026-06-15T14:58:17.624Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:17.624Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @query
+Example: 查詢排行榜時 alice（勝場多）排在 bob 之前 &amp#27;[90m# features/user/查看戰績與排行榜.feature:25&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下玩家戰績：&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemHasPlayerStats(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | wins | losses |
+    | alice    | 8    | 2      |
+    | bob      | 5    | 5      |
+    | carol    | 4    | 3      |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m查詢排行榜&amp#27;[0m                        &amp#27;[90m# com.gomoku.steps.user.UserSteps.queryLeaderboard()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                         &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m排行榜第一名為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.user.UserSteps.leaderboardFirstPlaceIs(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m排行榜第二名為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m                 &amp#27;[90m# com.gomoku.steps.user.UserSteps.leaderboardSecondPlaceIs(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="勝場相同時以勝率高者在前" classname="後置（回應）- 排行榜以勝場數為主鍵由高到低排序，並列以勝率為次鍵" time="0.627">
+    <system-out><![CDATA[2026-06-15T14:58:17.999Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:17.999Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @query
+Example: 勝場相同時以勝率高者在前      &amp#27;[90m# features/user/查看戰績與排行榜.feature:31&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下玩家戰績：&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemHasPlayerStats(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | wins | losses |
+    | alice    | 8    | 2      |
+    | bob      | 5    | 5      |
+    | carol    | 4    | 3      |
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下玩家戰績：&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemHasPlayerStats(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | wins | losses |
+    | dave     | 6    | 4      |
+    | erin     | 6    | 14     |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m查詢排行榜&amp#27;[0m               &amp#27;[90m# com.gomoku.steps.user.UserSteps.queryLeaderboard()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m&amp#27;[0m&amp#27;[32m&amp#27;[1m"dave"&amp#27;[0m&amp#27;[32m 排在 &amp#27;[0m&amp#27;[32m&amp#27;[1m"erin"&amp#27;[0m&amp#27;[32m 之前&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.playerRanksBeforeAnother(java.lang.String,java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="對局數不足 10 場的玩家不上榜" classname="前置（門檻）- 累計對局數（勝+敗）達 10 場才列入排行榜" time="0.384">
+    <system-out><![CDATA[2026-06-15T14:58:18.626Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:18.626Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @query
+Example: 對局數不足 10 場的玩家不上榜 &amp#27;[90m# features/user/查看戰績與排行榜.feature:41&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中有以下玩家戰績：&amp#27;[0m       &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemHasPlayerStats(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | wins | losses |
+    | alice    | 8    | 2      |
+    | bob      | 5    | 5      |
+    | carol    | 4    | 3      |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m查詢排行榜&amp#27;[0m              &amp#27;[90m# com.gomoku.steps.user.UserSteps.queryLeaderboard()&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m排行榜不包含 &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol"&amp#27;[0m     &amp#27;[90m# com.gomoku.steps.user.UserSteps.leaderboardDoesNotContain(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="密碼錯誤時登入失敗" classname="前置（參數）- 帳號與密碼必須與既有玩家相符" time="0.202">
+    <system-out><![CDATA[2026-06-15T14:58:19.010Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.011Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 密碼錯誤時登入失敗                         &amp#27;[90m# features/user/登入取得JWT.feature:13&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                        &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | password  |
+    | alice    | P@ssw0rd1 |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 與密碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"wrong"&amp#27;[0m&amp#27;[32m 登入&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.playerLogsInWithUsernameAndPassword(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"帳號或密碼錯誤"&amp#27;[0m                  &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="帳號不存在時登入失敗" classname="前置（參數）- 帳號與密碼必須與既有玩家相符" time="0.157">
+    <system-out><![CDATA[2026-06-15T14:58:19.213Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.214Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 帳號不存在時登入失敗                            &amp#27;[90m# features/user/登入取得JWT.feature:17&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | password  |
+    | alice    | P@ssw0rd1 |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"ghost"&amp#27;[0m&amp#27;[32m 與密碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"P@ssw0rd1"&amp#27;[0m&amp#27;[32m 登入&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.playerLogsInWithUsernameAndPassword(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"帳號或密碼錯誤"&amp#27;[0m                      &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="以正確帳密登入後取得 JWT" classname="後置（回應）- 登入成功後回傳可用於後續請求的 JWT" time="0.205">
+    <system-out><![CDATA[2026-06-15T14:58:19.369Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.370Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 以正確帳密登入後取得 JWT                        &amp#27;[90m# features/user/登入取得JWT.feature:23&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                            &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | password  |
+    | alice    | P@ssw0rd1 |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m玩家以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 與密碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"P@ssw0rd1"&amp#27;[0m&amp#27;[32m 登入&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.playerLogsInWithUsernameAndPassword(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                    &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m回應包含一個 JWT token&amp#27;[0m                         &amp#27;[90m# com.gomoku.steps.user.UserSteps.responseContainsJwtToken()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統發布 PlayerLoggedIn 事件&amp#27;[0m                   &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemPublishesPlayerLoggedInEvent()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="未輸入暱稱進入訪客模式時操作失敗" classname="前置（參數）- 訪客必須提供非空暱稱" time="0.035">
+    <system-out><![CDATA[2026-06-15T14:58:19.575Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.576Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 未輸入暱稱進入訪客模式時操作失敗 &amp#27;[90m# features/user/訪客模式進入.feature:7&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以暱稱 &amp#27;[0m&amp#27;[32m&amp#27;[1m""&amp#27;[0m&amp#27;[32m 進入&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestEntersWithNickname(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"請輸入暱稱"&amp#27;[0m   &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="以暱稱進入後建立臨時身份" classname="後置（狀態）- 訪客進入後建立臨時玩家身份（不建立持久帳號）" time="0.027">
+    <system-out><![CDATA[2026-06-15T14:58:19.610Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.610Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 以暱稱進入後建立臨時身份        &amp#27;[90m# features/user/訪客模式進入.feature:13&amp#27;[0m
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以暱稱 &amp#27;[0m&amp#27;[32m&amp#27;[1m"路人甲"&amp#27;[0m&amp#27;[32m 進入&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestEntersWithNickname(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                  &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統建立一個臨時玩家身份，暱稱為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"路人甲"&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemCreatesTemporaryIdentityWithNickname(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m該身份不寫入持久帳號資料表&amp#27;[0m          &amp#27;[90m# com.gomoku.steps.user.UserSteps.identityNotPersistedInAccountTable()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="訪客完成線上單場後不產生戰績紀錄" classname="後置（狀態）- 訪客線上遊玩僅限單場，不累積戰績" time="0.04">
+    <system-out><![CDATA[2026-06-15T14:58:19.637Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.637Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 訪客完成線上單場後不產生戰績紀錄     &amp#27;[90m# features/user/訪客模式進入.feature:21&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m暱稱為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"路人甲"&amp#27;[0m&amp#27;[32m 的訪客完成一場線上對局&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestCompletedOnlineGame(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統不為該訪客累積勝敗場或排行榜資料&amp#27;[0m     &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemDoesNotAccumulateStatsForGuest()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="訪客線上單場結束後無法直接再戰同對手" classname="後置（狀態）- 訪客線上單場結束後不可直接再戰，須重新輸入暱稱進新局" time="0.027">
+    <system-out><![CDATA[2026-06-15T14:58:19.677Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.678Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 訪客線上單場結束後無法直接再戰同對手   &amp#27;[90m# features/user/訪客模式進入.feature:27&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m暱稱為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"路人甲"&amp#27;[0m&amp#27;[32m 的訪客完成一場線上對局&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestCompletedOnlineGame(java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m系統不提供「直接再戰」選項給該訪客&amp#27;[0m      &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemDoesNotProvideRematchForGuest()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統要求訪客重新輸入暱稱才能進入新的線上對局&amp#27;[0m  &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemRequiresGuestToReenterNickname()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m結束畫面顯示「強烈建議註冊」提示&amp#27;[0m        &amp#27;[90m# com.gomoku.steps.user.UserSteps.endScreenShowsRegistrationHint()&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="使用已存在的 username 註冊時操作失敗" classname="前置（參數）- username 必須唯一" time="0.147">
+    <system-out><![CDATA[2026-06-15T14:58:19.705Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.705Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 使用已存在的 username 註冊時操作失敗                         &amp#27;[90m# features/user/註冊帳號.feature:13&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                                      &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | email             |
+    | alice    | alice@example.com |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice"&amp#27;[0m&amp#27;[32m 與 email &amp#27;[0m&amp#27;[32m&amp#27;[1m"new@example.com"&amp#27;[0m&amp#27;[32m 註冊&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestRegistersWithUsernameAndEmail(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"username 已被使用"&amp#27;[0m                          &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="使用已存在的 email 註冊時操作失敗" classname="前置（參數）- email 必須唯一且格式合法" time="0.16">
+    <system-out><![CDATA[2026-06-15T14:58:19.852Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:19.852Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 使用已存在的 email 註冊時操作失敗                            &amp#27;[90m# features/user/註冊帳號.feature:19&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                                      &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | email             |
+    | alice    | alice@example.com |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 與 email &amp#27;[0m&amp#27;[32m&amp#27;[1m"alice@example.com"&amp#27;[0m&amp#27;[32m 註冊&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestRegistersWithUsernameAndEmail(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"email 已被註冊"&amp#27;[0m                             &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="使用格式不合法的 email 註冊時操作失敗" classname="前置（參數）- email 必須唯一且格式合法" time="0.134">
+    <system-out><![CDATA[2026-06-15T14:58:20.011Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:20.012Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 使用格式不合法的 email 註冊時操作失敗                     &amp#27;[90m# features/user/註冊帳號.feature:23&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                                 &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | email             |
+    | alice    | alice@example.com |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"bob"&amp#27;[0m&amp#27;[32m 與 email &amp#27;[0m&amp#27;[32m&amp#27;[1m"not-an-email"&amp#27;[0m&amp#27;[32m 註冊&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestRegistersWithUsernameAndEmail(java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"email 格式不正確"&amp#27;[0m                       &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="密碼少於 8 碼註冊時操作失敗" classname="前置（參數）- 密碼至少 8 碼且須同時含英文小寫字母與數字" time="0.144">
+    <system-out><![CDATA[2026-06-15T14:58:20.146Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:20.146Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 密碼少於 8 碼註冊時操作失敗                                              &amp#27;[90m# features/user/註冊帳號.feature:29&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                                                   &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | email             |
+    | alice    | alice@example.com |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol"&amp#27;[0m&amp#27;[32m 與 email &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol@example.com"&amp#27;[0m&amp#27;[32m 與密碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"ab12"&amp#27;[0m&amp#27;[32m 註冊&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestRegistersWithUsernameEmailPassword(java.lang.String,java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"密碼至少需 8 碼"&amp#27;[0m                                           &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="密碼缺少數字註冊時操作失敗" classname="前置（參數）- 密碼至少 8 碼且須同時含英文小寫字母與數字" time="0.146">
+    <system-out><![CDATA[2026-06-15T14:58:20.289Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:20.290Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 密碼缺少數字註冊時操作失敗                                                    &amp#27;[90m# features/user/註冊帳號.feature:33&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                                                       &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | email             |
+    | alice    | alice@example.com |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol"&amp#27;[0m&amp#27;[32m 與 email &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol@example.com"&amp#27;[0m&amp#27;[32m 與密碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"abcdefgh"&amp#27;[0m&amp#27;[32m 註冊&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestRegistersWithUsernameEmailPassword(java.lang.String,java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"密碼須同時包含英文小寫字母與數字"&amp#27;[0m                                        &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="密碼缺少英文小寫字母註冊時操作失敗" classname="前置（參數）- 密碼至少 8 碼且須同時含英文小寫字母與數字" time="0.14">
+    <system-out><![CDATA[2026-06-15T14:58:20.436Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:20.437Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 密碼缺少英文小寫字母註冊時操作失敗                                                &amp#27;[90m# features/user/註冊帳號.feature:37&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                                                       &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | email             |
+    | alice    | alice@example.com |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol"&amp#27;[0m&amp#27;[32m 與 email &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol@example.com"&amp#27;[0m&amp#27;[32m 與密碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"12345678"&amp#27;[0m&amp#27;[32m 註冊&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestRegistersWithUsernameEmailPassword(java.lang.String,java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作失敗，錯誤為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"密碼須同時包含英文小寫字母與數字"&amp#27;[0m                                        &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationFailedWithError(java.lang.String)&amp#27;[0m
+]]></system-out>
+  </testcase>
+  <testcase name="以全新帳號註冊後建立成功" classname="後置（狀態）- 註冊成功後系統建立玩家帳號並發布 PlayerRegistered 事件" time="0.257">
+    <system-out><![CDATA[2026-06-15T14:58:20.576Z  INFO 91 --- [gomoku] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gomoku.cucumber.CucumberSpringConfiguration]: CucumberSpringConfiguration does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-06-15T14:58:20.576Z  INFO 91 --- [gomoku] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gomoku.Application for test class com.gomoku.cucumber.CucumberSpringConfiguration
+
+@ignore @command
+Example: 以全新帳號註冊後建立成功                                                      &amp#27;[90m# features/user/註冊帳號.feature:43&amp#27;[0m
+  &amp#27;[32mGiven &amp#27;[0m&amp#27;[32m系統中已存在以下玩家：&amp#27;[0m                                                        &amp#27;[90m# com.gomoku.steps.common_given.CommonGiven.systemHasPlayers(java.util.List<java.util.Map<java.lang.String, java.lang.String>>)&amp#27;[0m
+    | username | email             |
+    | alice    | alice@example.com |
+  &amp#27;[32mWhen &amp#27;[0m&amp#27;[32m訪客以 username &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol"&amp#27;[0m&amp#27;[32m 與 email &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol@example.com"&amp#27;[0m&amp#27;[32m 與密碼 &amp#27;[0m&amp#27;[32m&amp#27;[1m"P@ssw0rd1"&amp#27;[0m&amp#27;[32m 註冊&amp#27;[0m &amp#27;[90m# com.gomoku.steps.user.UserSteps.guestRegistersWithUsernameEmailPassword(java.lang.String,java.lang.String,java.lang.String)&amp#27;[0m
+  &amp#27;[32mThen &amp#27;[0m&amp#27;[32m操作成功&amp#27;[0m                                                                &amp#27;[90m# com.gomoku.steps.common_then.CommonThen.operationSuccessful()&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m系統中存在 username 為 &amp#27;[0m&amp#27;[32m&amp#27;[1m"carol"&amp#27;[0m&amp#27;[32m 的玩家&amp#27;[0m                                         &amp#27;[90m# com.gomoku.steps.user.UserSteps.systemContainsPlayerWithUsername(java.lang.String)&amp#27;[0m
+  &amp#27;[32mAnd &amp#27;[0m&amp#27;[32m密碼以雜湊形式儲存，不以明文保存&amp#27;[0m                                                     &amp#27;[90m# com.gomoku.steps.user.UserSteps.passwordStoredAsHash()&amp#27;[0m
+]]></system-out>
+  </testcase>
+</testsuite>

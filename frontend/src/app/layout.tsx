@@ -1,42 +1,27 @@
-import type { Metadata } from 'next'
-import './globals.css'
-import { MSWProvider } from '@/components/MSWProvider'
-import { Toaster } from 'react-hot-toast'
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+import { MswProvider } from "@/mocks/MswProvider";
+import { ToastHost } from "@/components/Toast";
 
 export const metadata: Metadata = {
-  title: 'OnePage 電商平台',
-  description: 'OnePage 一頁式電商平台',
-}
+  title: "五子棋 Gomoku",
+  description: "經典對弈 · 15×15 標準棋盤 · 支援 Swap2 公平開局",
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-TW">
+    <html lang="zh-Hant">
       <body>
-        <MSWProvider>
+        <MswProvider>
           {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#4A5D23',
-                color: '#fff',
-                fontFamily: 'Source Sans 3, sans-serif',
-              },
-              error: {
-                style: {
-                  background: '#C75B39',
-                  color: '#fff',
-                },
-              },
-            }}
-          />
-        </MSWProvider>
+          <ToastHost />
+        </MswProvider>
       </body>
     </html>
-  )
+  );
 }

@@ -1,0 +1,100 @@
+version: "1.0"
+module: "frontend_development"
+project: "gomoku"
+framework: "Next.js 14 (App Router) + TypeScript + Tailwind"
+updated_at: "2026-05-24"
+
+# Phase progress (Playbook workflow)
+phases:
+  scaffold:            done   # package.json, next/tailwind/tsconfig/postcss, globals.css
+  api_layer:           done   # zod schemas + client + service layer + config
+  msw_layer:           done   # fixtures + handlers (api.yml-aligned) + worker + provider
+  state_management:    done   # zustand: session, toast, (game state in page)
+  stomp:               done   # channels + client wrapper (x-stomp-channels)
+  components:          done   # AppHeader, Toast, Modal, ConnectionBadge, Board(canvas)
+  routes:              done   # all 9 App Router pages
+  e2e:                 done   # 5 Playwright smoke tests PASS
+  verify_build:        done   # tsc --noEmit clean; next build OK; dev 200 on all routes
+
+inputs_consumed:
+  - specs/api.yml
+  - specs/ui/*.md
+  - prototype/*/index.html (9 screens)
+  - prototype/assets/{theme.css,board.js,ui.js}
+  - prototype/_component-inventory.md
+
+# Files created so far
+files:
+  config:
+    - src/lib/api/config.ts
+  api:
+    - src/lib/types/schemas.ts   # (pre-existing, strict api.yml mirror)
+    - src/lib/api/client.ts      # envelope-unwrapping typed fetch
+    - src/lib/api/services.ts    # one fn per operationId
+  game:
+    - src/lib/game/winCheck.ts   # 5-in-a-row detection (mock authority)
+  mocks:
+    - src/mocks/data/fixtures.ts
+    - src/mocks/handlers/index.ts
+    - src/mocks/browser.ts
+    - src/mocks/MswProvider.tsx
+    - public/mockServiceWorker.js
+  store:
+    - src/lib/store/session.ts   # Q4 identity 三態, persisted
+    - src/lib/store/toast.ts
+  stomp:
+    - src/lib/stomp/channels.ts
+    - src/lib/stomp/client.ts
+  styles:
+    - src/app/globals.css        # full theme.css port
+
+# Route plan (App Router) — 9 screens
+routes_planned:
+  - "/"            -> home (mode select)
+  - "/user"        -> login/register/guest tabs
+  - "/lobby"       -> public rooms + create/join/quick-match
+  - "/room/[roomId]" -> room (ready/chat/spectator)
+  - "/opening/[gameId]" -> Swap2 flow (tutorial->coin->place->choice)
+  - "/game/[gameId]" -> 15x15 board play + result overlay
+  - "/leaderboard" -> stats + ranking (Q2 rule)
+  - "/replay/[gameId]" -> replay controls
+
+components_built:
+  - src/components/AppHeader.tsx       # identity 三態 (Q4)
+  - src/components/Toast.tsx           # global toast host
+  - src/components/Modal.tsx           # overlay dialog (dismissable flag)
+  - src/components/ConnectionBadge.tsx # online/reconnecting/offline
+  - src/components/Board.tsx           # React wrapper over Canvas board
+  - src/lib/game/GomokuBoard.ts        # canvas renderer (port of board.js)
+
+routes_built:
+  - src/app/layout.tsx                 # MswProvider + ToastHost
+  - src/app/page.tsx                   # home / mode select
+  - src/app/user/page.tsx              # login/register/guest (zod)
+  - src/app/lobby/page.tsx             # rooms / create / join / quick-match
+  - src/app/room/[roomId]/page.tsx     # ready / chat / spectator / STOMP
+  - src/app/opening/[gameId]/page.tsx  # Swap2 flow (tutorial→coin→place→choice)
+  - src/app/game/[gameId]/page.tsx     # board play + 4 result scenarios + reconnect
+  - src/app/leaderboard/page.tsx       # ranking (Q2) + my stats
+  - src/app/replay/[gameId]/page.tsx   # replay controls
+
+e2e_files:
+  - playwright.config.ts
+  - e2e/smoke.spec.ts                  # 5 scenarios, all PASS
+
+verification:
+  typecheck: "PASS (tsc --noEmit)"
+  build: "PASS (next build, all 9 routes)"
+  dev_server: "all routes HTTP 200"
+  e2e: "5/5 PASS"
+  known_warnings:
+    - "sockjs-client `debug` critical-dependency webpack warning (non-fatal)"
+    - "localStorage warning during static prerender (zustand persist; client-only, harmless)"
+
+known_followups:
+  - "STOMP wiring is in place but backend WS not online; online realtime is best-effort + reconnect badge"
+  - "MSW handlers simulate server authority (win detection, swap2); replace with real backend by setting NEXT_PUBLIC_API_MOCKING=disabled"
+
+interrupt:
+  status: "completed"
+  notes: "All phases complete: api/msw/store/stomp + 6 components + 9 routes + e2e green; build clean."

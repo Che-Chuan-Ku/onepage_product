@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — 對局</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<main class="page">
+  <!-- info bar -->
+  <div class="info-bar" style="margin-bottom:14px">
+    <button class="btn btn-ghost" style="min-height:38px;padding:0 14px" onclick="leave()">← 離開</button>
+    <div class="player-chip active" id="p1"><span class="stone-dot black"></span><span>玩家一</span></div>
+    <div class="player-chip" id="p2"><span class="stone-dot white"></span><span>玩家二</span></div>
+    <span class="grow"></span>
+    <span class="dim num" id="moveCount">第 0 手</span>
+    <span class="dim num" id="clock">00:00</span>
+    <span class="conn online" id="conn"><span class="led"></span><span>已連線</span></span>
+  </div>
+
+  <div id="specBanner" class="info-bar" style="display:none;margin-bottom:14px;background:#2f2533">
+    <span class="badge badge-spec">👁 觀戰中</span><span class="dim">棋盤唯讀，無法落子</span>
+    <span class="grow"></span><span class="dim num" id="specN">觀戰 3 人</span>
+  </div>
+
+  <div class="layout">
+    <section>
+      <div class="board-wrap" id="bw"><canvas class="board" id="board"></canvas></div>
+      <p class="dim center mt-8" style="font-size:13px" id="turnHint" aria-live="polite">輪到黑方落子</p>
+    </section>
+    <aside class="sidebar">
+      <div class="card pad">
+        <h3 style="margin-bottom:10px">對局資訊</h3>
+        <div class="row" style="justify-content:space-between"><span class="dim">模式</span><span id="modeLabel">本地雙人</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">回合</span><span id="turnLabel">黑方</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">落子數</span><span class="num" id="mcSide">0</span></div>
+      </div>
+      <div class="card pad">
+        <h3 style="margin-bottom:10px">示範控制</h3>
+        <button class="btn btn-ghost btn-block" onclick="demoWin()">模擬連五（觸發結束）</button>
+        <button class="btn btn-ghost btn-block mt-8" onclick="demoReconnect()">模擬斷線重連</button>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script src="../assets/board.js"></script>
+<script>
+const P=new URLSearchParams(location.search);
+const mode=P.get('mode')||'local';        // local | online
+const isSpec=P.get('role')==='spectator';
+let turn='black', moves=0, sec=0, lastFive=[];
+
+document.getElementById('modeLabel').textContent = mode==='local'?'本地雙人':'線上連線';
+if(mode==='local'){document.getElementById('p1').children[1].textContent='玩家一';document.getElementById('p2').children[1].textContent='玩家二';
+  document.getElementById('conn').style.display='none';} // hide conn in local
+else{document.getElementById('p1').children[1].textContent='阿哲';document.getElementById('p2').children[1].textContent='你';}
+
+const board=new GomokuBoard(document.getElementById('board'),{
+  interactive:!isSpec, requireConfirm:isMobile(),
+  onPlace:place
+});
+function isMobile(){return matchMedia('(max-width:640px)').matches;}
+
+if(isSpec){
+  document.getElementById('specBanner').style.display='flex';
+  document.getElementById('bw').classList.add('spectating');
+}
+
+// timer
+setInterval(()=>{if(document.hidden)return;sec++;document.getElementById('clock').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');},1000);
+
+function place(r,c){
+  // demo: alternate, server-authoritative simulated. reject if not your turn handled by board interactive flag
+  board.add(r,c,turn);
+  moves++;
+  lastFive.push([r,c]);
+  document.getElementById('moveCount').textContent='第 '+moves+' 手';
+  document.getElementById('mcSide').textContent=moves;
+  // quick win check (demo: 5 in a row horizontally not auto-detected; use demoWin button)
+  turn = turn==='black'?'white':'black';
+  syncTurn();
+}
+function syncTurn(){
+  document.getElementById('turnLabel').textContent=turn==='black'?'黑方':'白方';
+  document.getElementById('turnHint').textContent='輪到'+(turn==='black'?'黑':'白')+'方落子';
+  document.getElementById('p1').classList.toggle('active',turn==='black');
+  document.getElementById('p2').classList.toggle('active',turn==='white');
+}
+syncTurn();
+
+// invalid move demo: clicking occupied is silently ignored by board; show toast example
+document.getElementById('board').addEventListener('pointerdown',e=>{
+  if(isSpec){toast('觀戰中，無法落子','error');}
+});
+
+function demoWin(){
+  const row=7; const line=[[row,4],[row,5],[row,6],[row,7],[row,8]];
+  line.forEach(([r,c])=>{if(!board.stones[r+','+c]){board.stones[r+','+c]='black';}});
+  board.setHighlight(line);
+  setTimeout(()=>showResult({winner:'黑方', name: mode==='local'?'玩家一':'阿哲', draw:false}),900);
+}
+function demoReconnect(){
+  const conn=document.getElementById('conn');
+  conn.className='conn reconnecting';conn.children[1].textContent='重新連線中…';
+  toast('連線中斷，重新連線中…','error');
+  setTimeout(()=>{conn.className='conn online';conn.children[1].textContent='已連線';toast('已重新連線','success');},2200);
+}
+
+function showResult(res){
+  const isGuestOnline = mode!=='local' && P.get('guest')==='1';
+  const rematch = isSpec ? '' :
+    isGuestOnline
+      ? `<a class="btn btn-primary btn-block" href="../user/index.html#guest">重新輸入暱稱進新局</a>
+         <p class="dim mt-8" style="font-size:13px;text-align:center">想保存戰績、登上排行榜？強烈建議註冊一個帳號</p>`
+      : `<button class="btn btn-primary btn-block" onclick="rematch()">再戰</button>`;
+  const ov=showModal(`<div class="result-banner">${res.draw?'和局':res.name+' 獲勝！'}</div>
+    <div class="win-stat"><div><div class="dim" style="font-size:12px">落子數</div><b class="num">${moves||9}</b></div>
+      <div><div class="dim" style="font-size:12px">耗時</div><b class="num">${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}</b></div></div>
+    <div class="col gap-8 mt-16">
+      ${rematch}
+      ${isSpec?'<p class="dim" style="text-align:center;font-size:13px">觀戰者僅顯示結果</p>':''}
+      <a class="btn btn-ghost btn-block" href="../home/index.html">回首頁</a>
+    </div>`);
+  ov.dataset.dismiss='0';
+}
+window.rematch=function(){ location.reload(); };
+
+function leave(){
+  showModal(`<h2 style="margin-bottom:10px">離開對局？</h2><p class="dim" style="margin-bottom:16px">離開將結束目前對局。</p>
+    <div class="col gap-8"><a class="btn btn-danger btn-block" href="../home/index.html">確定離開</a>
+    <button class="btn btn-ghost btn-block" onclick="closeModal(this)">繼續對局</button></div>`);
+}
+</script>
+</body>
+</html>

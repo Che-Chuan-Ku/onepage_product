@@ -1,0 +1,101 @@
+%% ═══ 線上連線對戰 — 技術時序圖（SD-level）═══
+%% 對應業務流程：activities/線上連線對戰.mmd
+%% 通訊模式：REST 寫（實線，server-authoritative）+ STOMP 讀（虛線，/topic 廣播）
+%% 後端：Spring SimpMessagingTemplate（SimpleBroker，記憶體）+ PostgreSQL 為唯一真相源
+%% 來源：backend WebSocketConfig / GameController / RoomController / GameService / RoomService / GameBroadcaster
+%% 本圖為標準模式主路徑；Swap2 開局段（/topic/game/{id}/opening）省略
+
+sequenceDiagram
+    autonumber
+    actor A as 玩家A (Host)
+    actor B as 玩家B (Guest)
+    participant C as Controller<br/>(/api/gmk/v1)
+    participant S as RoomService /<br/>GameService
+    participant DB as PostgreSQL
+    participant BC as GameBroadcaster
+    participant WS as STOMP Broker<br/>(/topic, SimpleBroker)
+
+    Note over A,B: 兩端皆已 SockJS 連上 /ws
+
+    rect rgb(235,245,255)
+    Note over A,WS: ① 匹配 / 建房
+    A->>C: POST /rooms (createRoom)
+    C->>S: createRoom(A)
+    S->>DB: save GameRoom(WAITING, host=A)
+    S-->>A: RoomDetailResponse (201)
+    A--)WS: SUBSCRIBE /topic/room/{roomId}
+
+    B->>C: POST /rooms/actions/quick-match
+    C->>S: quickMatch(B)
+    S->>DB: 找 WAITING 公開房 → joinRoom(B)
+    S->>BC: broadcastRoom(roomId, detail)
+    BC--)WS: /topic/room/{roomId}
+    WS--)A: RoomDetailResponse (B 加入)
+    B--)WS: SUBSCRIBE /topic/room/{roomId}
+    end
+
+    rect rgb(235,255,235)
+    Note over A,WS: ② 雙方 Ready（悲觀鎖序列化）
+    A->>C: POST /rooms/{id}/actions/toggle-ready
+    C->>S: toggleReady(A) — findByIdForUpdate🔒
+    S->>DB: A.ready=true
+    S->>BC: broadcastRoom
+    BC--)WS: /topic/room/{id}
+    WS--)B: room (A ready)
+    B->>C: POST /rooms/{id}/actions/toggle-ready
+    C->>S: toggleReady(B) 🔒
+    S->>DB: B.ready=true → 兩人 ready → status=READY
+    S->>BC: broadcastRoom
+    BC--)WS: /topic/room/{id}
+    WS--)A: room=READY
+    end
+
+    rect rgb(255,245,230)
+    Note over A,WS: ③ 開局（幂等 + 悲觀鎖，收斂同一 gameId）
+    A->>C: POST /rooms/{id}/actions/start-game
+    C->>S: startOnlineGame(A) — findByIdForUpdate🔒
+    S->>DB: save Game(ONLINE, PLAYING,<br/>black=A, white=B, turn=BLACK)<br/>room→IN_PROGRESS
+    S->>BC: broadcastRoom(GameStartedEvent)
+    BC--)WS: /topic/room/{id}
+    WS--)A: GameStartedEvent(gameId)
+    WS--)B: GameStartedEvent(gameId)
+    Note over A,B: 兩端導航到 /game/{gameId}<br/>並 SUBSCRIBE /topic/game/{gameId}
+    end
+
+    rect rgb(245,235,255)
+    Note over A,WS: ④ 輪流落子（server-authoritative）
+    A->>C: POST /games/{id}/moves {row,col}
+    C->>S: placeMove(gameId, A, move)
+    S->>S: 驗回合(turn=BLACK→需A)<br/>越界 / 重複檢查
+    S->>DB: save Move、rebuild board、<br/>findWinningLine→無、turn→WHITE
+    S-->>A: GameStateResponse (201)
+    S->>BC: broadcastGameState
+    BC--)WS: /topic/game/{id}
+    WS--)B: 新狀態 (turn=WHITE, lastMove)
+
+    B->>C: POST /games/{id}/moves {row,col}
+    C->>S: placeMove(gameId, B, move)
+    S->>DB: save Move、turn→BLACK
+    S-->>B: GameStateResponse (201)
+    S->>BC: broadcastGameState
+    BC--)WS: /topic/game/{id}
+    WS--)A: 新狀態 (turn=BLACK)
+    Note over A,B: …往復直到五連 / 滿盤…
+    end
+
+    rect rgb(255,235,235)
+    Note over A,WS: ⑤ 勝負 + 戰績
+    A->>C: POST /games/{id}/moves（致勝手）
+    C->>S: placeMove → findWinningLine 命中
+    S->>DB: Game FINISHED, result=BLACK_WIN,<br/>winner=A、updateStats(A win, B loss)
+    S-->>A: GameStateResponse(result, winningLine)
+    S->>BC: broadcastGameState
+    BC--)WS: /topic/game/{id}
+    WS--)B: FINISHED + winningLine
+    end
+
+    opt 再戰
+    A->>C: POST /games/{id}/actions/rematch
+    C->>S: rematchGame — 黑白對調建新局
+    S-->>A: 新 gameId (201)
+    end

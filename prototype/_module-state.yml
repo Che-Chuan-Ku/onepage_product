@@ -1,0 +1,164 @@
+version: "2.0"
+mode: "P3"                        # 最終視覺交付
+workflow_mode: "hybrid"          # 預設 hybrid：8 phase 全跑，新文件自動生成
+current_phase: "done"
+phase_detail: "全 phase 完成，prototype 交付前端"
+
+spec_analysis:
+  status: "done"
+  manifest_file: "prototype/_feature-manifest.md"
+  features_count: 9
+  derived_inputs:
+    - "prototype/_derived/home.md"
+  missing_inputs:
+    - "arguments.yml（Hub 未提供，模組以預設路徑運行）"
+    - "specs/activities/*.activity（實際為 .mmd，已相容解析）"
+
+ux_foundation:
+  status: "done"
+  file: "prototype/_ux-foundation.md"
+  confirmed: true
+  confirmed_at: "2026-05-24T12:30:00+08:00"   # hybrid 模式自動確認
+
+information_architecture:
+  status: "done"
+  file: "prototype/_information-architecture.md"
+  confirmed: true
+  confirmed_at: "2026-05-24T12:30:00+08:00"
+
+design_strategy:
+  status: "done"
+  confirmed: true
+  confirmed_at: "2026-05-24T12:30:00+08:00"
+  file: "prototype/_design-strategy.md"
+  accessibility_spec_file: "prototype/_accessibility-spec.md"
+  component_inventory_file: "prototype/_component-inventory.md"
+  ux_copy_guidelines_file: "prototype/_ux-copy-guidelines.md"
+
+prototyping:
+  status: "done"
+  completed_count: 9
+  conflict_count: 0
+  error_count: 0
+
+ux_review:
+  status: "passed"
+  report_file: "prototype/_ux-review.md"
+
+features:
+  - name: "home"
+    activity_file: "specs/activities/本地雙人對戰.mmd"
+    ui_file: "specs/ui/模式選擇首頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/home/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "user"
+    activity_file: "specs/activities/使用者管理.mmd"
+    ui_file: "specs/ui/登入註冊頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/user/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "lobby"
+    activity_file: "specs/activities/線上連線對戰.mmd"
+    ui_file: "specs/ui/大廳與房間列表.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/lobby/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "room"
+    activity_file: "specs/activities/線上連線對戰.mmd"
+    ui_file: "specs/ui/房間頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/room/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "opening"
+    activity_file: "specs/activities/線上連線對戰.mmd"
+    ui_file: "specs/ui/Swap2開局介面.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/opening/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "game"
+    activity_file: "specs/activities/本地雙人對戰.mmd"
+    ui_file: "specs/ui/棋盤對局頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/game/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "result"
+    activity_file: "specs/activities/本地雙人對戰.mmd"
+    ui_file: "specs/ui/對局結束畫面.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/result/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "leaderboard"
+    activity_file: "specs/activities/使用者管理.mmd"
+    ui_file: "specs/ui/排行榜頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/leaderboard/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "replay"
+    activity_file: "specs/activities/使用者管理.mmd"
+    ui_file: "specs/ui/回放頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/replay/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+
+quality_gate:
+  p1:
+    status: "passed"
+    report_file: "prototype/_quality-gate-report.md"
+    ux_review_verified: true
+  p3:
+    status: "passed"
+    report_file: "prototype/_quality-gate-report.md"
+    ux_review_verified: true
+
+last_interrupt:
+  type: "none"
+  at_phase: "done"
+  at_skill: ""
+  resume_file: ""
+  created_at: "2026-05-24T12:30:00+08:00"

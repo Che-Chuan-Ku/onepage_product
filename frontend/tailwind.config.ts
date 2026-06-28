@@ -1,66 +1,69 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from "tailwindcss";
 
+// Design tokens mirror prototype/assets/theme.css (Design Strategy §2).
 const config: Config = {
-  content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        olive: {
-          50: '#f7f8f0',
-          100: '#eef0e1',
-          200: '#dce1c3',
-          300: '#c4cc9a',
-          400: '#a8b36e',
-          500: '#8d9a4f',
-          600: '#6e7b3b',
-          700: '#4A5D23',
-          800: '#3d4c1f',
-          900: '#2e3a17',
-        },
-        terra: {
-          50: '#fdf5f2',
-          100: '#fbe8e0',
-          200: '#f5cfc0',
-          300: '#edae96',
-          400: '#e28a6a',
-          500: '#C75B39',
-          600: '#b74a2c',
-          700: '#993d25',
-          800: '#7d3422',
-          900: '#6a2e20',
-        },
-        cream: {
-          50: '#FEFDFB',
-          100: '#FAF7F2',
-          200: '#F5EFE6',
-          300: '#EDE4D4',
-        },
+        bg: "#1a1714",
+        surface: "#252019",
+        "surface-2": "#2f2820",
+        board: "#d9a86c",
+        "board-line": "#6b4f30",
+        "stone-black": "#1b1b1f",
+        "stone-white": "#f4f1ea",
+        primary: "#e0a458",
+        accent: "#4ea1d3",
+        success: "#5cb85c",
+        danger: "#e0573e",
+        win: "#ffd34d",
+        text: "#f2ece2",
+        "text-dim": "#a99e8d",
+        border: "#3a322a",
+      },
+      borderRadius: {
+        sm: "8px",
+        md: "14px",
+        lg: "22px",
+        pill: "999px",
+      },
+      boxShadow: {
+        card: "0 6px 24px rgba(0,0,0,.35)",
+        stone: "0 2px 4px rgba(0,0,0,.5)",
       },
       fontFamily: {
-        display: ['Playfair Display', 'serif'],
-        body: ['Source Sans 3', 'sans-serif'],
+        sans: [
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "PingFang TC",
+          "Noto Sans TC",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
       },
       keyframes: {
+        pulse: { "0%,100%": { opacity: "1" }, "50%": { opacity: ".35" } },
+        toastIn: {
+          from: { opacity: "0", transform: "translateY(-8px)" },
+          to: { opacity: "1", transform: "none" },
+        },
         slideUp: {
-          from: { opacity: '0', transform: 'translateY(30px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to: { opacity: "1", transform: "none" },
         },
-        fadeIn: {
-          from: { opacity: '0' },
-          to: { opacity: '1' },
-        },
+        coinflip: { to: { transform: "rotateX(1980deg)" } },
       },
       animation: {
-        slideUp: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-        fadeIn: 'fadeIn 0.8s ease forwards',
+        pulseSoft: "pulse 1s infinite",
+        toastIn: "toastIn .25s ease",
+        slideUp: "slideUp .3s ease",
+        coinflip: "coinflip 1.6s cubic-bezier(.3,.1,.2,1) forwards",
       },
     },
   },
   plugins: [],
-}
+};
 
-export default config
+export default config;

@@ -1,1 +1,8 @@
-{}
+{
+  "/page": "app/page.js",
+  "/lobby/page": "app/lobby/page.js",
+  "/user/page": "app/user/page.js",
+  "/room/[roomId]/page": "app/room/[roomId]/page.js",
+  "/opening/[gameId]/page": "app/opening/[gameId]/page.js",
+  "/game/[gameId]/page": "app/game/[gameId]/page.js"
+}

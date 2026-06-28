@@ -1,4 +1,5 @@
-import { setupWorker } from 'msw/browser'
-import { handlers } from './handlers'
+import { setupWorker } from "msw/browser";
+import { handlers } from "./handlers";
 
-export const worker = setupWorker(...handlers)
+/** Browser-side MSW worker (backend not yet online). */
+export const worker = setupWorker(...handlers);

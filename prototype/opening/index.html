@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — Swap2 開局</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<main class="page">
+  <!-- opening banner -->
+  <div class="info-bar" style="margin-bottom:14px" aria-live="polite" id="banner">
+    <span class="badge badge-swap2">Swap2 開局</span>
+    <b id="phaseText">準備投擲硬幣…</b>
+    <span class="grow"></span>
+    <span class="dim" id="stepText"></span>
+  </div>
+
+  <div class="layout">
+    <section>
+      <div class="board-wrap"><canvas class="board" id="board"></canvas></div>
+    </section>
+
+    <aside class="sidebar">
+      <!-- controls swap depending on phase -->
+      <div class="card pad" id="controls">
+        <div class="center col" style="padding:10px 0">
+          <div class="dim">載入中…</div>
+        </div>
+      </div>
+      <div class="card pad">
+        <button class="btn btn-ghost btn-block" onclick="openTutorial()">？ Swap2 規則說明</button>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script src="../assets/board.js"></script>
+<script>
+const ctx=new URLSearchParams(location.search).get('ctx')||'online';
+const board=new GomokuBoard(document.getElementById('board'),{interactive:false,requireConfirm:true});
+const ctl=document.getElementById('controls');
+const phaseText=document.getElementById('phaseText'), stepText=document.getElementById('stepText');
+
+// State: coin -> firstMover plays 3 stones (B,W,B) -> secondMover chooses
+let placed=[]; // {r,c,color}
+const seq=['black','white','black']; // 假先方放 2黑1白
+
+// 1) tutorial (first time)
+function openTutorial(){
+  const ov=showModal(`<h2 style="margin-bottom:10px">Swap2 開局怎麼玩？</h2>
+    <p class="dim" style="line-height:1.7">
+    假先方先在盤面放 <b>3 顆子（2 黑 1 白）</b>，假後方再從三個選項中選擇：<br>
+    ① 執黑接手 ② 執白接手 ③ 再放第四、五子後交由對手選色。<br>
+    讓開局更公平，避免先手優勢過大。</p>
+    <label class="row gap-8 mt-16" style="font-size:14px"><input type="checkbox" id="noShow" style="width:18px;height:18px">不再顯示</label>
+    <button class="btn btn-primary btn-block mt-16" onclick="closeTut(this)">我知道了</button>`);
+  ov.dataset.dismiss='1';
+  window._tutOv=ov;
+}
+function closeTut(el){ if($('#noShow')?.checked) localStorage.setItem('swap2_tut','1'); closeModal(el); coinPhase(); }
+function maybeTutorial(){ if(localStorage.getItem('swap2_tut')) coinPhase(); else openTutorial(); }
+
+// 2) coin flip -> decide 假先方
+function coinPhase(){
+  phaseText.textContent='投擲硬幣，決定假先方…';
+  ctl.innerHTML=`<div class="center col" style="text-align:center">
+    <div class="coin-scene"><div class="coin" id="coin">
+      <div class="face heads">先</div><div class="face tails">後</div></div></div>
+    <button class="btn btn-primary mt-16" id="tossBtn" onclick="toss()">投擲硬幣</button>
+  </div>`;
+}
+function toss(){
+  document.getElementById('tossBtn').disabled=true;
+  const coin=document.getElementById('coin');
+  const youFirst=true; // backend-decided (demo: you are 假先方)
+  coin.classList.add('flipping');
+  setTimeout(()=>{
+    coin.style.transform=youFirst?'rotateX(0deg)':'rotateY(180deg)';
+    toast(youFirst?'你是假先方':'你是假後方','success');
+    setTimeout(()=> youFirst?placePhase():waitPhase(), 800);
+  },1600);
+}
+
+// 3a) 假先方 placement (each stone confirm + undo)
+function placePhase(){
+  board.interactive=true; board.requireConfirm=true;
+  board.onPlace=(r,c)=>{ const color=seq[placed.length]; board.add(r,c,color,true); placed.push({r,c,color}); renderPlace(); };
+  renderPlace();
+}
+function renderPlace(){
+  const n=placed.length;
+  phaseText.textContent='你是假先方 — 放置開局子';
+  stepText.textContent=n+'/3';
+  if(n<3){
+    const nextColor=seq[n]==='black'?'黑':'白';
+    ctl.innerHTML=`<h3 style="margin-bottom:8px">放置開局子（${n}/3）</h3>
+      <p class="dim" style="margin-bottom:14px">點擊盤面預覽，下一子為 <b>${nextColor}</b>。</p>
+      <button class="btn btn-primary btn-block" id="confirmBtn" ${board.cursor?'':'disabled'} onclick="board.confirm()">確認此子</button>
+      <button class="btn btn-ghost btn-block mt-8" ${n>0?'':'disabled'} onclick="undo()">悔最後一子</button>`;
+    // re-enable confirm when cursor set
+    const origPlace=board._place.bind(board);
+  } else {
+    board.interactive=false;
+    phaseText.textContent='開局子放置完成';stepText.textContent='';
+    ctl.innerHTML=`<h3 style="margin-bottom:8px">已放置 3 子</h3>
+      <p class="dim" style="margin-bottom:14px">交由假後方三選一…（示意：由你扮演假後方做選擇）</p>
+      <button class="btn btn-accent btn-block" onclick="choicePhase()">輪到假後方選擇 →</button>`;
+  }
+}
+// hook confirm-button enabling on cursor changes
+const _draw=GomokuBoard.prototype.draw;
+GomokuBoard.prototype.draw=function(){_draw.call(this);const b=document.getElementById('confirmBtn');if(b)b.disabled=!this.cursor;};
+function undo(){ const last=placed.pop(); if(last){board.remove(last.r,last.c);} board.clearCursor(); renderPlace(); toast('已悔最後一子'); }
+
+// 3b) 假後方 wait view (when you're 假後方)
+function waitPhase(){
+  phaseText.textContent='你是假後方 — 等待對手開局…';
+  ctl.innerHTML=`<div class="center col" style="text-align:center;padding:14px 0">
+    <div style="font-size:40px;animation:pulse 1.4s infinite">⌛</div>
+    <p class="dim mt-8">等待對手放置開局子</p></div>`;
+  // demo: auto-fill opponent's 3 stones then go to choice
+  const demo=[{r:7,c:7,color:'black'},{r:7,c:8,color:'white'},{r:8,c:7,color:'black'}];
+  let i=0; const t=setInterval(()=>{ if(i>=3){clearInterval(t);choicePhase();return;} const s=demo[i++]; board.add(s.r,s.c,s.color,true); },700);
+}
+
+// 4) 假後方 three-choice
+function choicePhase(){
+  board.interactive=false;
+  phaseText.textContent='假後方三選一';stepText.textContent='';
+  ctl.innerHTML=`<h3 style="margin-bottom:12px">選擇你的接手方式</h3>
+    <div class="col gap-12">
+      <div class="opt-card" onclick="choose('執黑')"><h3>執黑</h3><p>接手目前盤面以黑棋繼續</p></div>
+      <div class="opt-card" onclick="choose('執白')"><h3>執白</h3><p>接手目前盤面以白棋繼續</p></div>
+      <div class="opt-card" onclick="choose('放第四五子')"><h3>放第四、五子</h3><p>再交由對手選色</p></div>
+    </div>`;
+}
+function choose(c){
+  toast('已選擇：'+c+' · 顏色定案，進入正式對局','success');
+  setTimeout(()=>location.href='../game/index.html?mode='+(ctx==='local'?'local':'online')+'&from=swap2',1000);
+}
+
+maybeTutorial();
+</script>
+</body>
+</html>

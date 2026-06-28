@@ -1,29 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8080',
-      },
-      {
-        protocol: 'https',
-        hostname: 'kudreambuck.s3.ap-east-2.amazonaws.com',
-      },
-    ],
-  },
+  reactStrictMode: true,
+  // Real-backend wiring (integration test): set BACKEND_ORIGIN to proxy
+  // /api/* and /ws/* to the Spring backend; unset → MSW mock mode as before.
   async rewrites() {
+    const backend = process.env.BACKEND_ORIGIN;
+    if (!backend) return [];
     return [
-      {
-        source: '/api/v1/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/v1/:path*`,
-      },
+      { source: "/api/:path*", destination: `${backend}/api/:path*` },
+      { source: "/ws/:path*", destination: `${backend}/ws/:path*` },
     ];
   },
 };

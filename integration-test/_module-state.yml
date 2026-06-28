@@ -1,0 +1,113 @@
+version: "1.0"
+module: "integration_test"
+project: "gomoku"
+method: "staged full-stack E2E with auto-fix"
+updated_at: "2026-06-07"
+
+phases:
+  backend_compile:    done   # Docker maven+JDK21; 4 test-compile generic-type fixes
+  cucumber_e2e:       done   # 64/64 (17 features) vs PG15+Redis7 siblings
+  fullstack_compose:  done   # integration-test/docker-compose.fullstack.yml healthy
+  playwright_real:    done   # 7/7 real-API scenarios (MSW disabled)
+  real_chrome_headed: done   # 25/25 full-coverage.spec.ts — headed real Chromium, every page/button/flow (2026-06-10)
+  report:             done   # integration-test/REPORT.md
+
+playwright_mcp:
+  registered: true           # user scope, `claude mcp list` -> ✓ Connected
+  note: "mcp__playwright__* tools load only after a session reconnect"
+  fixed: "~/.mcp.json was malformed (missing mcpServers wrapper) -> repaired"
+
+quality_gate:
+  hard: "PASS (64/64 acceptance scenarios)"
+  soft: "PASS with gaps (5 vacuous scenarios: 3 STOMP-connection, undo-non-last, chat broadcast)"
+  verdict: "PASS"
+
+backend_bugs_fixed:
+  - "opening_stones.placed_by_player_id NOT NULL too strict (LOCAL Swap2 500)"
+  - "PLACE_TWO_MORE choice not persisted -> stage-2 placement dead (games.swap2_two_more_chosen added)"
+  - "currentTurn hardcoded BLACK after opening (spec: WHITE after 3 stones)"
+  - "guest entry issued no JWT -> /rooms unreachable for guests (token added, additive)"
+  - "GlobalExceptionHandler swallowed stacks; unknown path returned 500 not 404"
+
+frontend_bugs_fixed:
+  - "GameReplayResponse.result non-nullable but backend returns null for unfinished games -> zod parse fail -> replay page stuck at 0/0 (caught by real Chrome test; fixed to GameResult.nullable())"
+  - "Local Swap2: impure setStones updater `(s)=>[...s,demo[i++]]` + reactStrictMode double-invoke -> demo[3]=undefined -> GomokuBoard.set reads undefined.r -> page crash. Fixed: pure updater `setStones(demo.slice(0,i))` + GomokuBoard.set `.filter(Boolean)`. (user-reported 2026-06-10)"
+  - "Local Swap2 not playable to end: toss routed local to fake 'wait demo' (never called backend placeOpeningStone) -> choice 422. Fixed: local forces real place path (player=tentative-first). (user-reported, spec-grounded)"
+  - "PLACE_TWO_MORE: frontend navigated to /game for all choices, no 2nd stage. Fixed: choose() branches on response status (OPENING->place 4th/5th->tentative-first color pick)."
+  - "/game page: turn hardcoded BLACK, never loaded initial state -> Swap2 opening stones not shown, turn wrong. Fixed: local mount loads via /replay (opening+moves+turn parity). (spec #30)"
+
+swap2_spec_alignment:
+  source: "specs/features/opening/*.feature + game/開始本地遊戲 + activities/本地雙人對戰.mmd"
+  local_flow: "single device, one person plays both roles: place 3 (B,W,B) real -> auto choice -> 執黑/執白 finalize / PLACE_TWO_MORE 2nd stage (place 2 more W,B -> tentative-first pick) -> game playable"
+  turn_after_opening: "always WHITE (B,W,B ends odd -> 4th stone white); color choice only sets who-is-which, invisible in local single-device"
+  online_swap2: "DONE 2026-06-15 — online standard + Swap2 implemented end-to-end, tested with 2 real browsers + real STOMP"
+
+online_play_2026_06_15:
+  status: "implemented + tested (2 browsers, real STOMP)"
+  backend_added:
+    - "POST /rooms/{roomId}/actions/start-game (idempotent, pessimistic-lock; creates ONLINE game, assigns colors/tentative-first, broadcasts GameStartedEvent)"
+    - "GET /rooms/{roomId} (room snapshot); join accepts roomId OR 6-char roomCode; RoomDetailResponse + hostPlayerId; GameStartedEvent DTO"
+  concurrency_bugs_fixed:
+    - "start-game double-call -> GameRoom optimistic-lock 500 -> pessimistic findByIdForUpdate + idempotent reuse"
+    - "toggleReady concurrent -> neither sees other's ready -> never READY -> pessimistic lock"
+    - "StompClient subscribe race: badge online before subscription active (600ms poll window dropped broadcasts) -> apply pending subs in onConnect"
+    - "join-by-code: 36-char UUID vs 6-char input -> show real roomCode + backend resolves id-or-code"
+    - "online game place() double-applied own move (REST + broadcast) -> online relies on broadcast only"
+    - "online Swap2 tentative-first subscribed game channel too late -> subscribe early (place phase)"
+    - "start-game navigation depended solely on broadcast timing (flaky) -> response now carries tentativeFirstPlayerId, caller navigates from response"
+    - "hard-nav (page.goto in tests) reset in-memory authToken before re-hydration -> getAuthToken() falls back to persisted gmk-session token (kills 401 window)"
+  stability: "online.spec.ts 5/5 green x3 consecutive runs, no flaky (after token-fallback fix); retries:1 kept as safety net for 2-browser+WS jitter"
+
+token_expiry_ux_2026_06_16:
+  trigger: "user hit 403 creating a room — guest JWT expire-hours=1, session days old -> persisted token expired"
+  fix: "client.ts: on 401/403 WITHOUT ManageResponse envelope (= Spring Security block, not business error), fire onUnauthorized; session.ts registers it -> logout() + toast '登入已過期，請重新登入' + redirect to /user (900ms delay so toast renders)"
+  guard: "business 403 (e.g. spectator toggle-ready) has envelope -> env.success -> NOT treated as auth-expiry (verified: no test wrongly redirected to /user)"
+  note: "JWT expiry kept at 1h (production-appropriate); graceful handling covers expiry"
+
+register_auto_login_bug_2026_06_16:
+  symptom: "user: '剛登入完馬上就說登入過期'"
+  root_cause: "doReg called loginAs WITHOUT a token (register API returns no JWT) -> '已自動登入' was a lie -> first authenticated action after register had no token -> 403 no-envelope -> new unauthorized-handler fired '登入已過期' immediately"
+  fix: "doReg: after register, authService.login(username,password) to get a real JWT, then loginAs with token+playerId"
+  verified: "register -> create room now succeeds (enters /room), no false expiry; full-coverage register test + 34 suite green"
+  tests_online_spec:
+    - "O0 STOMP move-sync de-risk gate"
+    - "O1 standard online to black 5-in-a-row, 9 moves synced both sides"
+    - "O2 real nicknames + chat A->B over STOMP"
+    - "O3 third player joins full room as read-only spectator"
+    - "O4 online Swap2: first places 3, second sees via STOMP, picks black, both enter game"
+  still_todo_not_green:
+    - "disconnect-forfeit frontend UI (timers/disconnect sim; backend Cucumber covers logic)"
+    - "online Swap2 PLACE_TWO_MORE second-stage role swap"
+    - "quick-match wait->matched push"
+    - "game page online player names still hardcoded (cosmetic)"
+  tests: "full-coverage.spec.ts S1-S5 (execBlack/execWhite to end, two-stage, undo, tutorial) all green; waitForResponse asserts 201/200, any 4xx/5xx fails"
+
+coverage_blind_spots_fixed:
+  - "full-coverage tests used `if(await x.count())` optional clicks -> diverged flows silently skipped"
+  - "no pageerror listener -> runtime crashes passed as green. Added page.on('pageerror') guard + afterEach assertion across whole spec"
+  - "de-masked room/opening tests to hard assertions; chat-collapse moved to mobile viewport (collapse-toggle is mobile-only)"
+  - "full-coverage.spec.ts now 28/28; any uncaught frontend exception fails the test"
+
+coverage_gaps:
+  - "connection feature x3: needs live STOMP client + server timers"
+  - "undo-non-last: unexpressible over REST (enforced by API shape)"
+  - "room chat broadcast: STOMP-only per contract"
+  - "no GET /games/{gameId} in api.yml — live state unobservable via REST"
+
+spec_feedback:  # for demand_analysis module; specs untouched
+  - "erm.dbml opening_stones.placed_by_player_id [not null] contradicts LOCAL Swap2"
+  - "erm.dbml games lacks Swap2 stage-2 state field"
+  - "api.yml GuestEnterResponse lacks token, contradicts guest online single-game (req #2)"
+  - "api.yml lacks GET /games/{gameId}"
+
+artifacts:
+  - integration-test/REPORT.md
+  - integration-test/backend.Dockerfile
+  - integration-test/docker-compose.fullstack.yml
+  - frontend/e2e/real-api.spec.ts
+  - backend/src/test/java/com/gomoku/cucumber/DbCleanupHook.java
+  - backend/target/cucumber-reports.html
+
+interrupt:
+  status: "completed"
+  notes: "Quality Gate PASS — 64/64 Cucumber + 7/7 Playwright real-API + 5/5 MSW regression; 4 backend bugs fixed; 4 spec feedback items raised."

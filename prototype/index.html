@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 Prototype — 總覽</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<header class="app-header"><span class="logo"><span class="dot"></span>五子棋 Gomoku — P3 Prototype</span></header>
+<main class="page">
+  <p class="dim" style="margin-bottom:20px">9 個 feature 原型（自包含 HTML）。建議從「模式選擇首頁」開始走完整流程。</p>
+  <div class="mode-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+    <a class="mode-card" href="home/index.html"><div class="ico">🏠</div><h2>模式選擇首頁</h2><p class="dim">本地/線上入口 + 身份三態</p></a>
+    <a class="mode-card" href="user/index.html"><div class="ico">🔑</div><h2>登入 / 註冊 / 訪客</h2><p class="dim">JWT 登入、訪客暱稱</p></a>
+    <a class="mode-card online" href="lobby/index.html"><div class="ico">📋</div><h2>大廳與房間列表</h2><p class="dim">建房/加入/快速配對</p></a>
+    <a class="mode-card online" href="room/index.html"><div class="ico">⏳</div><h2>房間（Ready/聊天/觀戰）</h2><p class="dim">?role=spectator 觀戰</p></a>
+    <a class="mode-card" href="opening/index.html?ctx=online"><div class="ico">🪙</div><h2>Swap2 開局</h2><p class="dim">教學→硬幣→放置→三選一</p></a>
+    <a class="mode-card" href="game/index.html?mode=local"><div class="ico">⚫</div><h2>棋盤對局</h2><p class="dim">?mode=online&role=spectator</p></a>
+    <a class="mode-card" href="result/index.html"><div class="ico">🏆</div><h2>對局結束畫面</h2><p class="dim">勝/和/訪客/觀戰 四情境</p></a>
+    <a class="mode-card" href="leaderboard/index.html"><div class="ico">📊</div><h2>戰績與排行榜</h2><p class="dim">個人戰績 + 全站榜</p></a>
+    <a class="mode-card" href="replay/index.html"><div class="ico">⏯</div><h2>對局回放</h2><p class="dim">含 Swap2 開局子</p></a>
+  </div>
+</main>
+</body>
+</html>

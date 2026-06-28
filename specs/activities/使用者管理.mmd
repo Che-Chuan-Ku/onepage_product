@@ -1,0 +1,37 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 使用者管理（註冊 / 登入 / 戰績）
+%% [ACTOR] 訪客玩家 -> {specs/actors/訪客玩家.md}
+%% [ACTOR] 註冊玩家 -> {specs/actors/註冊玩家.md}
+
+flowchart TD
+
+%% ═══ 區段二：節點定義 ═══
+
+    Start(( ))
+
+    %% [STEP:1] @訪客玩家 {features/user/註冊帳號.feature}
+    S1["@訪客玩家<br/>註冊帳號 (Email/Username+密碼)"]
+
+    %% [STEP:2] @訪客玩家 {features/user/登入取得JWT.feature}
+    S2["@訪客玩家<br/>登入取得 JWT"]
+
+    %% [DECISION:2a] 是否以訪客身份遊玩
+    D2a{"進入方式"}
+
+    %% [BRANCH:2a:訪客] @訪客玩家 {features/user/訪客模式進入.feature}
+    B2a_guest["@訪客玩家<br/>輸入暱稱進入(訪客)"]
+
+    %% [STEP:3] @註冊玩家 {specs/ui/排行榜頁.md}
+    S3["@註冊玩家<br/>查看個人戰績與排行榜"]
+
+    End((( )))
+
+%% ═══ 區段三：邊（連線）定義 ═══
+
+    Start --> D2a
+    D2a -- 註冊登入 --> S1
+    S1 --> S2
+    S2 --> S3
+    D2a -- 訪客模式 --> B2a_guest
+    B2a_guest --> End
+    S3 --> End

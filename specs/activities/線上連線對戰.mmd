@@ -1,0 +1,86 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 線上連線對戰（房間 → Ready → 開局 → 對局 → 結束）
+%% [ACTOR] 註冊玩家 -> {specs/actors/註冊玩家.md}
+%% [ACTOR] 訪客玩家 -> {specs/actors/訪客玩家.md}
+
+flowchart TD
+
+%% ═══ 區段二：節點定義 ═══
+
+    Start(( ))
+
+    %% [STEP:1] @註冊玩家 {specs/ui/模式選擇首頁.md}
+    S1["@玩家<br/>選擇線上連線模式"]
+
+    %% [DECISION:1a] 進入房間方式
+    D1a{"進入房間方式"}
+
+    %% [BRANCH:1a:建立] @註冊玩家 {features/room/建立房間.feature}
+    B1a_create["@玩家<br/>建立房間(可選Swap2模式)"]
+
+    %% [BRANCH:1a:加入] @註冊玩家 {features/room/加入房間.feature}
+    B1a_join["@玩家<br/>輸入房間碼加入"]
+
+    %% [BRANCH:1a:配對] @註冊玩家 {features/room/快速配對.feature}
+    B1a_match["@玩家<br/>快速配對"]
+
+    %% [MERGE:1a]
+    M1a(( ))
+
+    %% [STEP:2] @註冊玩家 {features/room/標記準備與聊天.feature}
+    S2["@玩家<br/>標記 Ready / 房內聊天"]
+
+    %% [DECISION:2a] 雙方皆 Ready 後判斷房間模式（內建系統依 isSwap2Mode 路由）
+    D2a{"房間模式 (isSwap2Mode)"}
+
+    %% [STEP:3] @註冊玩家 {features/game/投擲硬幣決定先手.feature}
+    %% 普通模式：硬幣決定黑白
+    S3["@玩家<br/>投擲硬幣決定黑白(動畫,結果後端決定)"]
+
+    %% [STEP:4] @註冊玩家 {features/game/投擲硬幣決定先手.feature}
+    %% Swap2 模式：硬幣決定假先方
+    S4["@玩家<br/>投擲硬幣決定假先方(動畫)"]
+
+    %% [STEP:5] @註冊玩家 {features/opening/Swap2開局放置.feature}
+    S5["@假先方<br/>Swap2 開局放置(每子確認+動畫)"]
+
+    %% [STEP:6] @註冊玩家 {features/opening/Swap2選擇.feature}
+    S6["@假後方<br/>Swap2 三選一(顏色/輪到對手放第4子等)"]
+
+    %% [STEP:7] @註冊玩家 {features/game/線上落子.feature}
+    S7["@玩家<br/>輪流即時落子(後端驗證+廣播)"]
+
+    %% [DECISION:7a] 落子後勝負判定（內建 GameLogic）
+    D7a{"對局是否結束"}
+
+    %% [BRANCH:7a:未結束 -> 7] @註冊玩家 {features/game/線上落子.feature}
+    B7a_cont["@玩家<br/>換手繼續落子"]
+
+    %% [STEP:8] @註冊玩家 {specs/ui/對局結束畫面.md}
+    S8["@玩家<br/>結束畫面(勝者/和局/高亮/再戰)"]
+
+    End((( )))
+
+%% ═══ 區段三：邊（連線）定義 ═══
+
+    Start --> S1
+    S1 --> D1a
+    D1a -- 建立房間 --> B1a_create
+    D1a -- 加入房間 --> B1a_join
+    D1a -- 快速配對 --> B1a_match
+    B1a_create --> M1a
+    B1a_join --> M1a
+    B1a_match --> M1a
+    M1a --> S2
+    S2 --> D2a
+    D2a -- 普通模式 --> S3
+    D2a -- Swap2模式 --> S4
+    S3 --> S7
+    S4 --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> D7a
+    D7a -- 未結束 --> B7a_cont
+    B7a_cont --> S7
+    D7a -- 五連/和局/斷線判負 --> S8
+    S8 --> End

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — 模式選擇</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page">
+  <div class="center col" style="text-align:center;margin:30px 0 36px">
+    <div style="font-size:14px;color:var(--c-text-dim)">經典對弈 · 15×15 標準棋盤 · 支援 Swap2 公平開局</div>
+    <h1 style="font-size:34px;margin-top:8px">選擇你的對戰方式</h1>
+  </div>
+
+  <div class="mode-grid">
+    <button class="mode-card local" onclick="goLocal()">
+      <div class="ico">🪑</div>
+      <h2>本地雙人</h2>
+      <p class="dim">同一裝置輪流對弈，全功能、不需連線。</p>
+      <label class="row gap-8" style="margin-top:16px;font-size:14px" onclick="event.stopPropagation()">
+        <input type="checkbox" id="swap2" style="width:18px;height:18px"> 啟用 Swap2 開局（更公平的開局規則）
+      </label>
+    </button>
+
+    <button class="mode-card online" onclick="goOnline()">
+      <div class="ico">🌐</div>
+      <h2>線上連線</h2>
+      <p class="dim">與其他玩家即時對戰、開房、快速配對與觀戰。</p>
+      <div class="badge badge-normal" style="margin-top:16px">需登入或以訪客身份</div>
+    </button>
+  </div>
+
+  <p class="dim center" style="margin-top:28px;font-size:13px">
+    切換右上角身份示意：
+    <a href="#" onclick="setId('none');return false">未登入</a> ·
+    <a href="#" onclick="setId('guest');return false">訪客</a> ·
+    <a href="#" onclick="setId('registered');return false">註冊玩家</a>
+  </p>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script>
+let identity='registered';
+function paint(){ document.getElementById('hdr').innerHTML=renderHeader({identity,nickname:'KuPlayer'}); }
+function setId(v){identity=v;paint();}
+paint();
+
+function goLocal(){
+  const swap2=document.getElementById('swap2').checked;
+  if(swap2){ location.href='../opening/index.html?ctx=local'; }
+  else { location.href='../game/index.html?mode=local'; }
+}
+function goOnline(){
+  if(identity==='none'){
+    showModal(`<h2 style="margin-bottom:8px">線上對戰需要身份</h2>
+      <p class="dim" style="margin-bottom:18px">要登入，還是先以訪客玩一場？（訪客線上戰績不會保存）</p>
+      <div class="col gap-8">
+        <a class="btn btn-accent btn-block" href="../user/index.html">登入 / 註冊</a>
+        <a class="btn btn-primary btn-block" href="../user/index.html#guest">以訪客遊玩</a>
+        <button class="btn btn-ghost btn-block" onclick="closeModal(this)">取消</button>
+      </div>`);
+  } else {
+    location.href='../lobby/index.html';
+  }
+}
+</script>
+</body>
+</html>
