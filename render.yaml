@@ -12,23 +12,23 @@ services:
     envVars:
       - key: DB_HOST
         fromDatabase:
-          name: onepage-db
+          name: gomoku-db
           property: host
       - key: DB_PORT
         fromDatabase:
-          name: onepage-db
+          name: gomoku-db
           property: port
       - key: DB_NAME
         fromDatabase:
-          name: onepage-db
+          name: gomoku-db
           property: database
       - key: DB_USER
         fromDatabase:
-          name: onepage-db
+          name: gomoku-db
           property: user
       - key: DB_PASSWORD
         fromDatabase:
-          name: onepage-db
+          name: gomoku-db
           property: password
       - key: JWT_SECRET
         generateValue: true
@@ -36,7 +36,8 @@ services:
         value: "-Xmx300m -Xms128m"
 
 databases:
-  - name: onepage-db
-    databaseName: onepage
-    user: onepage_user
+  # 專屬空 DB：gomoku Flyway V1__init 需乾淨 schema，不可共用 onepage 既有 DB
+  - name: gomoku-db
+    databaseName: gomoku
+    user: gomoku
     plan: free
