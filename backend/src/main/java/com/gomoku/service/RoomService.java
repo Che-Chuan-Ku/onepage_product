@@ -87,7 +87,7 @@ public class RoomService {
             throw new BusinessException(ErrorCode.UNPROCESSABLE, "房間未達 Ready 狀態");
         }
         List<RoomMember> players = memberRepository
-                .findByRoomIdAndRoleAndDeletedFalse(roomId, RoomMemberRole.PLAYER);
+                .findByRoomIdAndRoleAndDeletedFalseOrderByCreatedAtAsc(roomId, RoomMemberRole.PLAYER);
         if (players.size() != MAX_PLAYERS) {
             throw new BusinessException(ErrorCode.UNPROCESSABLE, "房間對戰人數不足");
         }
@@ -288,7 +288,7 @@ public class RoomService {
         member.setReady(!member.isReady());
         memberRepository.save(member);
 
-        List<RoomMember> players = memberRepository.findByRoomIdAndRoleAndDeletedFalse(roomId, RoomMemberRole.PLAYER);
+        List<RoomMember> players = memberRepository.findByRoomIdAndRoleAndDeletedFalseOrderByCreatedAtAsc(roomId, RoomMemberRole.PLAYER);
         boolean allReady = players.size() == MAX_PLAYERS && players.stream().allMatch(RoomMember::isReady);
         room.setStatus(allReady ? RoomStatus.READY : RoomStatus.WAITING);
         roomRepository.save(room);
@@ -301,7 +301,9 @@ public class RoomService {
     // ── helpers ──────────────────────────────────────────────────────
 
     private RoomDetailResponse toDetail(GameRoom room, RoomMemberRole joinedAsRole) {
-        List<RoomMember> members = memberRepository.findByRoomIdAndDeletedFalse(room.getId());
+        // Ordered by join time so the host (first PLAYER) is always members[0]
+        // — the room/game pages depend on stable slot 0/1 = host/guest.
+        List<RoomMember> members = memberRepository.findByRoomIdAndDeletedFalseOrderByCreatedAtAsc(room.getId());
         List<RoomMemberItem> memberItems = new ArrayList<>();
         int spectatorCount = 0;
         for (RoomMember m : members) {

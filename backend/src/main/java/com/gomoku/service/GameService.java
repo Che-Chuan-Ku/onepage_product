@@ -478,7 +478,10 @@ public class GameService {
                 game.getMoveCount(),
                 game.isUseSwap2(),
                 openingItems,
-                moveItems);
+                moveItems,
+                game.getRoomId(),
+                game.getBlackPlayerId(),
+                game.getWhitePlayerId());
     }
 
     // ────────────────────────── helpers ──────────────────────────────────────

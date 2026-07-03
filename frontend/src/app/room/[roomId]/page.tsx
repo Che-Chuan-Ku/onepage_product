@@ -39,7 +39,15 @@ export default function RoomPage() {
   const msgsRef = useRef<HTMLDivElement>(null);
   const navigatedRef = useRef(false);
 
-  const players = members.filter((m) => m.role === "PLAYER");
+  // Bug fix: slot 0/1 (黑/白) must reflect the real host/guest, not raw array
+  // order — the backend now returns members ordered by join time (host first),
+  // but we additionally sort by hostId here so a stale/unordered payload can't
+  // flip black/white on the room screen.
+  const players = [...members.filter((m) => m.role === "PLAYER")].sort((a, b) => {
+    if (a.playerId === hostId) return -1;
+    if (b.playerId === hostId) return 1;
+    return 0;
+  });
   const spectators = members.filter((m) => m.role === "SPECTATOR");
   const me = members.find((m) => m.playerId === myId);
   const isSpectator = me?.role === "SPECTATOR" || search.get("role") === "spectator";
@@ -125,7 +133,11 @@ export default function RoomPage() {
     if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
   }, [chat]);
 
-  // 反應式觸發：房間達 READY 且我是房主 → 開始對局（用最新的 status/hostId/myId，免閉包過期）
+  // 反應式觸發：房間達 READY → 開始對局（用最新的 status/hostId/myId，免閉包過期）。
+  // 註：程式碼實際上不論房主或訪客都會呼叫 ensureStartAndGo，兩邊都觸發是刻意設計——
+  // 對應後端 RoomService.startOnlineGame 的悲觀鎖 + 冪等回傳（見該檔註解：允許雙方併發
+  // 呼叫並收斂到同一個 gameId），藉此避免「若只由房主觸發、房主端剛好卡住」時對局卡死。
+  // hostId 目前只用來讓「稍後才拿到 hostId/myId」時能重新觸發本 effect，不是身份門檻。
   useEffect(() => {
     if (status === "READY") void ensureStartAndGo();
     // eslint-disable-next-line react-hooks/exhaustive-deps

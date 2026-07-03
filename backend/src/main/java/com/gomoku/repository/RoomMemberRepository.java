@@ -9,11 +9,14 @@ import java.util.Optional;
 
 public interface RoomMemberRepository extends JpaRepository<RoomMember, String> {
 
-    List<RoomMember> findByRoomIdAndDeletedFalse(String roomId);
+    // Ordered by join time (createdAt) ascending so the host — the first PLAYER
+    // to join — is always first in the list. Frontend room/game pages rely on
+    // this stable order to map slot 0/1 to black/white without extra lookups.
+    List<RoomMember> findByRoomIdAndDeletedFalseOrderByCreatedAtAsc(String roomId);
 
     Optional<RoomMember> findByRoomIdAndPlayerIdAndDeletedFalse(String roomId, String playerId);
 
     long countByRoomIdAndRoleAndDeletedFalse(String roomId, RoomMemberRole role);
 
-    List<RoomMember> findByRoomIdAndRoleAndDeletedFalse(String roomId, RoomMemberRole role);
+    List<RoomMember> findByRoomIdAndRoleAndDeletedFalseOrderByCreatedAtAsc(String roomId, RoomMemberRole role);
 }

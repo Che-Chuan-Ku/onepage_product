@@ -257,5 +257,11 @@ export const GameReplayResponse = z.object({
   useSwap2: z.boolean(),
   openingStones: z.array(ReplayOpeningStone),
   moves: z.array(ReplayMove),
+  // Additive fields (bug fix): lets the game page resolve real nicknames +
+  // correct black/white chip mapping instead of hardcoded placeholder names.
+  // null for LOCAL games / not-yet-assigned online games.
+  roomId: z.string().nullable().optional(),
+  blackPlayerId: z.string().nullable().optional(),
+  whitePlayerId: z.string().nullable().optional(),
 });
 export type GameReplayResponse = z.infer<typeof GameReplayResponse>;

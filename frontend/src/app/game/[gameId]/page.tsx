@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Board } from "@/components/Board";
+import { Board, type BoardHandle } from "@/components/Board";
 import { Modal } from "@/components/Modal";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
-import { gameService } from "@/lib/api/services";
+import { gameService, roomService } from "@/lib/api/services";
 import { ApiError } from "@/lib/api/client";
 import type { GameStateResponse, Color } from "@/lib/types/schemas";
 import type { PlacedStone, StoneColor } from "@/lib/game/GomokuBoard";
@@ -29,6 +29,7 @@ export default function GamePage() {
   const mode = search.get("mode") || "local"; // local | online
   const isSpectator = search.get("role") === "spectator";
   const isGuest = useSession((s) => s.identity) === "guest";
+  const myId = useSession((s) => s.playerId);
 
   const [stones, setStones] = useState<PlacedStone[]>([]);
   const [openingStones, setOpeningStones] = useState<PlacedStone[]>([]);
@@ -42,13 +43,27 @@ export default function GamePage() {
   const [showResult, setShowResult] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
   const [touchConfirm, setTouchConfirm] = useState(false);
+  const [hasCursor, setHasCursor] = useState(false);
   const stompRef = useRef<StompClient | null>(null);
+  const boardRef = useRef<BoardHandle>(null);
+  const mountedRef = useRef(true);
+  // 是否曾經成功連線過一次 —— 用來分辨「初次連線」與「斷線後重連成功」。
+  const hasBeenOnlineRef = useRef(false);
 
-  const p1Name = mode === "local" ? "玩家一" : "阿哲";
-  const p2Name = mode === "local" ? "玩家二" : "你";
+  // Bug fix: online p1Name/p2Name used to be hardcoded placeholder strings.
+  // Real nicknames + correct black/white mapping are resolved below once the
+  // replay (which carries roomId/blackPlayerId/whitePlayerId) loads.
+  const [p1Name, setP1Name] = useState(mode === "local" ? "玩家一" : "黑方");
+  const [p2Name, setP2Name] = useState(mode === "local" ? "玩家二" : "白方");
 
   useEffect(() => {
     setTouchConfirm(typeof window !== "undefined" && window.matchMedia("(max-width:640px)").matches);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   // clock (pause when tab hidden)
@@ -71,47 +86,83 @@ export default function GamePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId, mode]);
 
-  // 載入對局初始狀態（Swap2 開局子 + 已落子 + 當前回合）。
+  // 載入對局目前狀態（Swap2 開局子 + 已落子 + 當前回合），整組重建（非 append）。
   // 無 GET /games/{id} 端點 → 用 /replay 重建。需求 #30：開局後輪次依嚴格交替。
-  // 對全新對局（0 子）保持預設（黑方先手）。online 晚進場者也能同步當前盤面。
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const replay = await gameService.replay(gameId);
-        if (cancelled) return;
-        const opening = [...replay.openingStones]
-          .sort((a, b) => a.sequence - b.sequence)
-          .map((s) => ({ r: s.row, c: s.col, color: lc(s.color) }));
-        const moves = [...replay.moves]
-          .sort((a, b) => a.moveNumber - b.moveNumber)
-          .map((m) => ({ r: m.row, c: m.col, color: lc(m.color) }));
-        const all = [...opening, ...moves];
-        if (all.length === 0) return; // 全新局，保留黑方先手預設
-        setOpeningStones(opening);
-        setStones(all);
-        setMoveCount(replay.moves.length);
-        const last = moves[moves.length - 1] ?? opening[opening.length - 1];
-        if (last) setLastMove([last.r, last.c]);
-        // N 子已落：N 奇→白方續落，偶→黑方（與後端 currentTurn 一致）
-        setTurn(all.length % 2 === 1 ? "WHITE" : "BLACK");
-      } catch {
-        /* 全新局或 replay 不可用 → 保留預設 */
+  // 對全新對局（0 子）保持預設（黑方先手）。online 晚進場者/重連者都能同步當前盤面。
+  // 抽成可重用函式：掛載時載入一次，斷線重連成功時也要重跑一次，補齊斷線
+  // 期間漏接的廣播（手機鎖屏/背景斷線的修復核心）。
+  const loadReplay = useCallback(async () => {
+    try {
+      const replay = await gameService.replay(gameId);
+      if (!mountedRef.current) return;
+      // 線上模式：用 replay 帶回的 roomId 查房間成員取得真實暱稱，
+      // 並依 blackPlayerId/whitePlayerId 正確對應黑白子（修正原本寫死假名的 bug）。
+      if (mode === "online" && replay.roomId) {
+        try {
+          const room = await roomService.get(replay.roomId);
+          if (mountedRef.current) {
+            const nickOf = (id: string | null | undefined) =>
+              room.members.find((m) => m.playerId === id)?.nickname;
+            const label = (id: string | null | undefined) => {
+              const nick = nickOf(id) ?? "對手";
+              return id && myId && id === myId ? `${nick}（你）` : nick;
+            };
+            if (replay.blackPlayerId) setP1Name(label(replay.blackPlayerId));
+            if (replay.whitePlayerId) setP2Name(label(replay.whitePlayerId));
+          }
+        } catch {
+          /* 查詢房間失敗 → 保留「黑方」/「白方」預設標籤 */
+        }
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      const opening = [...replay.openingStones]
+        .sort((a, b) => a.sequence - b.sequence)
+        .map((s) => ({ r: s.row, c: s.col, color: lc(s.color) }));
+      const moves = [...replay.moves]
+        .sort((a, b) => a.moveNumber - b.moveNumber)
+        .map((m) => ({ r: m.row, c: m.col, color: lc(m.color) }));
+      const all = [...opening, ...moves];
+      if (all.length === 0) return; // 全新局，保留黑方先手預設
+      setOpeningStones(opening);
+      setStones(all);
+      setMoveCount(replay.moves.length);
+      const last = moves[moves.length - 1] ?? opening[opening.length - 1];
+      if (last) setLastMove([last.r, last.c]);
+      // N 子已落：N 奇→白方續落，偶→黑方（與後端 currentTurn 一致）
+      setTurn(all.length % 2 === 1 ? "WHITE" : "BLACK");
+    } catch {
+      /* 全新局或 replay 不可用 → 保留預設 */
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameId, mode]);
+  }, [gameId, mode, myId]);
+
+  // 依賴 loadReplay（含 myId）：session 從 localStorage 還原較慢時，
+  // myId 就緒後會重跑一次，確保「（你）」標籤正確補上。
+  useEffect(() => {
+    loadReplay();
+  }, [loadReplay]);
+
+  // 斷線重連修復：conn 從非 online 轉回 online 時（首次連線除外，因為上面的
+  // effect 已經載入過一次），代表 STOMP 剛重新建立連線 —— 斷線期間可能漏接
+  // 對方落子的廣播，整組重抓 replay 重建盤面，不是靠 append 補洞。
+  useEffect(() => {
+    if (mode !== "online") return;
+    if (conn === "online") {
+      if (hasBeenOnlineRef.current) {
+        loadReplay();
+      }
+      hasBeenOnlineRef.current = true;
+    }
+  }, [conn, mode, loadReplay]);
 
   const applyState = useCallback((state: GameStateResponse) => {
     if (state.lastMove) {
-      setStones((prev) => [
-        ...prev,
-        { r: state.lastMove!.row, c: state.lastMove!.col, color: lc(state.lastMove!.color) },
-      ]);
-      setLastMove([state.lastMove.row, state.lastMove.col]);
+      const { row, col, color } = state.lastMove;
+      setStones((prev) =>
+        // 防重複：斷線重連時 loadReplay() 可能已經把這手補進來了，
+        // 若該格已有子就跳過，避免同一手疊兩次。
+        prev.some((s) => s.r === row && s.c === col) ? prev : [...prev, { r: row, c: col, color: lc(color) }],
+      );
+      setLastMove([row, col]);
     }
     setMoveCount(state.moveCount);
     if (state.currentTurn) setTurn(state.currentTurn);
@@ -182,6 +233,7 @@ export default function GamePage() {
       <div className="layout">
         <section>
           <Board
+            ref={boardRef}
             stones={stones}
             opening={openingStones}
             lastMove={lastMove}
@@ -190,10 +242,22 @@ export default function GamePage() {
             requireConfirm={touchConfirm}
             spectating={isSpectator}
             onPlace={place}
+            onCursorChange={setHasCursor}
           />
           <p className="dim center mt-8" style={{ fontSize: 13 }} aria-live="polite">
             輪到{turn === "BLACK" ? "黑" : "白"}方落子
           </p>
+          {/* Bug fix: touchConfirm 模式下棋盤只設預覽游標，須靠外部按鈕呼叫 confirm()
+              才會真的落子 — 手機（≤640px）先前缺這顆按鈕，導致永遠無法真正落子。 */}
+          {touchConfirm && !isSpectator && !result && (
+            <button
+              className="btn btn-primary btn-block mt-8"
+              disabled={!hasCursor}
+              onClick={() => boardRef.current?.confirm()}
+            >
+              確認落子
+            </button>
+          )}
         </section>
 
         <aside className="sidebar">
