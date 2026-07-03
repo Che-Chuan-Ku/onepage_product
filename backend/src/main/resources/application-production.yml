@@ -1,0 +1,15 @@
+# Render production profile (activated by supervisord: --spring.profiles.active=production).
+# deploy/start.sh derives these from the Render Postgres env vars:
+#   DB_URL=jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME?sslmode=require
+#   DB_USERNAME=$DB_USER   DB_PASSWORD passed through from Render
+# Everything else (jpa/flyway, server.port=8080 behind nginx) inherits application.yml.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    show-sql: false
+
+jwt:
+  secret-key: ${JWT_SECRET}

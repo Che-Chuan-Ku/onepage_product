@@ -1,3 +1,7 @@
+# Render Blueprint — gomoku 五子棋（單容器：nginx + Spring 後端 + Next 前端）
+# 一個 Docker image（根 Dockerfile）內跑 nginx(:$PORT) 反代 → backend(:8080) / frontend(:3000)。
+# REST /api 與 WebSocket /ws 皆同源經 nginx 代理到後端（免 CORS）。
+# DB 由 deploy/start.sh 依 DB_* 組出 DB_URL(?sslmode=require)，backend 走 production profile 讀取。
 services:
   - type: web
     name: onepage-product
@@ -30,35 +34,6 @@ services:
         generateValue: true
       - key: JVM_OPTS
         value: "-Xmx300m -Xms128m"
-      - key: CORS_ALLOWED_ORIGINS
-        sync: false
-        value: "https://onepage-product.onrender.com"
-      - key: MAIL_HOST
-        value: "smtp.gmail.com"
-      - key: MAIL_PORT
-        value: "465"
-      - key: MAIL_USERNAME
-        value: "kksjkdkk9933@gmail.com"
-      - key: MAIL_PASSWORD
-        sync: false
-      - key: AWS_S3_BUCKET
-        value: "kudreambuck"
-      - key: AWS_S3_REGION
-        value: "ap-east-2"
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: ECPAY_MERCHANT_ID
-        sync: false
-      - key: ECPAY_HASH_KEY
-        sync: false
-      - key: ECPAY_HASH_IV
-        sync: false
-      - key: ECPAY_PAYMENT_URL
-        sync: false
-      - key: ECPAY_INVOICE_URL
-        sync: false
 
 databases:
   - name: onepage-db

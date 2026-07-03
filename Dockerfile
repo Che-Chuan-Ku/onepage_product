@@ -9,7 +9,7 @@ RUN mvn dependency:go-offline -B
 
 COPY backend/src ./src
 RUN mvn package -DskipTests -B && \
-    cp target/product-*.jar target/app.jar
+    cp target/gomoku-*.jar target/app.jar
 
 # ============================================
 # Stage 2: Build Frontend (Next.js 14)
@@ -22,8 +22,8 @@ RUN npm ci
 
 COPY frontend/ .
 
-ENV NEXT_PUBLIC_MOCK_ENABLED=false
-ENV NEXT_PUBLIC_API_BASE_URL=
+# gomoku frontend flags: disable MSW, use same-origin defaults for API_BASE (/api/gmk/v1) + WS (/ws)
+ENV NEXT_PUBLIC_API_MOCKING=disabled
 RUN mkdir -p public && npm run build
 
 # ============================================
