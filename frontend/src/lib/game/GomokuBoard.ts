@@ -278,16 +278,38 @@ export class GomokuBoard {
       }
       ctx.restore();
     }
-    // cursor preview
+    // cursor preview — must stay legible on small (mobile) boards where the
+    // finger covers the target cell: row/col guide lines locate the cell even
+    // when occluded, and the filled ghost + glow ring beat a thin dashed circle.
     if (this.cursor) {
       const [x, y] = this.xy(...this.cursor);
-      ctx.strokeStyle = "rgba(224,164,88,.95)";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
+      ctx.save();
+      // row/column guide lines (saturated orange so they read against both
+      // the #d9a86c board and the #6b4f30 grid lines)
+      ctx.strokeStyle = "rgba(255,140,0,.7)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(p, y);
+      ctx.lineTo(S - p, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, p);
+      ctx.lineTo(x, S - p);
+      ctx.stroke();
+      // ghost stone fill — bright orange pops against the mid-amber board
+      ctx.fillStyle = "rgba(255,178,64,.6)";
       ctx.beginPath();
       ctx.arc(x, y, rad, 0, 7);
+      ctx.fill();
+      // dark ring + warm glow: contrast in both directions on wood tones
+      ctx.shadowColor = "rgba(255,194,94,.95)";
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = "#9a5d0f";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, rad + 2, 0, 7);
       ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.restore();
     }
   }
 }
