@@ -1,5 +1,7 @@
 package com.gomoku.domain.entity;
 
+import com.gomoku.domain.enums.BattleMode;
+import com.gomoku.domain.enums.FieldType;
 import com.gomoku.domain.enums.RoomStatus;
 import com.gomoku.domain.enums.RoomVisibility;
 import jakarta.persistence.Column;
@@ -26,6 +28,16 @@ public class GameRoom extends BaseEntity {
     @Column(name = "is_swap2_mode", nullable = false)
     private boolean swap2Mode = false;
 
+    /** 普通 / 真劍勝負 (req #34); SERIOUS_DUEL is mutually exclusive with swap2Mode (Q9). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "battle_mode", nullable = false, length = 20)
+    private BattleMode battleMode = BattleMode.NORMAL;
+
+    /** Required when battleMode=SERIOUS_DUEL, must be null otherwise (req #34). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "field_type", length = 20)
+    private FieldType fieldType;
+
     @Column(name = "host_player_id", length = 36, nullable = false)
     private String hostPlayerId;
 
@@ -43,6 +55,12 @@ public class GameRoom extends BaseEntity {
 
     public boolean isSwap2Mode() { return swap2Mode; }
     public void setSwap2Mode(boolean swap2Mode) { this.swap2Mode = swap2Mode; }
+
+    public BattleMode getBattleMode() { return battleMode; }
+    public void setBattleMode(BattleMode battleMode) { this.battleMode = battleMode; }
+
+    public FieldType getFieldType() { return fieldType; }
+    public void setFieldType(FieldType fieldType) { this.fieldType = fieldType; }
 
     public String getHostPlayerId() { return hostPlayerId; }
     public void setHostPlayerId(String hostPlayerId) { this.hostPlayerId = hostPlayerId; }

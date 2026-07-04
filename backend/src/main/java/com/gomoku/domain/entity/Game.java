@@ -1,6 +1,9 @@
 package com.gomoku.domain.entity;
 
+import com.gomoku.domain.enums.BattleMode;
+import com.gomoku.domain.enums.ClassType;
 import com.gomoku.domain.enums.CoinResult;
+import com.gomoku.domain.enums.FieldType;
 import com.gomoku.domain.enums.GameMode;
 import com.gomoku.domain.enums.GameResult;
 import com.gomoku.domain.enums.GameStatus;
@@ -36,6 +39,24 @@ public class Game extends BaseEntity {
      *  PLACING_SECOND_TWO at 3 placed stones (the choice itself adds no stone). */
     @Column(name = "swap2_two_more_chosen", nullable = false)
     private boolean swap2TwoMoreChosen = false;
+
+    /** Snapshot from the room at game creation (req #34); SERIOUS_DUEL excludes Swap2. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "battle_mode", nullable = false, length = 20)
+    private BattleMode battleMode = BattleMode.NORMAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "field_type", length = 20)
+    private FieldType fieldType;
+
+    /** Revealed when status turns PLAYING with colors assigned (req #35). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "black_class", length = 20)
+    private ClassType blackClass;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "white_class", length = 20)
+    private ClassType whiteClass;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -88,6 +109,18 @@ public class Game extends BaseEntity {
 
     public boolean isSwap2TwoMoreChosen() { return swap2TwoMoreChosen; }
     public void setSwap2TwoMoreChosen(boolean swap2TwoMoreChosen) { this.swap2TwoMoreChosen = swap2TwoMoreChosen; }
+
+    public BattleMode getBattleMode() { return battleMode; }
+    public void setBattleMode(BattleMode battleMode) { this.battleMode = battleMode; }
+
+    public FieldType getFieldType() { return fieldType; }
+    public void setFieldType(FieldType fieldType) { this.fieldType = fieldType; }
+
+    public ClassType getBlackClass() { return blackClass; }
+    public void setBlackClass(ClassType blackClass) { this.blackClass = blackClass; }
+
+    public ClassType getWhiteClass() { return whiteClass; }
+    public void setWhiteClass(ClassType whiteClass) { this.whiteClass = whiteClass; }
 
     public GameStatus getStatus() { return status; }
     public void setStatus(GameStatus status) { this.status = status; }

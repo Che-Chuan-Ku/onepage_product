@@ -13,6 +13,12 @@ public record GameStartedEvent(
         String status,                 // OPENING (swap2) | PLAYING (standard)
         String tentativeFirstPlayerId, // swap2 only; else null
         String blackPlayerId,          // standard only; else null
-        String whitePlayerId           // standard only; else null
+        String whitePlayerId,          // standard only; else null
+        // Serious Duel: classes are revealed exactly when the game turns
+        // PLAYING (ClassesRevealed payload, req #35); null otherwise.
+        String battleMode,             // NORMAL | SERIOUS_DUEL
+        String fieldType,              // serious duel only; else null
+        String blackClass,
+        String whiteClass
 ) {
 }

@@ -4,6 +4,8 @@ import com.gomoku.domain.entity.Game;
 import com.gomoku.domain.entity.GameRoom;
 import com.gomoku.domain.entity.Player;
 import com.gomoku.domain.entity.RoomMember;
+import com.gomoku.domain.enums.BattleMode;
+import com.gomoku.domain.enums.ClassType;
 import com.gomoku.domain.enums.GameMode;
 import com.gomoku.domain.enums.GameStatus;
 import com.gomoku.domain.enums.RoomMemberRole;
@@ -11,6 +13,7 @@ import com.gomoku.domain.enums.RoomStatus;
 import com.gomoku.domain.enums.RoomVisibility;
 import com.gomoku.domain.enums.StoneColor;
 import com.gomoku.dto.request.RoomCreateRequest;
+import com.gomoku.dto.request.SelectClassRequest;
 import com.gomoku.dto.response.GameDetailResponse;
 import com.gomoku.dto.response.GameStartedEvent;
 import com.gomoku.dto.response.QuickMatchResponse;
@@ -45,17 +48,20 @@ public class RoomService {
     private final RoomMemberRepository memberRepository;
     private final PlayerRepository playerRepository;
     private final GameRepository gameRepository;
+    private final SeriousDuelService seriousDuelService;
     private final GameBroadcaster broadcaster;
 
     public RoomService(GameRoomRepository roomRepository,
                        RoomMemberRepository memberRepository,
                        PlayerRepository playerRepository,
                        GameRepository gameRepository,
+                       SeriousDuelService seriousDuelService,
                        GameBroadcaster broadcaster) {
         this.roomRepository = roomRepository;
         this.memberRepository = memberRepository;
         this.playerRepository = playerRepository;
         this.gameRepository = gameRepository;
+        this.seriousDuelService = seriousDuelService;
         this.broadcaster = broadcaster;
     }
 
@@ -67,9 +73,14 @@ public class RoomService {
      * Acts as the coin toss: standard → host=BLACK, guest=WHITE, status=PLAYING;
      * Swap2 → random tentative-first, status=OPENING. Broadcasts GameStartedEvent
      * to /topic/room/{roomId} so both clients navigate to the same game.
+     *
+     * HTTP response shape (api.yml:423-437) is GameDetailResponse — the richer
+     * GameStartedEvent (blackPlayerId/tentativeFirstPlayerId/classes/…) is kept
+     * solely for the WS broadcast so REST callers and WS subscribers each get
+     * the payload shaped for their purpose.
      */
     @Transactional
-    public GameStartedEvent startOnlineGame(String playerId, String roomId) {
+    public GameDetailResponse startOnlineGame(String playerId, String roomId) {
         // Pessimistic lock serializes concurrent callers: the 2nd waits, then sees
         // the game the 1st created and returns it (no duplicate, no version clash).
         GameRoom room = roomRepository.findByIdForUpdate(roomId)
@@ -80,7 +91,7 @@ public class RoomService {
                 .findFirstByRoomIdAndStatusNotAndDeletedFalse(roomId, GameStatus.FINISHED)
                 .orElse(null);
         if (existing != null) {
-            return toGameStarted(existing);
+            return toGameDetail(existing);
         }
 
         if (room.getStatus() != RoomStatus.READY) {
@@ -100,6 +111,9 @@ public class RoomService {
         game.setRoomId(roomId);
         game.setUseSwap2(room.isSwap2Mode());
 
+        game.setBattleMode(room.getBattleMode());
+        game.setFieldType(room.getFieldType());
+
         if (room.isSwap2Mode()) {
             // Swap2: coin decides tentative-first; colours finalized after opening.
             game.setStatus(GameStatus.OPENING);
@@ -111,14 +125,25 @@ public class RoomService {
             game.setBlackPlayerId(hostId);
             game.setWhitePlayerId(guestId);
         }
+
+        // Serious Duel (never Swap2, Q9): snapshot classes by color — the game
+        // turning PLAYING is the ClassesRevealed moment (req #35) — and generate
+        // the field (obstacles + hidden cells, req #39 #40).
+        if (room.getBattleMode() == BattleMode.SERIOUS_DUEL) {
+            game.setBlackClass(memberClass(players, hostId));
+            game.setWhiteClass(memberClass(players, guestId));
+        }
         game = gameRepository.save(game);
+        if (room.getBattleMode() == BattleMode.SERIOUS_DUEL) {
+            seriousDuelService.initializeField(game);
+        }
 
         room.setStatus(RoomStatus.IN_PROGRESS);
         roomRepository.save(room);
 
         GameStartedEvent event = toGameStarted(game);
         broadcaster.broadcastRoom(roomId, event);
-        return event;
+        return toGameDetail(game);
     }
 
     private GameStartedEvent toGameStarted(Game game) {
@@ -129,7 +154,20 @@ public class RoomService {
                 game.getStatus().name(),
                 game.getTentativeFirstPlayerId(),
                 game.getBlackPlayerId(),
-                game.getWhitePlayerId());
+                game.getWhitePlayerId(),
+                game.getBattleMode().name(),
+                game.getFieldType() == null ? null : game.getFieldType().name(),
+                game.getBlackClass() == null ? null : game.getBlackClass().name(),
+                game.getWhiteClass() == null ? null : game.getWhiteClass().name());
+    }
+
+    private ClassType memberClass(List<RoomMember> players, String playerId) {
+        for (RoomMember member : players) {
+            if (member.getPlayerId().equals(playerId)) {
+                return member.getClassType();
+            }
+        }
+        return null;
     }
 
     /** Current room snapshot (members + status) for the room page on load / reconnect. */
@@ -141,7 +179,7 @@ public class RoomService {
                 .findByRoomIdAndPlayerIdAndDeletedFalse(roomId, playerId)
                 .map(RoomMember::getRole)
                 .orElse(null);
-        return toDetail(room, role);
+        return toDetail(room, playerId, role);
     }
 
     private GameDetailResponse toGameDetail(Game game) {
@@ -149,17 +187,35 @@ public class RoomService {
                 game.getId(),
                 game.getGameMode().name(),
                 game.isUseSwap2(),
+                game.getBattleMode().name(),
+                game.getFieldType() == null ? null : game.getFieldType().name(),
                 game.getStatus().name(),
                 game.getCurrentTurn() == null ? null : game.getCurrentTurn().name());
     }
 
     @Transactional
     public RoomDetailResponse createRoom(String playerId, RoomCreateRequest req) {
+        BattleMode battleMode = req.battleModeOrDefault();
+        // Serious Duel constraints (req #34, Q9): mutually exclusive with Swap2;
+        // fieldType required for SERIOUS_DUEL and must be null otherwise.
+        if (battleMode == BattleMode.SERIOUS_DUEL) {
+            if (req.swap2()) {
+                throw new BusinessException(ErrorCode.INVALID_MOVE, "真劍勝負模式與 Swap2 模式互斥");
+            }
+            if (req.fieldType() == null) {
+                throw new BusinessException(ErrorCode.INVALID_MOVE, "真劍勝負模式必須指定場地");
+            }
+        } else if (req.fieldType() != null) {
+            throw new BusinessException(ErrorCode.INVALID_MOVE, "非真劍勝負模式不可指定場地");
+        }
+
         GameRoom room = new GameRoom();
         room.setRoomCode(generateUniqueCode());
         room.setVisibility(req.visibility());
         room.setStatus(RoomStatus.WAITING);
         room.setSwap2Mode(req.swap2());
+        room.setBattleMode(battleMode);
+        room.setFieldType(req.fieldType());
         room.setHostPlayerId(playerId);
         room = roomRepository.save(room);
 
@@ -169,7 +225,40 @@ public class RoomService {
         host.setRole(RoomMemberRole.PLAYER);
         memberRepository.save(host);
 
-        return toDetail(room, RoomMemberRole.PLAYER);
+        return toDetail(room, playerId, RoomMemberRole.PLAYER);
+    }
+
+    /**
+     * Serious Duel class selection (req #35, Q8): PLAYER seats only, before
+     * Ready; Ready locks the choice. Both players may pick the same class.
+     * The ClassSelected broadcast carries no classType — choices stay hidden
+     * from the opponent until the game starts (spectators read via GET).
+     */
+    @Transactional
+    public RoomDetailResponse selectClass(String playerId, String roomId, SelectClassRequest req) {
+        GameRoom room = roomRepository.findByIdAndDeletedFalse(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "房間不存在"));
+        RoomMember member = memberRepository
+                .findByRoomIdAndPlayerIdAndDeletedFalse(roomId, playerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "不在房間中"));
+
+        if (member.getRole() != RoomMemberRole.PLAYER) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "觀戰者不可選擇職業");
+        }
+        if (room.getBattleMode() != BattleMode.SERIOUS_DUEL) {
+            throw new BusinessException(ErrorCode.UNPROCESSABLE, "非真劍勝負房間");
+        }
+        if (member.isReady()) {
+            throw new BusinessException(ErrorCode.UNPROCESSABLE, "職業已鎖定，無法變更");
+        }
+
+        member.setClassType(req.classType());
+        memberRepository.save(member);
+
+        broadcaster.broadcastRoom(roomId, java.util.Map.of(
+                "event", "ClassSelected",
+                "playerId", playerId));
+        return toDetail(room, playerId, member.getRole());
     }
 
     @Transactional(readOnly = true)
@@ -191,7 +280,9 @@ public class RoomService {
                     nickname(r.getHostPlayerId()),
                     (int) players,
                     (int) spectators,
-                    r.isSwap2Mode()));
+                    r.isSwap2Mode(),
+                    r.getBattleMode().name(),
+                    r.getFieldType() == null ? null : r.getFieldType().name()));
         }
         return new PageData<>(items, total);
     }
@@ -210,8 +301,8 @@ public class RoomService {
         RoomMember existing = memberRepository
                 .findByRoomIdAndPlayerIdAndDeletedFalse(roomId, playerId).orElse(null);
         if (existing != null) {
-            broadcaster.broadcastRoom(roomId, toDetail(room, existing.getRole()));
-            return toDetail(room, existing.getRole());
+            broadcaster.broadcastRoom(roomId, toDetail(room, null, null));
+            return toDetail(room, playerId, existing.getRole());
         }
 
         long playerCount = memberRepository.countByRoomIdAndRoleAndDeletedFalse(roomId, RoomMemberRole.PLAYER);
@@ -229,9 +320,8 @@ public class RoomService {
             roomRepository.save(room);
         }
 
-        RoomDetailResponse detail = toDetail(room, role);
-        broadcaster.broadcastRoom(roomId, detail);
-        return detail;
+        broadcaster.broadcastRoom(roomId, toDetail(room, null, null));
+        return toDetail(room, playerId, role);
     }
 
     /**
@@ -293,28 +383,41 @@ public class RoomService {
         room.setStatus(allReady ? RoomStatus.READY : RoomStatus.WAITING);
         roomRepository.save(room);
 
-        RoomDetailResponse detail = toDetail(room, member.getRole());
-        broadcaster.broadcastRoom(roomId, detail);
-        return detail;
+        broadcaster.broadcastRoom(roomId, toDetail(room, null, null));
+        return toDetail(room, playerId, member.getRole());
     }
 
     // ── helpers ──────────────────────────────────────────────────────
 
-    private RoomDetailResponse toDetail(GameRoom room, RoomMemberRole joinedAsRole) {
+    /**
+     * Room snapshot for a specific viewer. Serious Duel classType visibility
+     * (Q8, R2-2): before the game starts, opposing PLAYERs see null for each
+     * other's choice; a member always sees their own; SPECTATOR viewers see
+     * everything at any stage. Once the room is IN_PROGRESS/FINISHED (i.e. the
+     * game turned PLAYING → ClassesRevealed) everyone sees both classes.
+     * Broadcast copies use viewerId=null/viewerRole=null → most restrictive.
+     */
+    private RoomDetailResponse toDetail(GameRoom room, String viewerId, RoomMemberRole viewerRole) {
         // Ordered by join time so the host (first PLAYER) is always members[0]
         // — the room/game pages depend on stable slot 0/1 = host/guest.
         List<RoomMember> members = memberRepository.findByRoomIdAndDeletedFalseOrderByCreatedAtAsc(room.getId());
+        boolean revealed = room.getStatus() == RoomStatus.IN_PROGRESS
+                || room.getStatus() == RoomStatus.FINISHED;
         List<RoomMemberItem> memberItems = new ArrayList<>();
         int spectatorCount = 0;
         for (RoomMember m : members) {
             if (m.getRole() == RoomMemberRole.SPECTATOR) {
                 spectatorCount++;
             }
+            boolean classVisible = revealed
+                    || (viewerId != null && viewerId.equals(m.getPlayerId()))
+                    || viewerRole == RoomMemberRole.SPECTATOR;
             memberItems.add(new RoomMemberItem(
                     m.getPlayerId(),
                     nickname(m.getPlayerId()),
                     m.getRole().name(),
-                    m.isReady()));
+                    m.isReady(),
+                    classVisible && m.getClassType() != null ? m.getClassType().name() : null));
         }
         return new RoomDetailResponse(
                 room.getId(),
@@ -322,8 +425,10 @@ public class RoomService {
                 room.getVisibility().name(),
                 room.getStatus().name(),
                 room.isSwap2Mode(),
+                room.getBattleMode().name(),
+                room.getFieldType() == null ? null : room.getFieldType().name(),
                 room.getHostPlayerId(),
-                joinedAsRole == null ? null : joinedAsRole.name(),
+                viewerRole == null ? null : viewerRole.name(),
                 spectatorCount,
                 memberItems);
     }

@@ -6,6 +6,8 @@ public record RoomListResponse(
         String hostNickname,
         int playerCount,
         int spectatorCount,
-        boolean isSwap2Mode
+        boolean isSwap2Mode,
+        String battleMode,
+        String fieldType
 ) {
 }

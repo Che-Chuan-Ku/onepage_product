@@ -1,5 +1,6 @@
 package com.gomoku.domain.entity;
 
+import com.gomoku.domain.enums.ClassType;
 import com.gomoku.domain.enums.RoomMemberRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,6 +25,11 @@ public class RoomMember extends BaseEntity {
     @Column(name = "is_ready", nullable = false)
     private boolean ready = false;
 
+    /** Serious Duel class choice; changeable until Ready, locked afterwards (req #35). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "class_type", length = 20)
+    private ClassType classType;
+
     public String getRoomId() { return roomId; }
     public void setRoomId(String roomId) { this.roomId = roomId; }
 
@@ -35,4 +41,7 @@ public class RoomMember extends BaseEntity {
 
     public boolean isReady() { return ready; }
     public void setReady(boolean ready) { this.ready = ready; }
+
+    public ClassType getClassType() { return classType; }
+    public void setClassType(ClassType classType) { this.classType = classType; }
 }

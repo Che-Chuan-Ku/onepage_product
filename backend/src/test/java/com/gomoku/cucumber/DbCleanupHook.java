@@ -17,7 +17,8 @@ public class DbCleanupHook {
     @Before(order = 0)
     public void cleanDatabase() {
         jdbcTemplate.execute(
-                "TRUNCATE TABLE opening_stones, moves, games, room_chat_messages, "
+                "TRUNCATE TABLE skill_usages, field_events, field_cells, field_states, "
+                        + "opening_stones, moves, games, room_chat_messages, "
                         + "room_members, game_rooms, player_stats, players "
                         + "RESTART IDENTITY CASCADE");
     }

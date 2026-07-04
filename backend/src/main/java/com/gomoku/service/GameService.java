@@ -1,9 +1,10 @@
 package com.gomoku.service;
 
+import com.gomoku.domain.entity.FieldEvent;
 import com.gomoku.domain.entity.Game;
 import com.gomoku.domain.entity.Move;
 import com.gomoku.domain.entity.OpeningStone;
-import com.gomoku.domain.entity.PlayerStats;
+import com.gomoku.domain.enums.BattleMode;
 import com.gomoku.domain.enums.CoinResult;
 import com.gomoku.domain.enums.GameMode;
 import com.gomoku.domain.enums.GameResult;
@@ -22,10 +23,10 @@ import com.gomoku.exception.BusinessException;
 import com.gomoku.exception.ErrorCode;
 import com.gomoku.game.GomokuRules;
 import com.gomoku.game.Swap2Phase;
+import com.gomoku.repository.FieldEventRepository;
 import com.gomoku.repository.GameRepository;
 import com.gomoku.repository.MoveRepository;
 import com.gomoku.repository.OpeningStoneRepository;
-import com.gomoku.repository.PlayerStatsRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,18 +54,24 @@ public class GameService {
     private final GameRepository gameRepository;
     private final MoveRepository moveRepository;
     private final OpeningStoneRepository openingStoneRepository;
-    private final PlayerStatsRepository playerStatsRepository;
+    private final FieldEventRepository fieldEventRepository;
+    private final StatsService statsService;
+    private final SeriousDuelService seriousDuelService;
     private final GameBroadcaster broadcaster;
 
     public GameService(GameRepository gameRepository,
                        MoveRepository moveRepository,
                        OpeningStoneRepository openingStoneRepository,
-                       PlayerStatsRepository playerStatsRepository,
+                       FieldEventRepository fieldEventRepository,
+                       StatsService statsService,
+                       SeriousDuelService seriousDuelService,
                        GameBroadcaster broadcaster) {
         this.gameRepository = gameRepository;
         this.moveRepository = moveRepository;
         this.openingStoneRepository = openingStoneRepository;
-        this.playerStatsRepository = playerStatsRepository;
+        this.fieldEventRepository = fieldEventRepository;
+        this.statsService = statsService;
+        this.seriousDuelService = seriousDuelService;
         this.broadcaster = broadcaster;
     }
 
@@ -154,6 +161,19 @@ public class GameService {
         if (game.getStatus() != GameStatus.PLAYING) {
             throw new BusinessException(ErrorCode.INVALID_MOVE,
                     game.getStatus() == GameStatus.OPENING ? "開局尚未完成" : "遊戲已結束");
+        }
+
+        // Serious Duel hands settle through the dedicated pipeline (req #36 #37).
+        if (game.getBattleMode() == BattleMode.SERIOUS_DUEL) {
+            GameStateResponse response = seriousDuelService.resolveHand(game, playerId, req);
+            gameRepository.save(game);
+            return response;
+        }
+        if (req.skill() != null) {
+            throw new BusinessException(ErrorCode.INVALID_MOVE, "普通模式不可使用技能");
+        }
+        if (req.row() == null || req.col() == null) {
+            throw new BusinessException(ErrorCode.INVALID_MOVE, "落子座標必填");
         }
         if (!GomokuRules.inBounds(req.row(), req.col())) {
             throw new BusinessException(ErrorCode.INVALID_MOVE, "座標超出棋盤範圍");
@@ -435,6 +455,8 @@ public class GameService {
         newGame.setGameMode(old.getGameMode());
         newGame.setRoomId(old.getRoomId());
         newGame.setUseSwap2(old.isUseSwap2());
+        newGame.setBattleMode(old.getBattleMode());
+        newGame.setFieldType(old.getFieldType());
 
         if (old.isUseSwap2()) {
             newGame.setStatus(GameStatus.OPENING);
@@ -445,8 +467,14 @@ public class GameService {
         // Swap player colors for rematch fairness
         newGame.setBlackPlayerId(old.getWhitePlayerId());
         newGame.setWhitePlayerId(old.getBlackPlayerId());
+        // Serious Duel: classes follow their players across the color swap.
+        newGame.setBlackClass(old.getWhiteClass());
+        newGame.setWhiteClass(old.getBlackClass());
 
         newGame = gameRepository.save(newGame);
+        if (newGame.getBattleMode() == BattleMode.SERIOUS_DUEL) {
+            seriousDuelService.initializeField(newGame); // fresh random field per game
+        }
         return toDetail(newGame);
     }
 
@@ -471,17 +499,73 @@ public class GameService {
                     m.getMoveNumber(), m.getColor().name(), m.getRow(), m.getCol()));
         }
 
+        // Serious Duel replay (req #47): skill/field event sequence. Hidden cells
+        // appear only through their trigger events, so replay may reveal them.
+        List<GameReplayResponse.FieldEventItem> fieldEventItems = new ArrayList<>();
+        List<GameReplayResponse.SkillUsageItem> skillUsageItems = new ArrayList<>();
+        List<GameReplayResponse.Cell> obstacleItems = new ArrayList<>();
+        String seaSide = null;
+        if (game.getBattleMode() == BattleMode.SERIOUS_DUEL) {
+            for (FieldEvent e : fieldEventRepository.findByGameIdOrderByOccurredAtAscIdAsc(gameId)) {
+                fieldEventItems.add(new GameReplayResponse.FieldEventItem(
+                        e.getMoveNumber(), e.getEventType().name(), e.getRow(), e.getCol()));
+            }
+            for (var su : seriousDuelService.listSkillUsages(gameId)) {
+                skillUsageItems.add(new GameReplayResponse.SkillUsageItem(
+                        su.getPlayerId(), su.getSkillType().name()));
+            }
+            SeriousDuelService.FieldSummary summary = seriousDuelService.buildFieldSummary(gameId);
+            for (var cell : summary.obstacles()) {
+                obstacleItems.add(new GameReplayResponse.Cell(cell.getRow(), cell.getCol()));
+            }
+            seaSide = summary.seaSide();
+        }
+
         return new GameReplayResponse(
                 gameId,
                 game.getResult() == null ? null : game.getResult().name(),
                 game.getWinnerPlayerId(),
                 game.getMoveCount(),
                 game.isUseSwap2(),
+                game.getCurrentTurn() == null ? null : game.getCurrentTurn().name(),
                 openingItems,
                 moveItems,
                 game.getRoomId(),
                 game.getBlackPlayerId(),
-                game.getWhitePlayerId());
+                game.getWhitePlayerId(),
+                game.getBattleMode().name(),
+                game.getFieldType() == null ? null : game.getFieldType().name(),
+                game.getBlackClass() == null ? null : game.getBlackClass().name(),
+                game.getWhiteClass() == null ? null : game.getWhiteClass().name(),
+                fieldEventItems,
+                skillUsageItems,
+                obstacleItems,
+                seaSide);
+    }
+
+    // ────────────────────────── game state query ─────────────────────────────
+
+    /**
+     * Current game state for page load / reconnect (req #46). Serious Duel adds
+     * field + class info; hidden cells are only included once triggered (req #44).
+     */
+    @Transactional(readOnly = true)
+    public GameStateResponse getGameState(String gameId) {
+        Game game = requireGame(gameId);
+        if (game.getBattleMode() == BattleMode.SERIOUS_DUEL) {
+            return seriousDuelService.buildState(game);
+        }
+        List<Move> moves = moveRepository.findByGameIdOrderByMoveNumberAsc(gameId);
+        Move last = moves.isEmpty() ? null : moves.get(moves.size() - 1);
+        return new GameStateResponse(
+                gameId,
+                game.getStatus().name(),
+                game.getCurrentTurn() == null ? null : game.getCurrentTurn().name(),
+                game.getMoveCount(),
+                last == null ? null
+                        : new GameStateResponse.LastMove(last.getColor().name(), last.getRow(), last.getCol()),
+                game.getResult() == null ? null : game.getResult().name(),
+                null);
     }
 
     // ────────────────────────── helpers ──────────────────────────────────────
@@ -583,6 +667,8 @@ public class GameService {
                 game.getId(),
                 game.getGameMode().name(),
                 game.isUseSwap2(),
+                game.getBattleMode().name(),
+                game.getFieldType() == null ? null : game.getFieldType().name(),
                 game.getStatus().name(),
                 game.getCurrentTurn() == null ? null : game.getCurrentTurn().name());
     }
@@ -596,33 +682,8 @@ public class GameService {
                 game.getWhitePlayerId());
     }
 
-    /** Update PlayerStats after a finished game. Only for ONLINE games with assigned players. */
+    /** Update PlayerStats after a finished game (delegates to the shared StatsService). */
     private void updateStats(Game game, GameResult result) {
-        if (game.getGameMode() != GameMode.ONLINE) {
-            return;
-        }
-        String blackId = game.getBlackPlayerId();
-        String whiteId = game.getWhitePlayerId();
-        if (blackId == null || whiteId == null) {
-            return;
-        }
-
-        PlayerStats blackStats = playerStatsRepository.findByPlayerIdAndDeletedFalse(blackId).orElse(null);
-        PlayerStats whiteStats = playerStatsRepository.findByPlayerIdAndDeletedFalse(whiteId).orElse(null);
-
-        switch (result) {
-            case BLACK_WIN -> {
-                if (blackStats != null) { blackStats.setWins(blackStats.getWins() + 1); blackStats.recomputeWinRate(); playerStatsRepository.save(blackStats); }
-                if (whiteStats != null) { whiteStats.setLosses(whiteStats.getLosses() + 1); whiteStats.recomputeWinRate(); playerStatsRepository.save(whiteStats); }
-            }
-            case WHITE_WIN -> {
-                if (whiteStats != null) { whiteStats.setWins(whiteStats.getWins() + 1); whiteStats.recomputeWinRate(); playerStatsRepository.save(whiteStats); }
-                if (blackStats != null) { blackStats.setLosses(blackStats.getLosses() + 1); blackStats.recomputeWinRate(); playerStatsRepository.save(blackStats); }
-            }
-            case DRAW -> {
-                if (blackStats != null) { blackStats.setDraws(blackStats.getDraws() + 1); playerStatsRepository.save(blackStats); }
-                if (whiteStats != null) { whiteStats.setDraws(whiteStats.getDraws() + 1); playerStatsRepository.save(whiteStats); }
-            }
-        }
+        statsService.updateStats(game, result);
     }
 }

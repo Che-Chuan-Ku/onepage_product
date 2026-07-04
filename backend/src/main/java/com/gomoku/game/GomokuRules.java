@@ -71,6 +71,45 @@ public final class GomokuRules {
         return !findWinningLine(board, row, col, color).isEmpty();
     }
 
+    /**
+     * Full-board scan for a 5-or-more line of {@code color} (board length = size,
+     * supports 15x15 and beach 16x16). Serious Duel needs this because pushes /
+     * burns / swaps can create or destroy lines anywhere, not just at the last
+     * move — the single post-settlement win check (req #37, Q2) scans everything.
+     */
+    public static List<int[]> scanWinningLine(StoneColor[][] board, StoneColor color) {
+        int size = board.length;
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                if (board[r][c] != color) {
+                    continue;
+                }
+                for (int[] dir : DIRECTIONS) {
+                    int dr = dir[0];
+                    int dc = dir[1];
+                    int pr = r - dr;
+                    int pc = c - dc;
+                    // Only count from the start of a run to avoid re-scanning.
+                    if (pr >= 0 && pr < size && pc >= 0 && pc < size && board[pr][pc] == color) {
+                        continue;
+                    }
+                    List<int[]> line = new ArrayList<>();
+                    int cr = r;
+                    int cc = c;
+                    while (cr >= 0 && cr < size && cc >= 0 && cc < size && board[cr][cc] == color) {
+                        line.add(new int[]{cr, cc});
+                        cr += dr;
+                        cc += dc;
+                    }
+                    if (line.size() >= 5) {
+                        return line;
+                    }
+                }
+            }
+        }
+        return List.of();
+    }
+
     /** Board full (every cell occupied). */
     public static boolean isBoardFull(StoneColor[][] board) {
         for (int r = 0; r < SIZE; r++) {

@@ -8,6 +8,8 @@ public record RoomDetailResponse(
         String visibility,
         String status,
         boolean isSwap2Mode,
+        String battleMode,
+        String fieldType,
         String hostPlayerId,
         String joinedAsRole,
         int spectatorCount,

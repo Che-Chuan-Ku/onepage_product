@@ -1,8 +1,8 @@
 package com.gomoku.controller;
 
 import com.gomoku.dto.request.RoomCreateRequest;
+import com.gomoku.dto.request.SelectClassRequest;
 import com.gomoku.dto.response.GameDetailResponse;
-import com.gomoku.dto.response.GameStartedEvent;
 import com.gomoku.dto.response.QuickMatchResponse;
 import com.gomoku.dto.response.RoomDetailResponse;
 import com.gomoku.dto.response.RoomListResponse;
@@ -101,6 +101,19 @@ public class RoomController {
     }
 
     /**
+     * POST /rooms/{roomId}/actions/select-class — operationId: selectClass
+     * Serious Duel only (req #35): choose/change class before Ready; locked after.
+     */
+    @PostMapping("/{roomId}/actions/select-class")
+    public ResponseEntity<ManageResponse<RoomDetailResponse>> selectClass(
+            @PathVariable String roomId,
+            @Valid @RequestBody SelectClassRequest req) {
+        String playerId = currentUser.requireId();
+        RoomDetailResponse data = roomService.selectClass(playerId, roomId, req);
+        return ResponseEntity.ok(ManageResponse.success(data));
+    }
+
+    /**
      * POST /rooms/{roomId}/actions/toggle-ready — operationId: toggleReady
      */
     @PostMapping("/{roomId}/actions/toggle-ready")
@@ -114,13 +127,19 @@ public class RoomController {
     /**
      * POST /rooms/{roomId}/actions/start-game — start the ONLINE game from a Ready room.
      * Idempotent: returns the existing game if already started (both clients may call).
+     * 201 + Location on success (api.yml:423-437 — data is GameDetailResponse; the
+     * richer GameStartedEvent is broadcast separately over WS, see RoomService).
      */
     @PostMapping("/{roomId}/actions/start-game")
-    public ResponseEntity<ManageResponse<GameStartedEvent>> startGame(
+    public ResponseEntity<ManageResponse<GameDetailResponse>> startGame(
             @PathVariable String roomId) {
         String playerId = currentUser.requireId();
         // 並發雙方呼叫由 RoomService 的悲觀鎖序列化，回傳同一對局（冪等）。
-        GameStartedEvent data = roomService.startOnlineGame(playerId, roomId);
-        return ResponseEntity.ok(ManageResponse.success(data));
+        GameDetailResponse data = roomService.startOnlineGame(playerId, roomId);
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/gmk/v1/games/{id}")
+                .buildAndExpand(data.gameId())
+                .toUri();
+        return ResponseEntity.created(location).body(ManageResponse.created(data));
     }
 }

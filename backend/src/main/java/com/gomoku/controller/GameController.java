@@ -12,6 +12,7 @@ import com.gomoku.service.GameService;
 import com.gomoku.web.ManageResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,6 +53,17 @@ public class GameController {
                 .buildAndExpand(data.gameId())
                 .toUri();
         return ResponseEntity.created(location).body(ManageResponse.created(data));
+    }
+
+    /**
+     * GET /games/{gameId} — current game state for page load / reconnect (req #46).
+     * Serious Duel: includes field/class state; hidden cells only once triggered (req #44).
+     */
+    @GetMapping("/{gameId}")
+    public ResponseEntity<ManageResponse<GameStateResponse>> getGameState(
+            @PathVariable String gameId) {
+        GameStateResponse data = gameService.getGameState(gameId);
+        return ResponseEntity.ok(ManageResponse.success(data));
     }
 
     /**
