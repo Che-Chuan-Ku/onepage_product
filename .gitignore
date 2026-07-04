@@ -1,2 +1,14 @@
 /frontend/node_modules
 /sdd_skill_factory
+
+# build artifacts
+/backend/target
+/frontend/.next
+/frontend/out
+
+# OS / editor noise
+.DS_Store
+
+# session backups
+*.bak-*
+*.bak2-*
