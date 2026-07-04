@@ -63,3 +63,24 @@
 | `RecentMatchRow` | 最近對戰（可點擊導回放） | leaderboard |
 | `ReplayControls` | 上一步/下一步/播放/暫停/進度條 | replay |
 | `ReplayInfo` | 勝者/落子數/是否 Swap2 | replay |
+
+## 真劍勝負模式（P3 增量，需求 #34–48）
+| 元件 | 用途 | Props/狀態（意圖） | 出現頁 |
+|------|------|------------------|--------|
+| `DuelModeBadge` | 「真劍勝負」標籤 + 場地圖示（🌋/🏖️） | field(volcano/beach) | lobby, room, game |
+| `FieldPicker` | 建立房間彈窗：場地二選一，與 Swap2 互斥 | field, disabled(ifSwap2) | lobby |
+| `ClassSelectCard` | 職業選擇卡（劍士/弓箭手） | classId, skills[], selected, locked | room（職業選擇介面.md） |
+| `OpponentHiddenCard` | 對手「? 選擇中」占位（選擇階段隱藏） | — | room |
+| `SpectatorClassView` | 觀戰者視角：雙方職業選擇即時可見（R2-2） | classes[] | room |
+| `ClassRevealBanner` | 對局開始職業揭曉橫幅（雙卡翻面） | selfClass, oppClass | game |
+| `SkillActionBar` | 技能操作列（一般技能×2 + 大絕×1） | skills[], usedSkills[], activeSkill | game（桌面版 + 行動版底部抽屜 `SkillDrawer`） |
+| `SkillDrawer` | 行動版技能列可收合抽屜 | collapsed | game（RWD） |
+| `DirectionPad` | 大絕方向選取（上/下/左/右） | onPick | game |
+| `PreviewRect` / `PreviewLine` | 大絕 3寬×2深 預覽框、附掛推擠 3 格預覽 | cells[] | game（Board 內建） |
+| `FieldLegend` | 場地圖例（障礙物/海洋/沙灘/隱藏格） | field | game |
+| `VolcanoObstacle` | 火山障礙物渲染（雙方可見） | cells[] | game（Board 內建） |
+| `BeachOceanOverlay` | 沙灘海洋/沙地分色渲染 + 侵蝕推進 | side, erosion | game, replay（Board 內建） |
+| `HiddenCellReveal` | 噴發格/漲潮格觸發揭露 + 賽後全揭露 | kind(eruption/tide) | game, result, replay（Board 內建） |
+| `FieldFxFlash` | 噴發/海浪/漲潮特效占位（CSS keyframe） | type(burn/wave/tide) | game |
+| `DuelReplayInfo` | 回放：場地類型 + 雙方職業 | field, classes[] | replay |
+| `SkillFieldEventRow` | 回放：本手技能/場地事件文字提示 | event | replay |

@@ -16,6 +16,7 @@
     <button class="btn btn-ghost" style="min-height:36px" onclick="scene('draw')">和局</button>
     <button class="btn btn-ghost" style="min-height:36px" onclick="scene('guest')">訪客線上</button>
     <button class="btn btn-ghost" style="min-height:36px" onclick="scene('spec')">觀戰者</button>
+    <button class="btn btn-ghost" style="min-height:36px" onclick="scene('duel')">真劍勝負（隱藏格揭露）</button>
   </div>
 
   <div class="board-wrap" id="bw" style="max-width:min(70vh,520px)"><canvas class="board" id="board"></canvas></div>
@@ -37,7 +38,20 @@ let ov;
 function scene(kind){
   ov?.remove();
   let body;
-  if(kind==='win'){
+  // reset any duel-specific field visuals before switching scene
+  board.field='none'; board.obstacles=new Set(); board.revealed=[]; board.draw();
+  if(kind==='duel'){
+    // 真劍勝負：對局結束後揭露本局所有隱藏格（噴發格/漲潮格）位置,供賽後檢視（需求 #44 #47）
+    board.field='volcano'; board.setObstacles([[2,2],[2,12],[12,2],[12,12],[4,10],[10,4]]);
+    board.revealAll([{r:8,c:8,kind:'eruption'},{r:5,c:9,kind:'eruption'},{r:10,c:6,kind:'eruption'}]);
+    body=`<div class="result-banner">阿哲 獲勝！</div>
+      <div class="win-stat"><div><div class="dim" style="font-size:12px">落子數</div><b class="num">37</b></div>
+        <div><div class="dim" style="font-size:12px">耗時</div><b class="num">11:05</b></div></div>
+      <p class="dim mt-8" style="text-align:center;font-size:13px">🌋 火山場地 · 本局隱藏的噴發格已全數揭露（虛線圈）</p>
+      <div class="col gap-8 mt-16">
+        <button class="btn btn-primary btn-block" onclick="toast('發起 rematch…','success')">再戰</button>
+        <a class="btn btn-ghost btn-block" href="../home/index.html">回首頁</a></div>`;
+  } else if(kind==='win'){
     body=`<div class="result-banner">阿哲 獲勝！</div>
       <div class="win-stat"><div><div class="dim" style="font-size:12px">落子數</div><b class="num">9</b></div>
         <div><div class="dim" style="font-size:12px">耗時</div><b class="num">04:12</b></div></div>

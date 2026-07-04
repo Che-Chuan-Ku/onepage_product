@@ -194,3 +194,73 @@ table.tbl{width:100%;border-collapse:collapse}
 }
 .collapse-toggle{display:none}
 @media(max-width:640px){.collapse-toggle{display:inline-flex}}
+
+/* ═══ 真劍勝負模式（需求 #34–48）═══ */
+
+/* Duel mode badge + field icon */
+.badge-duel{background:#4a1e1e;color:#ffb3a0}
+.field-ico{margin-right:2px}
+
+/* Class select cards (職業選擇介面) */
+.class-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.class-grid{grid-template-columns:1fr}}
+.class-card{background:var(--c-surface-2);border:2px solid var(--c-border);border-radius:var(--r-md);padding:16px;cursor:pointer;transition:border-color .15s,transform .15s;text-align:left}
+.class-card:hover{transform:translateY(-2px);border-color:var(--c-primary)}
+.class-card.selected{border-color:var(--c-primary);box-shadow:0 0 0 2px rgba(224,164,88,.35)}
+.class-card.locked{cursor:not-allowed;opacity:.85}
+.class-card h4{font-size:15px;margin-bottom:2px}
+.class-card .ico{font-size:26px;margin-bottom:6px}
+.class-card .skills{font-size:12px;color:var(--c-text-dim);margin-top:8px;line-height:1.7}
+.opp-hidden{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--c-surface-2);border:1px dashed var(--c-border);border-radius:var(--r-md);padding:20px;color:var(--c-text-dim);font-size:14px}
+
+/* Class reveal banner (揭曉動畫) */
+.reveal-banner{display:flex;align-items:center;justify-content:center;gap:22px;padding:10px 0 4px;flex-wrap:wrap}
+.reveal-card{text-align:center;perspective:800px}
+.reveal-card .flip{width:104px;height:140px;position:relative;transform-style:preserve-3d;transition:transform .8s ease}
+.reveal-card.show .flip{transform:rotateY(180deg)}
+.reveal-face{position:absolute;inset:0;border-radius:var(--r-md);display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;border:1px solid var(--c-border)}
+.reveal-face.back{background:var(--c-surface-2);font-size:30px;color:var(--c-text-dim)}
+.reveal-face.front{background:linear-gradient(160deg,var(--c-surface-2),var(--c-surface));transform:rotateY(180deg);font-size:32px}
+.reveal-vs{font-size:18px;color:var(--c-text-dim);font-weight:700}
+
+/* Skill action bar (技能操作列) */
+.skill-bar{display:flex;gap:10px;flex-wrap:wrap}
+.skill-btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:78px;min-height:44px;padding:10px 8px;border-radius:var(--r-md);border:1px solid var(--c-border);background:var(--c-surface-2);color:var(--c-text);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit}
+.skill-btn .ico{font-size:20px}
+.skill-btn.ultimate{border-color:var(--c-primary);background:linear-gradient(160deg,#3a2a12,var(--c-surface-2))}
+.skill-btn.active{outline:2px solid var(--c-accent)}
+.skill-btn:disabled,.skill-btn.used{opacity:.4;cursor:not-allowed}
+.skill-btn.used::after{content:'✓ 已使用';position:absolute;top:3px;right:6px;color:var(--c-success);font-size:10px}
+.skill-hint{background:var(--c-surface-2);border:1px solid var(--c-accent);border-radius:var(--r-md);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* Mobile bottom drawer for skill bar */
+.skill-drawer{display:none}
+@media(max-width:640px){
+  .skill-bar-desktop{display:none}
+  .skill-drawer{display:block;position:fixed;left:0;right:0;bottom:0;background:var(--c-surface);border-top:1px solid var(--c-border);padding:10px 14px calc(10px + env(safe-area-inset-bottom));z-index:50;box-shadow:0 -6px 20px rgba(0,0,0,.4)}
+  .skill-drawer .skill-bar{overflow-x:auto;flex-wrap:nowrap}
+  .skill-drawer.collapsed .skill-bar{display:none}
+  main.page{padding-bottom:120px}
+}
+
+/* Field legend (火山/沙灘) */
+.field-legend{display:flex;gap:14px;font-size:12px;color:var(--c-text-dim);flex-wrap:wrap}
+.field-legend .sw{display:inline-flex;align-items:center;gap:6px}
+.field-legend .sw i{width:12px;height:12px;border-radius:3px;display:inline-block;font-style:normal}
+.sw-volcano i{background:#5a4030}
+.sw-ocean i{background:#2f6a8a}
+.sw-sand i{background:#d9a86c}
+.sw-hidden i{background:transparent;border:1px dashed var(--c-text-dim)}
+
+/* Direction pad for 大絕 anchor+direction 選取 */
+.dir-pad{display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:4px;margin:12px auto}
+.dir-pad button{border-radius:8px}
+.dir-pad .mid{background:transparent;border:none;box-shadow:none}
+
+/* Field/skill FX flashes (占位特效) */
+@keyframes fxBurn{0%{box-shadow:inset 0 0 0 0 rgba(255,120,40,0)}30%{box-shadow:inset 0 0 60px 18px rgba(255,120,40,.55)}100%{box-shadow:inset 0 0 0 0 rgba(255,120,40,0)}}
+@keyframes fxWave{0%{box-shadow:inset 0 0 0 0 rgba(80,170,220,0)}40%{box-shadow:inset 0 0 60px 14px rgba(80,170,220,.5)}100%{box-shadow:inset 0 0 0 0 rgba(80,170,220,0)}}
+@keyframes fxTide{0%{box-shadow:inset 0 0 0 0 rgba(80,170,220,0)}50%{box-shadow:inset 0 0 90px 24px rgba(45,120,160,.6)}100%{box-shadow:inset 0 0 0 0 rgba(80,170,220,0)}}
+.fx-burn{animation:fxBurn .9s ease}
+.fx-wave{animation:fxWave 1.1s ease}
+.fx-tide{animation:fxTide 1.4s ease}

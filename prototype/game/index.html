@@ -14,6 +14,7 @@
     <div class="player-chip active" id="p1"><span class="stone-dot black"></span><span>玩家一</span></div>
     <div class="player-chip" id="p2"><span class="stone-dot white"></span><span>玩家二</span></div>
     <span class="grow"></span>
+    <span class="badge badge-duel" id="duelBadge" style="display:none"></span>
     <span class="dim num" id="moveCount">第 0 手</span>
     <span class="dim num" id="clock">00:00</span>
     <span class="conn online" id="conn"><span class="led"></span><span>已連線</span></span>
@@ -24,10 +25,34 @@
     <span class="grow"></span><span class="dim num" id="specN">觀戰 3 人</span>
   </div>
 
+  <!-- 真劍勝負：職業揭曉橫幅（需求 #35 對局開始時揭曉） -->
+  <div id="revealWrap" class="card pad" style="display:none;margin-bottom:14px">
+    <p class="dim center" style="font-size:13px;margin-bottom:2px">職業揭曉</p>
+    <div class="reveal-banner" id="revealBanner">
+      <div class="reveal-card" id="revCardSelf">
+        <div class="flip"><div class="reveal-face back">?</div><div class="reveal-face front" id="revSelfFace"></div></div>
+        <div class="dim mt-8" id="revSelfName">你</div>
+      </div>
+      <div class="reveal-vs">VS</div>
+      <div class="reveal-card" id="revCardOpp">
+        <div class="flip"><div class="reveal-face back">?</div><div class="reveal-face front" id="revOppFace"></div></div>
+        <div class="dim mt-8" id="revOppName">對手</div>
+      </div>
+    </div>
+  </div>
+
   <div class="layout">
     <section>
       <div class="board-wrap" id="bw"><canvas class="board" id="board"></canvas></div>
       <p class="dim center mt-8" style="font-size:13px" id="turnHint" aria-live="polite">輪到黑方落子</p>
+      <div class="field-legend center mt-8" id="fieldLegend" style="display:none"></div>
+
+      <!-- 真劍勝負：技能操作列（桌面版，行動版見底部抽屜，需求 #42 #43 #45） -->
+      <div class="card pad mt-16 skill-bar-desktop" id="skillCardDesktop" style="display:none">
+        <div class="row" style="margin-bottom:10px"><h3>技能</h3><span class="grow"></span><span class="dim" style="font-size:12px" id="selfClassLabelTop"></span></div>
+        <div class="skill-bar" id="skillBar"></div>
+        <div class="skill-hint mt-8" id="skillHint" style="display:none"></div>
+      </div>
     </section>
     <aside class="sidebar">
       <div class="card pad">
@@ -36,12 +61,30 @@
         <div class="row mt-8" style="justify-content:space-between"><span class="dim">回合</span><span id="turnLabel">黑方</span></div>
         <div class="row mt-8" style="justify-content:space-between"><span class="dim">落子數</span><span class="num" id="mcSide">0</span></div>
       </div>
+
+      <!-- 真劍勝負：場地與職業資訊（需求 #34 #35） -->
+      <div class="card pad" id="duelInfoCard" style="display:none">
+        <h3 style="margin-bottom:10px">真劍勝負</h3>
+        <div class="row" style="justify-content:space-between"><span class="dim">場地</span><span id="fieldLabel">—</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">你的職業</span><span id="selfClassLabel">—</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">對手職業</span><span id="oppClassLabel">—</span></div>
+      </div>
+
       <div class="card pad">
         <h3 style="margin-bottom:10px">示範控制</h3>
         <button class="btn btn-ghost btn-block" onclick="demoWin()">模擬連五（觸發結束）</button>
         <button class="btn btn-ghost btn-block mt-8" onclick="demoReconnect()">模擬斷線重連</button>
+        <div id="duelDemoControls" style="display:none"></div>
       </div>
     </aside>
+  </div>
+
+  <!-- 真劍勝負：行動版技能抽屜（需求 #43 RWD） -->
+  <div class="skill-drawer" id="skillDrawer" style="display:none">
+    <div class="row" style="margin-bottom:8px"><h3 style="font-size:14px">技能</h3><span class="grow"></span>
+      <button class="btn btn-ghost collapse-toggle" style="min-height:30px;padding:0 10px;display:inline-flex" onclick="toggleDrawer(this)">收合</button></div>
+    <div class="skill-bar" id="skillBarMobile"></div>
+    <div class="skill-hint mt-8" id="skillHintMobile" style="display:none"></div>
   </div>
 </main>
 
@@ -49,19 +92,46 @@
 <script src="../assets/board.js"></script>
 <script>
 const P=new URLSearchParams(location.search);
-const mode=P.get('mode')||'local';        // local | online
+const mode=P.get('mode')||'local';        // local | online | duel
 const isSpec=P.get('role')==='spectator';
+const isDuel=mode==='duel';
+const field=P.get('field')||'volcano';    // volcano | beach（僅 duel 適用，需求 #34 #39 #40）
 let turn='black', moves=0, sec=0, lastFive=[];
 
-document.getElementById('modeLabel').textContent = mode==='local'?'本地雙人':'線上連線';
+document.getElementById('modeLabel').textContent = mode==='local'?'本地雙人':(isDuel?'線上·真劍勝負':'線上連線');
 if(mode==='local'){document.getElementById('p1').children[1].textContent='玩家一';document.getElementById('p2').children[1].textContent='玩家二';
   document.getElementById('conn').style.display='none';} // hide conn in local
 else{document.getElementById('p1').children[1].textContent='阿哲';document.getElementById('p2').children[1].textContent='你';}
 
-const board=new GomokuBoard(document.getElementById('board'),{
-  interactive:!isSpec, requireConfirm:isMobile(),
-  onPlace:place
-});
+/* ═══ 真劍勝負：職業定義（需求 #35 #42 #43，資料為原型示範用） ═══ */
+const CLASSES={
+  swordsman:{name:'劍士',ico:'⚔️',skills:[
+    {id:'horizontal',name:'橫劈',ico:'↔️',mode:'attach-push',axis:'row'},
+    {id:'vertical',name:'縱劈',ico:'↕️',mode:'attach-push',axis:'col'},
+    {id:'ultimate',name:'天地反轉',ico:'🌀',mode:'ultimate',effect:'swap'}
+  ]},
+  archer:{name:'弓箭手',ico:'🏹',skills:[
+    {id:'snipe',name:'精準狙擊',ico:'🎯',mode:'attach-target'},
+    {id:'scatter',name:'散射',ico:'💥',mode:'attach-scatter'},
+    {id:'ultimate',name:'開拓之星',ico:'✨',mode:'ultimate',effect:'clear'}
+  ]}
+};
+const selfClassKey = P.get('class')==='archer'?'archer':'swordsman';
+const oppClassKey = selfClassKey==='swordsman'?'archer':'swordsman'; // 展示用：預設雙方不同職業（規則允許同職業）
+const selfClass=CLASSES[selfClassKey], oppClass=CLASSES[oppClassKey];
+
+const boardOpts={interactive:!isSpec, requireConfirm:isMobile(), onPlace:place};
+if(isDuel){
+  boardOpts.size = field==='beach'?16:15;
+  boardOpts.field = field;
+  boardOpts.onBlocked=(rc,reason)=>{
+    if(reason==='obstacle'){ toast('該格為障礙物，無法落子','error'); return; }
+    // 大絕錨點階段點到已占用格：錨點必須是空格（需求 Q4 補充）
+    if(ultimateStage==='anchor'){ toast('大絕錨點必須是空格（不可指定已有棋子的格子）','error'); return; }
+    toast('該格已有棋子','error');
+  };
+}
+const board=new GomokuBoard(document.getElementById('board'),boardOpts);
 function isMobile(){return matchMedia('(max-width:640px)').matches;}
 
 if(isSpec){
@@ -69,20 +139,237 @@ if(isSpec){
   document.getElementById('bw').classList.add('spectating');
 }
 
+/* ═══ 真劍勝負：技能操作流狀態（需先於下方 init 區塊宣告，避免 TDZ，需求 #42 #43 #45 #46 Q3 Q4 Q10） ═══ */
+const usedSkills=new Set();
+let activeSkill=null;      // 目前選取的一般技能（附掛模式）
+let scatterPicks=[];       // 散射：兩個選點
+let ultimateStage=null;    // null | 'direction' | 'anchor'
+let ultimateDir=null;
+
+/* ═══ 真劍勝負：初始化場地、揭曉、技能列（需求 #34 #35 #39 #40 #42 #43 #44 #45） ═══ */
+if(isDuel){
+  document.getElementById('duelBadge').style.display='inline-flex';
+  document.getElementById('duelBadge').textContent=(field==='volcano'?'🌋 真劍勝負·火山':'🏖️ 真劍勝負·沙灘');
+  document.getElementById('duelInfoCard').style.display='block';
+  document.getElementById('fieldLabel').textContent=field==='volcano'?'火山':'沙灘（16×16）';
+  document.getElementById('fieldLegend').style.display='flex';
+
+  if(field==='volcano'){
+    // 開局隨機 5-8 格障礙物，雙方可見（需求 Q5）；避開中央 3x3 與示範棋子
+    const obstacles=[]; const taken=new Set(['6,7','7,6']);
+    const count=5+Math.floor(Math.random()*4); // 5..8
+    while(obstacles.length<count){
+      const r=Math.floor(Math.random()*15), c=Math.floor(Math.random()*15);
+      if(Math.abs(r-7)<=1 && Math.abs(c-7)<=1) continue; // keep center playable
+      const k=r+','+c; if(taken.has(k)) continue;
+      taken.add(k); obstacles.push([r,c]);
+    }
+    board.setObstacles(obstacles);
+    document.getElementById('fieldLegend').innerHTML=`<span class="sw sw-volcano"><i></i>障礙物（雙方可見）</span><span class="sw sw-hidden"><i></i>噴發格（隱藏,觸發後揭露）</span>`;
+    document.getElementById('duelDemoControls').innerHTML=`
+      <button class="btn btn-ghost btn-block mt-8" onclick="demoEruption()">模擬火山噴發</button>`;
+    // seed a couple demo stones so eruption has something to burn
+    board.add(6,7,'black'); board.add(7,6,'white'); moves+=2;
+  } else {
+    board.setBeach('top',0); // 海洋在上、沙灘在下，對半切（需求 Q6）
+    document.getElementById('fieldLegend').innerHTML=`<span class="sw sw-ocean"><i></i>海洋（可正常落子）</span><span class="sw sw-sand"><i></i>沙灘</span><span class="sw sw-hidden"><i></i>漲潮格（隱藏,觸發後揭露）</span>`;
+    document.getElementById('duelDemoControls').innerHTML=`
+      <button class="btn btn-ghost btn-block mt-8" onclick="demoWave()">模擬海浪（推擠）</button>
+      <button class="btn btn-ghost btn-block mt-8" onclick="demoTide()">模擬漲潮（侵蝕）</button>`;
+    board.add(3,7,'black'); board.add(4,8,'white'); moves+=2;
+  }
+  document.getElementById('duelDemoControls').style.display='block';
+
+  // 職業揭曉橫幅：對局開始時同時揭曉（需求 #35 ClassesRevealed）
+  document.getElementById('revealWrap').style.display='block';
+  document.getElementById('revSelfFace').textContent=selfClass.ico+' '+selfClass.name;
+  document.getElementById('revOppFace').textContent=oppClass.ico+' '+oppClass.name;
+  setTimeout(()=>{
+    document.getElementById('revCardSelf').classList.add('show');
+    document.getElementById('revCardOpp').classList.add('show');
+    toast('雙方職業已揭曉','success');
+  },500);
+  document.getElementById('selfClassLabel').textContent=selfClass.ico+' '+selfClass.name;
+  document.getElementById('oppClassLabel').textContent=oppClass.ico+' '+oppClass.name;
+  document.getElementById('selfClassLabelTop').textContent='你：'+selfClass.name;
+
+  document.getElementById('skillCardDesktop').style.display='block';
+  document.getElementById('skillDrawer').style.display='block';
+  renderSkillBar();
+}
+
+function toggleDrawer(btn){
+  const d=document.getElementById('skillDrawer');
+  d.classList.toggle('collapsed');
+  btn.textContent=d.classList.contains('collapsed')?'展開':'收合';
+}
+
+/* ═══ 真劍勝負：技能操作流函式（附掛/替換/散射/大絕，需求 #42 #43 #45 #46 Q3 Q4 Q10） ═══ */
+// 己方/敵方顏色以「當前輪次」為準（demo 中使用者輪流扮演雙方；勿寫死黑/白）
+function myColor(){ return turn; }
+function oppColor(){ return turn==='black'?'white':'black'; }
+function colorName(c){ return c==='black'?'黑':'白'; }
+
+function renderSkillBar(){
+  // 觀戰者可見技能列的已使用/未使用狀態，但不可操作（R2-2 + 需求 #44 觀戰唯讀）
+  const html=selfClass.skills.map(s=>{
+    const used=usedSkills.has(s.id);
+    const active=activeSkill===s.id;
+    return `<button class="skill-btn ${s.mode==='ultimate'?'ultimate':''} ${active?'active':''} ${used?'used':''}" ${(used||isSpec)?'disabled':''} ${isSpec?'':`onclick="onSkillClick('${s.id}')"`}>
+      <span class="ico">${s.ico}</span><span>${s.name}</span></button>`;
+  }).join('');
+  document.getElementById('skillBar').innerHTML=html;
+  document.getElementById('skillBarMobile').innerHTML=html;
+}
+function showHint(html){
+  ['skillHint','skillHintMobile'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!html){el.style.display='none';el.innerHTML='';}
+    else{el.style.display='flex';el.innerHTML=html;}
+  });
+}
+function onSkillClick(id){
+  if(isSpec)return; // 觀戰者唯讀
+  if(usedSkills.has(id))return;
+  const skill=selfClass.skills.find(s=>s.id===id);
+  if(activeSkill===id){ cancelSkillMode(); return; }
+  cancelSkillMode();
+  activeSkill=id;
+  if(skill.mode==='attach-push'){
+    showHint(`已選擇附掛技能：<b>${skill.name}</b>。下一手落子後將選擇推擠方向（連鎖推擠，需求 Q3）。`);
+  } else if(skill.mode==='attach-target'){
+    board.onStoneClick=onSnipeTarget;
+    showHint(`精準狙擊：請點選<b>敵方（${colorName(oppColor())}方）棋子</b>將其替換為你的顏色（即為本手，需求 Q10）。`);
+  } else if(skill.mode==='attach-scatter'){
+    scatterPicks=[];
+    showHint(`散射：請點選兩個<b>空格</b>（兩子需相距 ≥2 格，不得在彼此九宮格內）。已選 0/2。`);
+  } else if(skill.mode==='ultimate'){
+    ultimateStage='direction';
+    showHint(`${skill.name}：請先選擇方向，再於棋盤點選<b>空格</b>作為錨點（3寬×2深預覽，需求 Q4）。
+      <div class="dir-pad">
+        <span></span><button class="btn btn-ghost" onclick="pickUltimateDir('up')">↑</button><span></span>
+        <button class="btn btn-ghost" onclick="pickUltimateDir('left')">←</button><span class="mid"></span><button class="btn btn-ghost" onclick="pickUltimateDir('right')">→</button>
+        <span></span><button class="btn btn-ghost" onclick="pickUltimateDir('down')">↓</button><span></span>
+      </div>`);
+  }
+  renderSkillBar();
+}
+function cancelSkillMode(){
+  activeSkill=null; scatterPicks=[]; ultimateStage=null; ultimateDir=null;
+  board.onStoneClick=null; board.onHover=null; board.clearPreviews();
+  showHint(null); renderSkillBar();
+}
+function onSnipeTarget(stone){
+  if(activeSkill!=='snipe')return;
+  // 敵我以當前輪次判斷，不寫死黑/白
+  if(stone.color!==oppColor()){toast('請選擇敵方（'+colorName(oppColor())+'方）棋子','error');return;}
+  board.remove(stone.r,stone.c); board.add(stone.r,stone.c,myColor());
+  usedSkills.add('snipe'); toast('精準狙擊命中，已替換為己方棋子','success');
+  finishTurnAction();
+}
+function boardClickForScatter(r,c){
+  if(board.stones[r+','+c]){toast('請選擇空格','error');return;}
+  for(const [pr,pc] of scatterPicks){ if(Math.max(Math.abs(pr-r),Math.abs(pc-c))<2){toast('兩子距離過近（需 Chebyshev ≥2）','error');return;} }
+  scatterPicks.push([r,c]);
+  showHint(`散射：已選 ${scatterPicks.length}/2。`);
+  if(scatterPicks.length===2){
+    scatterPicks.forEach(([pr,pc])=>board.add(pr,pc,myColor()));
+    usedSkills.add('scatter'); toast('散射完成，已同時落下兩子','success');
+    finishTurnAction();
+  }
+}
+function pickUltimateDir(dir){
+  ultimateDir=dir; ultimateStage='anchor';
+  showHint(`已選方向：<b>${({up:'上',down:'下',left:'左',right:'右'})[dir]}</b>。請在棋盤上將滑鼠移到<b>空格</b>預覽範圍，點擊確認錨點。`);
+  board.onHover=(rc)=>{ if(!rc)return; board.setPreviewRect(rectFor(rc,ultimateDir)); };
+}
+function rectFor([r,c],dir){
+  // 目標格=中1(必須空格)，其後一格=中2；左右兩欄各深2 → 3寬x2深矩形（需求 Q4）
+  const along = (dir==='up'||dir==='down')? [-1,0,1].map(dc=>[0,dc]) : [-1,0,1].map(dr=>[dr,0]);
+  const step = {up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]}[dir];
+  const cells=[];
+  along.forEach(([dr,dc])=>{
+    const br=r+dr, bc=c+dc;
+    cells.push([br,bc]);
+    cells.push([br+step[0],bc+step[1]]);
+  });
+  return cells.filter(([rr,cc])=>rr>=0&&rr<board.N&&cc>=0&&cc<board.N);
+}
+const _boardClickHook=(r,c)=>{
+  if(activeSkill==='scatter'){ boardClickForScatter(r,c); return true; }
+  if(ultimateStage==='anchor'){
+    // 註：已占用格的點擊在 board.js pointerdown 即被擋下（onBlocked 顯示「錨點必須是空格」），
+    // 此處必為空格；「錨點必須空格」規則見需求 Q4 補充。
+    const skill=selfClass.skills.find(s=>s.id===activeSkill);
+    const rect=rectFor([r,c],ultimateDir);
+    rect.forEach(([rr,cc])=>{
+      const k=rr+','+cc; const has=board.stones[k];
+      if(!has)return;
+      if(skill.effect==='swap'){ board.remove(rr,cc); board.add(rr,cc, has==='black'?'white':'black'); }
+      else { board.remove(rr,cc); }
+    });
+    board.clearPreviews(); board.onHover=null;
+    usedSkills.add(activeSkill);
+    toast((skill.effect==='swap'?'天地反轉':'開拓之星')+' 已施放','success');
+    activeSkill=null; ultimateStage=null; ultimateDir=null; showHint(null); renderSkillBar();
+    finishTurnAction();
+    return true;
+  }
+  return false;
+};
+
+// 技能結算後的收尾：計一手、清技能模式、換手（大絕取代落子也走這裡，需求 Q1）
+function finishTurnAction(){
+  moves++; document.getElementById('moveCount').textContent='第 '+moves+' 手'; document.getElementById('mcSide').textContent=moves;
+  cancelSkillMode();
+  turn = turn==='black'?'white':'black'; syncTurn();
+}
+
 // timer
 setInterval(()=>{if(document.hidden)return;sec++;document.getElementById('clock').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');},1000);
 
 function place(r,c){
+  if(isDuel && _boardClickHook(r,c)) return; // 精準狙擊/散射/大絕接管本手
   // demo: alternate, server-authoritative simulated. reject if not your turn handled by board interactive flag
   board.add(r,c,turn);
   moves++;
   lastFive.push([r,c]);
   document.getElementById('moveCount').textContent='第 '+moves+' 手';
   document.getElementById('mcSide').textContent=moves;
-  // quick win check (demo: 5 in a row horizontally not auto-detected; use demoWin button)
+  if(isDuel && activeSkill && selfClass.skills.find(s=>s.id===activeSkill)?.mode==='attach-push'){
+    const skill=selfClass.skills.find(s=>s.id===activeSkill);
+    promptPushDirection(r,c,skill);
+    return; // 換手延後到推擠方向選定後
+  }
   turn = turn==='black'?'white':'black';
   syncTurn();
 }
+function promptPushDirection(r,c,skill){
+  const axisLabel = skill.axis==='row' ? ['上','下'] : ['左','右'];
+  showHint(`${skill.name}已附掛落子，請選擇推擠方向：
+    <button class="btn btn-accent" style="margin-left:8px" onclick="applyPush(${r},${c},'${skill.axis}',-1,'${skill.id}')">${axisLabel[0]}</button>
+    <button class="btn btn-accent" onclick="applyPush(${r},${c},'${skill.axis}',1,'${skill.id}')">${axisLabel[1]}</button>`);
+}
+function applyPush(r,c,axis,dir,skillId){
+  // 緊鄰該方向橫/縱排3格（連鎖推擠解算,需求 Q3 Q10）
+  const cells = axis==='row'
+    ? [[r+dir,c-1],[r+dir,c],[r+dir,c+1]]
+    : [[r-1,c+dir],[r,c+dir],[r+1,c+dir]];
+  const dr = axis==='row'?dir:0, dc = axis==='row'?0:dir;
+  cells.forEach(([rr,cc])=>{
+    if(rr<0||rr>=board.N||cc<0||cc>=board.N)return;
+    const k=rr+','+cc; const color=board.stones[k]; if(!color)return;
+    const tr=rr+dr, tc=cc+dc;
+    if(tr<0||tr>=board.N||tc<0||tc>=board.N || board.isObstacle(tr,tc)){ return; } // 出界/遇障礙物整列不動（示意）
+    board.remove(rr,cc); board.add(tr,tc,color);
+  });
+  usedSkills.add(skillId);
+  toast(skill_name(skillId)+' 推擠完成','success');
+  turn = turn==='black'?'white':'black'; syncTurn();
+  cancelSkillMode();
+}
+function skill_name(id){ return (selfClass.skills.find(s=>s.id===id)||{}).name||id; }
+
 function syncTurn(){
   document.getElementById('turnLabel').textContent=turn==='black'?'黑方':'白方';
   document.getElementById('turnHint').textContent='輪到'+(turn==='black'?'黑':'白')+'方落子';
@@ -109,6 +396,43 @@ function demoReconnect(){
   setTimeout(()=>{conn.className='conn online';conn.children[1].textContent='已連線';toast('已重新連線','success');},2200);
 }
 
+/* ═══ 真劍勝負：場地事件示範（噴發/海浪/漲潮,需求 #39 #40 #45） ═══ */
+function demoEruption(){
+  // 示範：一次性隱藏噴發格觸發（需求 Q5）；避開障礙物格
+  let r=8,c=8;
+  while(board.isObstacle(r,c)){ r=3+Math.floor(Math.random()*9); c=3+Math.floor(Math.random()*9); }
+  board.revealHidden(r,c,'eruption');
+  // 燒毀周邊 8 格（觸發者自己那顆不燒,示意：清除範圍內任何棋子）
+  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+    if(dr===0&&dc===0)continue;
+    const rr=r+dr, cc=c+dc; if(rr<0||rr>=board.N||cc<0||cc>=board.N)continue;
+    if(board.stones[rr+','+cc]) board.remove(rr,cc);
+  }
+  document.getElementById('bw').classList.add('fx-burn');
+  toast('火山噴發！周邊 8 格棋子已燒毀（觸發格本身留在場上）','error');
+  setTimeout(()=>document.getElementById('bw').classList.remove('fx-burn'),1000);
+}
+function demoWave(){
+  // 每 5 輪(10手)觸發一次：海洋格棋子往沙灘推進一格（示意：往下推 1 排）
+  const moved=[];
+  Object.keys(board.stones).forEach(k=>{
+    const [r,c]=k.split(',').map(Number);
+    if(board.isOcean(r,c) && !board.stones[(r+1)+','+c] && r+1<board.N){ moved.push([r,c,r+1]); }
+  });
+  moved.forEach(([r,c,tr])=>{ const color=board.stones[r+','+c]; board.remove(r,c); board.add(tr,c,color); });
+  document.getElementById('bw').classList.add('fx-wave');
+  toast('海浪來襲，海洋格棋子往沙灘推進一格','success');
+  setTimeout(()=>document.getElementById('bw').classList.remove('fx-wave'),1200);
+}
+function demoTide(){
+  board.erosion++; board.draw();
+  const r=Math.min(board.N-1, Math.floor(board.N/2)+board.erosion-1);
+  board.revealHidden(r, Math.floor(board.N/2),'tide');
+  document.getElementById('bw').classList.add('fx-tide');
+  toast('漲潮！最靠海的一排沙灘已侵蝕為海洋（漸進推進，需求 Q6）','error');
+  setTimeout(()=>document.getElementById('bw').classList.remove('fx-tide'),1400);
+}
+
 function showResult(res){
   const isGuestOnline = mode!=='local' && P.get('guest')==='1';
   const rematch = isSpec ? '' :
@@ -116,12 +440,14 @@ function showResult(res){
       ? `<a class="btn btn-primary btn-block" href="../user/index.html#guest">重新輸入暱稱進新局</a>
          <p class="dim mt-8" style="font-size:13px;text-align:center">想保存戰績、登上排行榜？強烈建議註冊一個帳號</p>`
       : `<button class="btn btn-primary btn-block" onclick="rematch()">再戰</button>`;
+  const duelNote = isDuel ? `<p class="dim mt-8" style="text-align:center;font-size:13px">真劍勝負：本局隱藏格（噴發/漲潮）已於結束畫面全數揭露（需求 #44 #47）</p>` : '';
   const ov=showModal(`<div class="result-banner">${res.draw?'和局':res.name+' 獲勝！'}</div>
     <div class="win-stat"><div><div class="dim" style="font-size:12px">落子數</div><b class="num">${moves||9}</b></div>
       <div><div class="dim" style="font-size:12px">耗時</div><b class="num">${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}</b></div></div>
     <div class="col gap-8 mt-16">
       ${rematch}
       ${isSpec?'<p class="dim" style="text-align:center;font-size:13px">觀戰者僅顯示結果</p>':''}
+      ${duelNote}
       <a class="btn btn-ghost btn-block" href="../home/index.html">回首頁</a>
     </div>`);
   ov.dataset.dismiss='0';

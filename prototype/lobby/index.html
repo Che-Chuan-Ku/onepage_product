@@ -47,7 +47,11 @@ const ROOMS=[
   {code:'A12X',host:'小美',players:2,spec:5,mode:'normal'},
   {code:'QQ88',host:'老張',players:1,spec:0,mode:'normal'},
   {code:'KU99',host:'快手小王',players:0,spec:1,mode:'swap2'},
+  {code:'DU3L',host:'火山戰士',players:1,spec:3,mode:'duel',field:'volcano'},
+  {code:'BC44',host:'沙灘浪人',players:0,spec:0,mode:'duel',field:'beach'},
 ];
+const MODE_LABEL={normal:'普通',swap2:'Swap2',duel:'真劍勝負'};
+const MODE_BADGE_CLASS={normal:'badge-normal',swap2:'badge-swap2',duel:'badge-duel'};
 function renderRooms(){
   document.getElementById('rooms').innerHTML=ROOMS.map(r=>`
     <div class="card pad row gap-16 wrap">
@@ -55,7 +59,7 @@ function renderRooms(){
       <div><div class="dim" style="font-size:12px">房主</div><div>${r.host}</div></div>
       <div><div class="dim" style="font-size:12px">對戰</div><div class="num">${r.players}/2</div></div>
       <div><div class="dim" style="font-size:12px">觀戰</div><div class="num">${r.spec} 人</div></div>
-      <span class="badge ${r.mode==='swap2'?'badge-swap2':'badge-normal'}">${r.mode==='swap2'?'Swap2':'普通'}</span>
+      <span class="badge ${MODE_BADGE_CLASS[r.mode]}">${MODE_LABEL[r.mode]}${r.mode==='duel'?(r.field==='volcano'?' 🌋':' 🏖️'):''}</span>
       <span class="grow"></span>
       <button class="btn ${r.players>=2?'btn-ghost':'btn-primary'}" onclick="enter('${r.code}',${r.players})">
         ${r.players>=2?'觀戰':'加入'}
@@ -69,11 +73,30 @@ function createRoom(){
   showModal(`<h2 style="margin-bottom:14px">建立房間</h2>
     <div class="field"><label>可見性</label>
       <div class="tabs"><div class="tab active" onclick="pick(this,'vis')">公開</div><div class="tab" onclick="pick(this,'vis')">私人</div></div></div>
-    <div class="field"><label>開局模式</label>
-      <div class="tabs"><div class="tab active" onclick="pick(this,'mode')">普通</div><div class="tab" onclick="pick(this,'mode')">Swap2</div></div></div>
-    <button class="btn btn-primary btn-block mt-8" onclick="location.href='../room/index.html'">建立並進入房間</button>`);
+    <div class="field"><label>房間模式（三選一，需求 #34 Q9）</label>
+      <div class="tabs" id="modeTabs"><div class="tab active" onclick="pickMode(this,'normal')">普通</div><div class="tab" onclick="pickMode(this,'swap2')">Swap2</div><div class="tab" onclick="pickMode(this,'duel')">真劍勝負</div></div></div>
+    <div class="field" id="fieldPicker" style="display:none"><label>場地（真劍勝負限定，需求 #34）</label>
+      <div class="tabs" id="fieldTabs"><div class="tab active" onclick="pick(this,'field')">🌋 火山</div><div class="tab" onclick="pick(this,'field')">🏖️ 沙灘</div></div></div>
+    <button class="btn btn-primary btn-block mt-8" onclick="submitCreate()">建立並進入房間</button>`);
 }
 function pick(el,grp){[...el.parentElement.children].forEach(c=>c.classList.remove('active'));el.classList.add('active');}
+let createMode='normal';
+function pickMode(el,m){
+  pick(el,'mode'); createMode=m;
+  document.getElementById('fieldPicker').style.display = m==='duel' ? 'block' : 'none';
+  // 真劍勝負與 Swap2 互斥（需求 #34 Q9）：切到真劍勝負視同取消 Swap2，反之亦然（本原型以三選一 tabs 直接呈現互斥）
+}
+function submitCreate(){
+  if(createMode==='duel'){
+    const fieldTab=document.querySelector('#fieldTabs .tab.active');
+    const field = fieldTab && fieldTab.textContent.includes('沙灘') ? 'beach' : 'volcano';
+    location.href='../room/index.html?mode=duel&field='+field;
+  } else if(createMode==='swap2'){
+    location.href='../room/index.html?mode=swap2';
+  } else {
+    location.href='../room/index.html?mode=normal';
+  }
+}
 
 function joinByCode(){
   const c=$('#code').value.trim().toUpperCase();
@@ -83,8 +106,10 @@ function joinByCode(){
   enter(c,r.players);
 }
 function enter(code,players){
-  if(players>=2){toast('對戰席已滿，已以觀戰者身份進入','success');setTimeout(()=>location.href='../room/index.html?role=spectator',700);}
-  else location.href='../room/index.html';
+  const r=ROOMS.find(x=>x.code===code)||{};
+  const q = r.mode==='duel' ? '&mode=duel&field='+(r.field||'volcano') : (r.mode==='swap2'?'&mode=swap2':'');
+  if(players>=2){toast('對戰席已滿，已以觀戰者身份進入','success');setTimeout(()=>location.href='../room/index.html?role=spectator'+q,700);}
+  else location.href='../room/index.html?x=1'+q;
 }
 
 let qmTimer;

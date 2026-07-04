@@ -2,7 +2,41 @@ version: "2.0"
 mode: "P3"                        # 最終視覺交付
 workflow_mode: "hybrid"          # 預設 hybrid：8 phase 全跑，新文件自動生成
 current_phase: "done"
-phase_detail: "全 phase 完成，prototype 交付前端"
+phase_detail: "全 phase 完成，prototype 交付前端；2026-07-04 完成真劍勝負模式（需求 #34–48）CHANGE 增量，見 change_log"
+
+change_log:
+  - date: "2026-07-04"
+    type: "CHANGE"
+    summary: "真劍勝負模式（需求 #34–48）：場地選擇(火山/沙灘)、職業選擇與揭曉、技能操作流、16x16沙灘棋盤、隱藏格、特效占位"
+    upstream_specs:
+      - "specs/activities/真劍勝負模式.mmd"
+      - "specs/activities/線上連線對戰.mmd（更新）"
+      - "specs/ui/職業選擇介面.md"
+      - "specs/ui/大廳與房間列表.md（更新）"
+      - "specs/ui/房間頁.md（更新）"
+      - "specs/ui/棋盤對局頁.md（更新）"
+      - "specs/ui/對局結束畫面.md（更新）"
+      - "specs/ui/回放頁.md（更新）"
+      - "documents/clarify/2026-07-04-1021.md"
+    modified_outputs:
+      - "prototype/assets/theme.css"
+      - "prototype/assets/board.js"
+      - "prototype/lobby/index.html"
+      - "prototype/room/index.html"
+      - "prototype/game/index.html"
+      - "prototype/result/index.html"
+      - "prototype/replay/index.html"
+      - "prototype/_feature-manifest.md"
+      - "prototype/_component-inventory.md"
+    features_touched: ["lobby","room","game","result","replay"]
+    conflicts_found: 0
+    verification: >-
+      browser smoke test（playwright,本機臨時伺服器）：8 個頁面場景無 console error；
+      房間→硬幣→對局→結束 duel 路由與技能操作流（附掛/替換/散射/大絕）以真實 DOM 點擊驗證通過。
+      另派 fresh-context sonnet agent 對抗審查，修復其發現之 2 個高嚴重問題
+      （觀戰者可繞過唯讀觸發精準狙擊改盤面；狙擊/散射寫死黑白顏色與輪次矛盾）
+      與 3 個中低問題（aria-label 未隨 16x16 更新、大絕錨點死碼檢查、障礙物未隨機 5-8 格），
+      修復後全部路徑重新以瀏覽器實測通過（觀戰唯讀、狙擊誤選己方被拒、16x16 aria、錨點占用專屬提示）。
 
 spec_analysis:
   status: "done"

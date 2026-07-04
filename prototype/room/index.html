@@ -33,6 +33,14 @@
             <span class="badge badge-wait" id="p2ready">未準備</span>
           </div>
         </div>
+
+        <!-- 真劍勝負：職業選擇區塊，嵌於自己的玩家槽位下方（需求 #35，specs/ui/職業選擇介面.md） -->
+        <div id="classSelectBlock" style="display:none;margin-top:16px">
+          <h3 style="margin-bottom:10px">選擇職業</h3>
+          <div class="class-grid" id="classGrid"></div>
+          <p class="dim mt-8" style="font-size:12px">選擇階段對手不可見；Ready 即鎖定，對局開始時雙方職業同時揭曉（需求 #35 Q8）。</p>
+        </div>
+
         <button class="btn btn-success btn-block mt-16" id="readyBtn" onclick="toggleReady()">標記 Ready</button>
         <p class="dim mt-8" id="readyHint" style="font-size:13px;text-align:center">雙方皆 Ready 後自動進入開局</p>
       </div>
@@ -40,6 +48,8 @@
       <div class="card pad">
         <div class="row gap-8" style="margin-bottom:10px"><h3>觀戰席</h3><span class="badge badge-spec" id="specCount">觀戰中 2 人</span></div>
         <div class="dim" style="font-size:14px">小美 · 路人甲</div>
+        <!-- 真劍勝負：觀戰者視角可見雙方職業選擇，不受玩家間互相隱藏限制（R2-2） -->
+        <div id="specClassView" style="display:none;margin-top:12px;font-size:13px" class="dim"></div>
       </div>
     </section>
 
@@ -66,6 +76,9 @@
 <script>
 const params=new URLSearchParams(location.search);
 const isSpectator=params.get('role')==='spectator';
+const roomMode=params.get('mode')||'normal';           // normal | swap2 | duel（需求 #34 房間模式三選一互斥）
+const isDuelRoom=roomMode==='duel';
+const field=params.get('field')||'volcano';            // 火山 | 沙灘（需求 #34 場地選擇）
 document.getElementById('hdr').innerHTML=renderHeader({identity:'registered',nickname:'KuPlayer'});
 
 if(isSpectator){
@@ -75,16 +88,79 @@ if(isSpectator){
   document.getElementById('p2ready').parentElement.querySelector('b').textContent='（空位 — 等待對手）';
 }
 
+/* ═══ 真劍勝負：房間模式標籤 + 職業選擇區塊（需求 #34 #35） ═══ */
+const CLASS_OPTIONS=[
+  {id:'swordsman',name:'劍士',ico:'⚔️',skills:['橫劈','縱劈','大絕：天地反轉']},
+  {id:'archer',name:'弓箭手',ico:'🏹',skills:['精準狙擊','散射','大絕：開拓之星']}
+];
+let myClass=null, myLocked=false;
+
+if(isDuelRoom){
+  const mb=document.getElementById('modeBadge');
+  mb.className='badge badge-duel'; mb.textContent=(field==='volcano'?'真劍勝負 · 🌋 火山':'真劍勝負 · 🏖️ 沙灘');
+
+  if(!isSpectator){
+    // 職業選擇區塊嵌於自己的玩家槽位下方，僅對戰玩家可見／可操作（需求 #35）
+    document.getElementById('classSelectBlock').style.display='block';
+    document.getElementById('readyBtn').disabled=true;
+    renderClassGrid();
+    document.getElementById('specClassView').style.display='none';
+  } else {
+    // 觀戰者視角：選擇階段即可見雙方（含未鎖定）職業選擇，不受玩家間互相隱藏限制（R2-2）
+    const v=document.getElementById('specClassView');
+    v.style.display='block';
+    v.innerHTML='對戰雙方職業選擇（觀戰者視角，即時可見）：<br>阿哲：⚔️ 劍士（未鎖定）　·　你：尚未選擇';
+  }
+} else if(roomMode==='swap2'){
+  document.getElementById('modeBadge').className='badge badge-swap2';
+  document.getElementById('modeBadge').textContent='Swap2';
+} else {
+  document.getElementById('modeBadge').className='badge badge-normal';
+  document.getElementById('modeBadge').textContent='普通';
+}
+
+function renderClassGrid(){
+  document.getElementById('classGrid').innerHTML=CLASS_OPTIONS.map(c=>`
+    <div class="class-card ${myClass===c.id?'selected':''} ${myLocked?'locked':''}" onclick="pickClass('${c.id}')">
+      <div class="ico">${c.ico}</div><h4>${c.name}</h4>
+      <div class="skills">${c.skills.join('　·　')}</div>
+    </div>`).join('') + `
+    <div class="opp-hidden" style="grid-column:1/-1">👤 對手：${myLocked?'? 選擇中（Ready 前對你不可見，開局時揭曉）':'? 選擇中'}</div>`;
+}
+function pickClass(id){
+  if(myLocked)return;
+  myClass=id; renderClassGrid();
+  document.getElementById('readyBtn').disabled=false;
+  toast('已選擇職業：'+CLASS_OPTIONS.find(c=>c.id===id).name,'success');
+}
+
 function copyCode(){navigator.clipboard?.writeText('7F3K');toast('房間碼已複製：7F3K','success');}
 let ready=false;
 function toggleReady(){
+  if(isDuelRoom && !myClass){ toast('請先選擇職業','error'); return; }
   ready=!ready;
   const b=document.getElementById('p2ready');
   b.className='badge '+(ready?'badge-ready':'badge-wait');b.textContent=ready?'已準備':'未準備';
   document.getElementById('readyBtn').textContent=ready?'取消 Ready':'標記 Ready';
-  if(ready){ // both ready -> coin/opening
-    toast('雙方皆已準備，進入開局…','success');
-    setTimeout(()=>location.href='../opening/index.html?ctx=online',900);
+  if(isDuelRoom){
+    myLocked=ready; renderClassGrid();
+    if(ready){ [...document.querySelectorAll('#classGrid .class-card')].forEach(el=>el.style.pointerEvents='none'); }
+  }
+  if(ready){ // both ready -> 進開局
+    if(isDuelRoom){
+      // 真劍勝負：硬幣決黑白後直接開局並揭曉職業，不走 Swap2 開局子流程（specs/activities/真劍勝負模式.mmd S3→S4）
+      toast('雙方皆已準備，投擲硬幣決定黑白…','success');
+      setTimeout(()=>{
+        const ov=showModal(`<div class="center col" style="text-align:center">
+          <div class="coin-scene"><div class="coin flipping" id="duelCoin"><div class="face heads">黑</div><div class="face tails">白</div></div></div>
+          <p class="dim mt-16">投擲硬幣決定黑白…</p></div>`);
+        ov.dataset.dismiss='0';
+        setTimeout(()=>location.href='../game/index.html?mode=duel&field='+field+'&class='+myClass,1700);
+      },700);
+    } else {
+      toast('雙方皆已準備，進入開局…','success');
+      setTimeout(()=>location.href='../opening/index.html?ctx=online',900);
+    }
   }
 }
 function send(e){e.preventDefault();const v=$('#chatIn').value.trim();if(!v)return false;
