@@ -6,7 +6,7 @@
 version: "3.0"
 project_root: "/Users/chechuanku/Documents/aiproject/gomoku"
 created_at: "2026-05-24T03:40:48Z"
-updated_at: "2026-06-23T06:14:39Z"
+updated_at: "2026-07-04T16:32:59Z"
 
 # ── 模組 DAG（所有模組一視同仁）────────────────────
 # 階段管理由人透過 Git PR/MR 控制，Hub 不追蹤階段狀態
@@ -19,9 +19,9 @@ modules:
     input:  ["document/"]
     output: ["specs/"]
     token_usage_total:           # 模組累計 token（含審核），由工具自動累加
-      input_tokens: 180600
-      output_tokens: 36520
-      total_tokens: 217120
+      input_tokens: 767600
+      output_tokens: 91220
+      total_tokens: 945224
 
   uiux_design:
     status: "completed"
@@ -31,9 +31,9 @@ modules:
     input:  ["specs/activities/", "specs/ui/", "specs/actors/"]
     output: ["prototype/"]
     token_usage_total:
-      input_tokens: 126200
-      output_tokens: 17871
-      total_tokens: 144071
+      input_tokens: 443200
+      output_tokens: 60071
+      total_tokens: 503271
 
   document_generate_sa:
     status: "completed"
@@ -55,9 +55,9 @@ modules:
     input:  []                   # 依技術棧決定
     output: ["backend/"]
     token_usage_total:
-      input_tokens: 140800
-      output_tokens: 25120
-      total_tokens: 165920
+      input_tokens: 1466800
+      output_tokens: 112620
+      total_tokens: 1696059
 
   frontend_development:
     status: "completed"
@@ -67,21 +67,21 @@ modules:
     input:  ["specs/", "prototype/"]
     output: ["frontend/"]
     token_usage_total:
-      input_tokens: 153000
-      output_tokens: 45200
-      total_tokens: 198200
+      input_tokens: 1116000
+      output_tokens: 115900
+      total_tokens: 1231900
 
   integration_test:
     status: "completed"
-    audit: "pending"
+    audit: "passed"
     depends_on: ["frontend_development", "backend_development"]
     options: {"method":"staged full-stack E2E","auto_fix":true,"stages":"backend compile -> cucumber e2e -> compose full stack -> playwright real API"}
     input:  ["specs/", "frontend/", "backend/"]
     output: []                   # 測試腳本 + pass/fail，可觸發 document_generate
     token_usage_total:
-      input_tokens: 850000
-      output_tokens: 75000
-      total_tokens: 925000
+      input_tokens: 1628000
+      output_tokens: 133600
+      total_tokens: 1818458
 
 # ── 當前 interrupt（Hub 工具寫入）─────────────────
 # 模組回傳 interrupt 後，Hub 工具將內容寫在此段

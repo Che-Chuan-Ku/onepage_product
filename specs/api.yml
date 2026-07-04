@@ -208,6 +208,20 @@ paths:
                         $ref: '#/components/schemas/RoomDetailResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '422':
+          description: >
+            真劍勝負模式參數衝突（需求 #34，Q9）：
+            (1) battleMode=SERIOUS_DUEL 與 isSwap2Mode=true 同時指定；
+            (2) battleMode=SERIOUS_DUEL 但未指定 fieldType。
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      code: { type: string, example: "422002" }
+                      data: { type: object }
     get:
       tags: [rooms]
       operationId: listPublicRooms
@@ -242,6 +256,32 @@ paths:
                                 type: array
                                 items:
                                   $ref: '#/components/schemas/RoomListResponse'
+
+  /rooms/{roomId}:
+    get:
+      tags: [rooms]
+      operationId: getRoomDetail
+      summary: 查詢房間詳情
+      description: 查詢房間目前狀態、成員名單與職業/Ready 狀況（供進房後輪詢或重連使用）。
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RoomDetailResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /rooms/{roomId}/actions/join:
     post:
@@ -293,6 +333,50 @@ paths:
                         $ref: '#/components/schemas/QuickMatchResponse'
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /rooms/{roomId}/actions/select-class:
+    post:
+      tags: [rooms]
+      operationId: selectClass
+      summary: 真劍勝負職業選擇
+      description: >
+        真劍勝負模式限定。進房後 Ready 前可自選或變更職業（劍士/弓箭手，可同職業）；
+        Ready 後鎖定，再呼叫回 422。對應 ClassSelected（需求 #35）。
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectClassRequest'
+      responses:
+        '200':
+          description: 選擇成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RoomDetailResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422':
+          description: 非真劍勝負房間 / Ready 後職業已鎖定
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+
   /rooms/{roomId}/actions/toggle-ready:
     post:
       tags: [rooms]
@@ -322,6 +406,49 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /rooms/{roomId}/actions/start-game:
+    post:
+      tags: [rooms]
+      operationId: startGame
+      summary: 開局（雙方 Ready 後）
+      description: >
+        兩名對戰玩家皆 Ready 後觸發開局，建立對局並將房間狀態轉為 IN_PROGRESS；
+        真劍勝負模式此時揭曉雙方職業（ClassesRevealed，Q8）。對應 AllPlayersReady /
+        線上版 GameStarted 事件。
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: 對局已建立
+          headers:
+            Location:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GameDetailResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: 尚有玩家未 Ready 或對戰席未滿 2 人
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+
   /games:
     post:
       tags: [games]
@@ -350,6 +477,34 @@ paths:
                       data:
                         $ref: '#/components/schemas/GameDetailResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+
+  /games/{gameId}:
+    get:
+      tags: [games]
+      operationId: getGameState
+      summary: 查詢對局目前狀態
+      description: >
+        供斷線重連使用：回傳當前對局完整狀態，含真劍勝負技能已使用狀態與場地狀態
+        （障礙物、侵蝕進度等）一併恢復，沿用既有重連機制（需求 #46）。
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GameStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /games/{gameId}/actions/coin-toss:
     post:
@@ -410,7 +565,10 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422':
-          description: 落子不合法（非當前回合 / 位置已佔 / 超出棋盤）
+          description: >
+            落子不合法（非當前回合 / 位置已佔 / 超出棋盤 / 障礙物格禁止落子 /
+            技能已使用過 / 大絕與落子/一般技能同時提出 / 大絕錨點非空格 /
+            散射兩子距離不足 / 精準狙擊目標非現存敵方棋子）
           content:
             application/json:
               schema:
@@ -669,6 +827,22 @@ components:
       properties:
         visibility: { type: string, enum: [PUBLIC, PRIVATE] }
         isSwap2Mode: { type: boolean, default: false }
+        battleMode:
+          type: string
+          enum: [NORMAL, SERIOUS_DUEL]
+          default: NORMAL
+          description: '真劍勝負模式；與 isSwap2Mode=true 互斥，同時指定回 422（需求 #34，Q9）'
+        fieldType:
+          type: string
+          enum: [VOLCANO, BEACH]
+          nullable: true
+          description: 'battleMode=SERIOUS_DUEL 時必填；否則須為 null（需求 #34）'
+
+    SelectClassRequest:
+      type: object
+      required: [classType]
+      properties:
+        classType: { type: string, enum: [WARRIOR, ARCHER] }
 
     RoomDetailResponse:
       type: object
@@ -678,6 +852,8 @@ components:
         visibility: { type: string, enum: [PUBLIC, PRIVATE] }
         status: { type: string, enum: [WAITING, READY, IN_PROGRESS, FINISHED] }
         isSwap2Mode: { type: boolean }
+        battleMode: { type: string, enum: [NORMAL, SERIOUS_DUEL] }
+        fieldType: { type: string, enum: [VOLCANO, BEACH], nullable: true }
         joinedAsRole:
           type: string
           enum: [PLAYER, SPECTATOR]
@@ -696,6 +872,16 @@ components:
         nickname: { type: string }
         role: { type: string, enum: [PLAYER, SPECTATOR], description: 'PLAYER=對戰席 / SPECTATOR=觀戰席' }
         isReady: { type: boolean, description: '觀戰席恆 false' }
+        classType:
+          type: string
+          enum: [WARRIOR, ARCHER]
+          nullable: true
+          description: >
+            真劍勝負模式限定。己方 response 顯示實際選擇；對手於選擇階段（未 ClassesRevealed 前）
+            顯示 null（Q8 不可見規則，僅適用於對戰雙方彼此之間），對局開始揭曉後雙方皆可見。
+            觀戰者（role=SPECTATOR）視角不受此限制：任何階段皆可見雙方實際 classType 與
+            技能使用狀態（R2-2）；但場地隱藏格資訊仍與玩家視角相同、觀戰者同樣不可見
+            （見 GameStateResponse.revealedHiddenCells，需求 #44）。
 
     RoomListResponse:
       type: object
@@ -706,6 +892,8 @@ components:
         playerCount: { type: integer, description: '對戰席人數（0..2）' }
         spectatorCount: { type: integer, description: '觀戰席人數' }
         isSwap2Mode: { type: boolean }
+        battleMode: { type: string, enum: [NORMAL, SERIOUS_DUEL] }
+        fieldType: { type: string, enum: [VOLCANO, BEACH], nullable: true }
 
     QuickMatchResponse:
       type: object
@@ -728,6 +916,8 @@ components:
         gameId: { type: string }
         gameMode: { type: string, enum: [LOCAL, ONLINE] }
         useSwap2: { type: boolean }
+        battleMode: { type: string, enum: [NORMAL, SERIOUS_DUEL] }
+        fieldType: { type: string, enum: [VOLCANO, BEACH], nullable: true }
         status: { type: string, enum: [OPENING, PLAYING, FINISHED] }
         currentTurn: { type: string, enum: [BLACK, WHITE], nullable: true }
 
@@ -741,14 +931,92 @@ components:
         whitePlayerId: { type: string, nullable: true }
 
     MoveCreateRequest:
+      description: >
+        以 oneOf 拆兩分支，恢復 schema 層必填保障（需求 #36）：
+        一般落子（含普通模式）/ 真劍勝負一般技能附掛落子 → MoveCreateRequestNormal（row/col 必填）；
+        真劍勝負大絕施法（取代本回合落子）→ MoveCreateRequestUltimate（僅 skill 必填、
+        skill.anchor 必填、禁止同時提供 row/col）。若請求同時滿足/都不滿足兩分支條件，
+        oneOf 驗證失敗（即 row/col 與大絕 skill 同時提出時兩分支互斥失敗）。
+        真劍勝負模式棋盤範圍依場地而異：火山 0..14、沙灘 0..15（需求 #39 #40）；
+        row/col 的 schema `maximum: 15` 為兩場地「聯集」上界，僅作 schema 層粗界防呆，
+        實際上界依 fieldType 收斂（火山最大 14、沙灘最大 15），backend 必依 fieldType
+        再次驗證，超出該場地實際邊界一律回 422（UnprocessableEntity）。
+      oneOf:
+        - $ref: '#/components/schemas/MoveCreateRequestNormal'
+        - $ref: '#/components/schemas/MoveCreateRequestUltimate'
+
+    MoveCreateRequestNormal:
       type: object
       required: [row, col]
+      description: '一般落子（含普通模式）或真劍勝負一般技能（附掛於本手落子，需求 #36）'
       properties:
-        row: { type: integer, minimum: 0, maximum: 14, example: 7 }
-        col: { type: integer, minimum: 0, maximum: 14, example: 7 }
+        row: { type: integer, minimum: 0, maximum: 15, example: 7 }
+        col: { type: integer, minimum: 0, maximum: 15, example: 7 }
+        skill:
+          $ref: '#/components/schemas/SkillActionRequest'
+
+    MoveCreateRequestUltimate:
+      type: object
+      required: [skill]
+      description: '真劍勝負大絕施法，取代本回合落子；不得同時提供 row/col（需求 #36）'
+      not:
+        anyOf:
+          - required: [row]
+          - required: [col]
+      properties:
+        skill:
+          allOf:
+            - $ref: '#/components/schemas/SkillActionRequest'
+            - type: object
+              required: [anchor]
+              properties:
+                skillType: { type: string, enum: [HEAVEN_EARTH_REVERSAL, PIONEER_STAR] }
+
+    SkillActionRequest:
+      type: object
+      required: [skillType]
+      description: >
+        真劍勝負模式限定（需求 #36 #42 #43）。一般技能（HORIZONTAL_SLASH /
+        VERTICAL_SLASH / PRECISION_SNIPE / SCATTER_SHOT）附掛於本手落子同時提出；
+        大絕（HEAVEN_EARTH_REVERSAL / PIONEER_STAR）取代本回合落子，此時外層
+        MoveCreateRequest.row/col 應省略。每個技能一場僅能使用一次。
+      properties:
+        skillType:
+          type: string
+          enum: [HORIZONTAL_SLASH, VERTICAL_SLASH, HEAVEN_EARTH_REVERSAL, PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR]
+        direction:
+          type: string
+          enum: [UP, DOWN, LEFT, RIGHT]
+          nullable: true
+          description: '橫劈用 UP/DOWN；縱劈用 LEFT/RIGHT；大絕四方向皆可'
+        anchor:
+          type: object
+          nullable: true
+          description: '大絕錨點，必須為空格（需求 #42 #43）'
+          properties:
+            row: { type: integer }
+            col: { type: integer }
+        target:
+          type: object
+          nullable: true
+          description: '精準狙擊指定的現存敵方棋子座標'
+          properties:
+            row: { type: integer }
+            col: { type: integer }
+        secondStone:
+          type: object
+          nullable: true
+          description: '散射第二顆棋子座標，與 row/col 的 Chebyshev 距離須 >= 2'
+          properties:
+            row: { type: integer }
+            col: { type: integer }
 
     GameStateResponse:
       type: object
+      description: >
+        真劍勝負限定欄位（blackClass/whiteClass/fieldState/skillEvents 等）對觀戰者與
+        玩家一致可見（R2-2）；唯隱藏格資訊（未觸發的 ERUPTION/TIDE）統一對所有視角不可見，
+        僅 revealedHiddenCells 揭露已觸發者（需求 #44）。
       properties:
         gameId: { type: string }
         status: { type: string, enum: [OPENING, PLAYING, FINISHED] }
@@ -770,6 +1038,51 @@ components:
             properties:
               row: { type: integer }
               col: { type: integer }
+        blackClass: { type: string, enum: [WARRIOR, ARCHER], nullable: true, description: '真劍勝負：games.status 轉為 PLAYING（即 ClassesRevealed 觸發時點）前為 null（需求 #35）' }
+        whiteClass: { type: string, enum: [WARRIOR, ARCHER], nullable: true, description: '真劍勝負：games.status 轉為 PLAYING 前為 null（需求 #35）' }
+        fieldState:
+          type: object
+          nullable: true
+          description: '真劍勝負限定；隱藏格（未觸發的 ERUPTION/TIDE）不含在 obstacles/revealedHiddenCells 之外（需求 #44）'
+          properties:
+            fieldType: { type: string, enum: [VOLCANO, BEACH] }
+            obstacles:
+              type: array
+              description: '火山障礙物格，雙方可見（需求 #39）'
+              items:
+                type: object
+                properties:
+                  row: { type: integer }
+                  col: { type: integer }
+            seaSide:
+              type: string
+              enum: [NORTH, SOUTH, EAST, WEST]
+              nullable: true
+              description: '沙灘場地海洋起始側（開局隨機決定，僅 fieldType=BEACH 有值；需求 #40）'
+            erodedRows: { type: integer, description: '沙灘已侵蝕排數（需求 #41）' }
+            tideTriggered: { type: boolean }
+            roundCounter: { type: integer, description: '海浪回合計數（每5輪/10手觸發一次）' }
+        revealedHiddenCells:
+          type: array
+          description: '本次結算中新觸發、因而揭露的噴發/漲潮格（需求 #44）'
+          items:
+            type: object
+            properties:
+              cellKind: { type: string, enum: [ERUPTION, TIDE] }
+              row: { type: integer }
+              col: { type: integer }
+        skillEvents:
+          type: array
+          description: '本回合結算產生的技能/場地事件，供前端特效觸發（需求 #37 #38 #45）'
+          items:
+            type: object
+            properties:
+              eventType:
+                type: string
+                enum: [FIELD_GENERATED, STONE_PUSHED, STONE_REMOVED_OFF_BOARD, STONES_BURNED, STONE_REPLACED, STONES_CLEARED, COLORS_SWAPPED, VOLCANO_ERUPTED, WAVE_SURGED, TIDE_TRIGGERED, TIDE_RISEN, SAND_ERODED]
+              row: { type: integer, nullable: true }
+              col: { type: integer, nullable: true }
+              effectTriggered: { type: boolean, example: true, description: '特效觸發旗標，動畫實作留待 UI 設計階段（R2-1）' }
 
     OpeningStoneCreateRequest:
       type: object
@@ -793,6 +1106,50 @@ components:
         winnerPlayerId: { type: string, nullable: true }
         moveCount: { type: integer }
         useSwap2: { type: boolean }
+        currentTurn:
+          type: string
+          enum: [BLACK, WHITE]
+          nullable: true
+          description: '（additive bug fix）回放/重連時權威的「輪到誰」，moveCount 奇偶不可靠（真劍勝負大招 0 手、散射一手 2 子）；FINISHED 後為 null'
+        battleMode: { type: string, enum: [NORMAL, SERIOUS_DUEL] }
+        fieldType: { type: string, enum: [VOLCANO, BEACH], nullable: true }
+        blackClass: { type: string, enum: [WARRIOR, ARCHER], nullable: true }
+        whiteClass: { type: string, enum: [WARRIOR, ARCHER], nullable: true }
+        fieldEvents:
+          type: array
+          description: '真劍勝負：技能/場地事件序列，含隱藏格觸發時點；賽後回放可完整重現並可揭露隱藏格（需求 #47）'
+          items:
+            type: object
+            properties:
+              moveNumber: { type: integer }
+              eventType:
+                type: string
+                enum: [FIELD_GENERATED, STONE_PUSHED, STONE_REMOVED_OFF_BOARD, STONES_BURNED, STONE_REPLACED, STONES_CLEARED, COLORS_SWAPPED, VOLCANO_ERUPTED, WAVE_SURGED, TIDE_TRIGGERED, TIDE_RISEN, SAND_ERODED]
+              row: { type: integer, nullable: true }
+              col: { type: integer, nullable: true }
+        skillUsages:
+          type: array
+          description: '（additive bug fix）每位玩家的已用技能歷史，供重連時還原前端 client-side 追蹤的 usedSkills 狀態（R2-3）；NORMAL 模式為空陣列或省略'
+          items:
+            type: object
+            properties:
+              playerId: { type: string }
+              skillType:
+                type: string
+                enum: [HORIZONTAL_SLASH, VERTICAL_SLASH, HEAVEN_EARTH_REVERSAL, PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR]
+        obstacles:
+          type: array
+          description: '（additive bug fix）火山障礙物 / 沙灘地形快照，鏡射 GameStateResponse.fieldState.obstacles；fieldEvents 的 FIELD_GENERATED 事件 row/col 皆為 null，無法單靠事件序列還原場地。NORMAL 模式為空陣列或省略'
+          items:
+            type: object
+            properties:
+              row: { type: integer }
+              col: { type: integer }
+        seaSide:
+          type: string
+          enum: [NORTH, SOUTH, EAST, WEST]
+          nullable: true
+          description: '（additive bug fix）沙灘場地海洋起始側，鏡射 GameStateResponse.fieldState.seaSide；僅 fieldType=BEACH 有值，NORMAL 模式為 null'
         openingStones:
           type: array
           items:
@@ -869,14 +1226,17 @@ components:
                   code: { type: string, example: "422001" }
                   data: { type: object }
 
-# ── STOMP over WebSocket 即時通道（需求 #9 #15 #16 #28）────
+# ── STOMP over WebSocket 即時通道（需求 #9 #15 #16 #28 #36 #44）─
 # 非 REST，列此供 frontend / backend 對齊；不屬 OpenAPI paths
 x-stomp-channels:
   - destination: /topic/room/{roomId}
-    purpose: 房間內 Ready 狀態與聊天廣播（需求 #7）
+    purpose: 房間內 Ready 狀態、聊天與真劍勝負職業選擇(ClassSelected)廣播（需求 #7 #35）
   - destination: /topic/game/{gameId}
-    purpose: 對局狀態更新廣播 GameStateUpdated（需求 #16）
+    purpose: >
+      對局狀態更新廣播 GameStateUpdated；真劍勝負額外廣播 ClassesRevealed /
+      SkillUsed / VolcanoErupted / WaveSurged / TideTriggered 等技能與場地事件
+      （需求 #16 #36 #37 #44），隱藏格僅於觸發時揭露（需求 #44）
   - destination: /topic/game/{gameId}/opening
     purpose: Swap2 開局即時同步與權限控制（需求 #28）
   - destination: /app/game/{gameId}/move
-    purpose: 玩家送出落子（後端驗證後廣播）
+    purpose: 玩家送出落子（可附掛 skill，後端驗證後廣播；需求 #36）

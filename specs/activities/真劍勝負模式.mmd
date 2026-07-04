@@ -1,0 +1,67 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] 真劍勝負模式（場地/職業選擇 → 開局 → 回合技能結算 → 結束）
+%% [ACTOR] 註冊玩家 -> {specs/actors/註冊玩家.md}
+%% [ACTOR] 訪客玩家 -> {specs/actors/訪客玩家.md}
+%% 說明：本活動圖銜接 線上連線對戰.mmd 的 D2a 分支「真劍勝負模式」；
+%%       房間建立、加入、Ready 等前置流程與該圖共用，不重複繪製。
+
+flowchart TD
+
+    Start(( ))
+
+    %% [STEP:1] @玩家 {features/room/真劍勝負房間建立與場地選擇.feature}
+    S1["@玩家<br/>建立房間選擇「真劍勝負」模式與場地(火山/沙灘)"]
+
+    %% [STEP:2] @玩家 {features/room/職業選擇與鎖定.feature}
+    S2["@玩家<br/>進房後Ready前自選職業(劍士/弓箭手,可同職業)"]
+
+    %% [DECISION:2a] 雙方是否皆 Ready
+    D2a{"雙方皆 Ready?"}
+
+    %% [STEP:3] @玩家 {features/game/投擲硬幣決定先手.feature}
+    S3["@玩家<br/>投擲硬幣決定黑白(沿用既有機制,與Swap2互斥)"]
+
+    %% [STEP:4] 系統 {features/room/職業選擇與鎖定.feature}
+    S4["系統<br/>對局開始,同時揭曉雙方職業(ClassesRevealed)"]
+
+    %% [STEP:5] @玩家 {features/game/真劍勝負回合行動經濟.feature}
+    S5["@玩家<br/>回合行動:純落子/附掛一般技能/施放大絕(取代落子)"]
+
+    %% [STEP:6] 系統 {features/game/真劍勝負結算順序與勝負判定.feature}
+    S6["系統<br/>結算順序:落子->技能效果->場地效果(噴發/海浪/漲潮)"]
+
+    %% [STEP:6a] 系統 {features/game/推擠解算器.feature}
+    %% 橫劈/縱劈/海浪共用推擠解算器；場地效果細節見 火山場地.feature / 沙灘場地.feature / 海浪與漲潮結算.feature
+    S6a["系統<br/>場地效果結算(火山噴發燒毀 / 海浪推擠 / 漲潮侵蝕)"]
+
+    %% [STEP:7] 系統 {features/game/真劍勝負結算順序與勝負判定.feature}
+    S7["系統<br/>唯一勝負判定(結算完成後才判定;同時五連行動方勝)"]
+
+    %% [DECISION:7a] 對局是否結束
+    D7a{"對局是否結束"}
+
+    %% [BRANCH:7a:未結束 -> 5] @玩家 {features/game/真劍勝負回合行動經濟.feature}
+    B7a_cont["@玩家<br/>換手繼續回合"]
+
+    %% [STEP:8] @玩家 {specs/ui/對局結束畫面.md}
+    S8["@玩家<br/>結束畫面(勝者/和局/高亮/再戰;隱藏格賽後可揭露,需求#44)"]
+
+    End((( )))
+
+%% ═══ 區段三：邊（連線）定義 ═══
+
+    Start --> S1
+    S1 --> S2
+    S2 --> D2a
+    D2a -- 尚未皆Ready --> S2
+    D2a -- 皆Ready --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> S6a
+    S6a --> S7
+    S7 --> D7a
+    D7a -- 未結束 --> B7a_cont
+    B7a_cont --> S5
+    D7a -- 五連/和局/斷線判負 --> S8
+    S8 --> End

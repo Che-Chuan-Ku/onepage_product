@@ -31,4 +31,18 @@
 30,遊戲邏輯 (共用),開局後顏色分配與輪次設定,根據 Swap2 選擇結果，正確設定最終黑白與 currentTurn（嚴格標準規則）,MVP,GameLogic 統一方法,ColorAssignmentFinalized,已確認：嚴格標準規則
 31,遊戲邏輯 (共用),開局悔最後一子,開局階段只允許悔「最後放置的一子」,Should,GameSession 額外 lastOpeningMove 欄位 + 回復邏輯,OpeningStonePlaced（可逆）,已確認：只悔最後一子
 32,非功能性,開局記錄與重播支援,開局 3~5 子完整記錄在 openingStones，支援賽後重播,Should,開局 stones 單獨存或標記 moveNumber < 0,GameEnded,方便教學與 review
-33,前端 UI/UX,Swap2 第一次教學提示,第一次進入 Swap2 模式時顯示簡單規則說明（可跳過）,Should,前端 Markdown / Tooltip + localStorage 記錄,-,提升新手體驗
+33,前端 UI/UX,Swap2 第一次教學提示,第一次進入 Swap2 模式時顯示簡單規則說明（可跳過）,Should,前端 Markdown / Tooltip + localStorage 記錄,-,提升新手體驗34,真劍勝負模式,真劍勝負房間建立與場地選擇,開房時可選「真劍勝負」模式並指定場地（火山/沙灘）；與 Swap2 互斥；先手沿用投擲硬幣,Should,GameRoom 增加 gameMode/fieldType 欄位 + 建房驗證,RoomCreated (帶 fieldType) / CoinTossCompleted,線上限定；本地雙人列 Could 後補
+35,真劍勝負模式,職業選擇與鎖定,進房後 Ready 前自選職業（劍士/弓箭手、可同職業），Ready 即鎖定；選擇階段對手不可見，對局開始時揭曉雙方職業,Should,Player 房內狀態 + 開局揭曉廣播,ClassSelected / ClassesRevealed,每技能一場限用一次
+36,真劍勝負模式,回合行動經濟狀態機,每回合一個主要動作：一般技能（橫劈/縱劈/精準狙擊/散射）附掛在該手落子上同手結算；大絕（天地反轉/開拓之星）取代該回合落子,Should,GameSession 回合狀態機擴充 + 動作類型驗證,TurnResolved / SkillUsed,技能使用即消耗該場唯一次數
+37,真劍勝負模式,結算順序與單一勝負判定點,落子→技能效果→場地效果全部結算完才做唯一一次勝負判定；五連可能被噴發燒毀或被推擠成立；雙方同時五連時行動方勝,Should,GameLogic 結算 pipeline + 判定重排,MoveResolved / WinConditionMet,防作弊：全部 server 端結算
+38,真劍勝負模式,推擠解算器（共用元件）,連鎖推擠：目的格有子整列連推；末端出界移除；列中遇障礙物整列不動；橫劈/縱劈/海浪共用,Should,獨立 PushResolver Service + 單元測試,StonesPushed / StoneRemovedOffBoard,三效果行為一致
+39,真劍勝負模式,火山場地,15×15；開局隨機生成障礙物 5–8 格（雙方可見、禁止落子）；隱藏噴發格最多5格（server-only、一次性），踩中即噴發燒毀周邊8格棋子（觸發子保留、格子之後仍可下）,Should,FieldGenerator + 噴發結算邏輯,FieldGenerated / VolcanoErupted / StonesBurned,噴發後該格變普通格
+40,真劍勝負模式,沙灘場地,專用 16×16 棋盤；海洋8排＋沙灘8排、海側四方向隨機；海洋格可正常落子；隱藏漲潮格最多5格（server-only）,Should,棋盤尺寸參數化（前後端 N 常數解耦）+ FieldGenerator,FieldGenerated / TideTriggered,現有渲染器寫死15×15需參數化
+41,真劍勝負模式,海浪與漲潮結算,每5輪（雙方各下一手為1輪）海浪將海洋格棋子往沙灘方向連鎖推1格；漲潮觸發後每次海浪追加侵蝕最靠海一排沙灘變海洋，其上棋子保留變海洋棋子,Should,回合計數器 + 場地狀態機,WaveSurged / TideRisen / SandEroded,侵蝕漸進直到全海洋
+42,真劍勝負模式,劍士技能組,橫劈/縱劈：附掛落子，以該子為基準選方向（橫劈上/下、縱劈左/右），緊鄰該方向一排3格往該方向推1格、含劈砍特效；大絕天地反轉：取代落子，選空格錨點+四方向之 3寬×2深 6格內棋子顏色雙方互換,Should,SkillResolver + PushResolver 重用,SkillUsed / StonesPushed / ColorsSwapped,大絕錨點格必須為空格
+43,真劍勝負模式,弓箭手技能組,精準狙擊：附掛落子，替換場上現存一顆敵方棋子為己方顏色（替換即該手落子）；散射：該手同時下2子於空格、兩子不得在彼此九宮格內（中心距≥2）；大絕開拓之星：取代落子，選空格錨點+四方向之 3寬×2深 6格內棋子全部消除,Should,SkillResolver + 目標合法性驗證,SkillUsed / StoneReplaced / StonesCleared,大絕錨點格必須為空格
+44,真劍勝負模式,隱藏格資訊管理,噴發格/漲潮格位置僅存 server 端、不下發前端；觀戰者同玩家視角（看不到隱藏格）,Should,GameState DTO 過濾 + 觸發時才廣播事件,VolcanoErupted / TideTriggered,防作弊延伸
+45,真劍勝負模式,技能與場地特效,劈砍/狙擊/散射/大絕/噴發/海浪/漲潮均有前端特效與音效占位；具體動畫於 UI 設計階段定案,Should,Framer Motion / Canvas 動畫層,對應各結算事件,需求先標「有特效」
+46,真劍勝負模式,斷線重連狀態恢復,技能已用狀態、場地狀態（障礙物、已觸發噴發格、侵蝕進度、回合計數）隨重連完整恢復,Should,沿用既有重連機制 + GameState 擴充,PlayerReconnected / GameStateUpdated,-
+47,真劍勝負模式,回放擴充,回放記錄技能事件與場地事件（含隱藏格觸發時點），賽後可完整重現對局,Should,落子序列 JSONB 擴充事件型別,GameEnded,隱藏格賽後可揭露
+48,真劍勝負模式,本地雙人真劍勝負,本地模式支援場地與職業玩法,Could,重用同一套 GameLogic/SkillResolver,LocalGameStarted (帶 mode),第二波後補

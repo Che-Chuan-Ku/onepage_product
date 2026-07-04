@@ -15,8 +15,8 @@ flowchart TD
     %% [DECISION:1a] 進入房間方式
     D1a{"進入房間方式"}
 
-    %% [BRANCH:1a:建立] @註冊玩家 {features/room/建立房間.feature}
-    B1a_create["@玩家<br/>建立房間(可選Swap2模式)"]
+    %% [BRANCH:1a:建立] @註冊玩家 {features/room/建立房間.feature, features/room/真劍勝負房間建立與場地選擇.feature}
+    B1a_create["@玩家<br/>建立房間(可選Swap2模式,或真劍勝負模式+場地,兩者互斥)"]
 
     %% [BRANCH:1a:加入] @註冊玩家 {features/room/加入房間.feature}
     B1a_join["@玩家<br/>輸入房間碼加入"]
@@ -30,8 +30,8 @@ flowchart TD
     %% [STEP:2] @註冊玩家 {features/room/標記準備與聊天.feature}
     S2["@玩家<br/>標記 Ready / 房內聊天"]
 
-    %% [DECISION:2a] 雙方皆 Ready 後判斷房間模式（內建系統依 isSwap2Mode 路由）
-    D2a{"房間模式 (isSwap2Mode)"}
+    %% [DECISION:2a] 雙方皆 Ready 後判斷房間模式（內建系統依 battleMode/isSwap2Mode 路由，三者互斥）
+    D2a{"房間模式 (battleMode / isSwap2Mode)"}
 
     %% [STEP:3] @註冊玩家 {features/game/投擲硬幣決定先手.feature}
     %% 普通模式：硬幣決定黑白
@@ -59,6 +59,10 @@ flowchart TD
     %% [STEP:8] @註冊玩家 {specs/ui/對局結束畫面.md}
     S8["@玩家<br/>結束畫面(勝者/和局/高亮/再戰)"]
 
+    %% [BRANCH:2a:真劍勝負] @玩家 {specs/activities/真劍勝負模式.mmd}
+    %% 場地/職業選擇、回合技能結算、唯一勝負判定等細節見獨立活動圖，與 Swap2 互斥（需求 #34 Q9）
+    B2a_duel["@玩家<br/>真劍勝負對局流程(場地/職業/技能結算)<br/>→ 詳見 真劍勝負模式.mmd"]
+
     End((( )))
 
 %% ═══ 區段三：邊（連線）定義 ═══
@@ -75,6 +79,7 @@ flowchart TD
     S2 --> D2a
     D2a -- 普通模式 --> S3
     D2a -- Swap2模式 --> S4
+    D2a -- 真劍勝負模式 --> B2a_duel
     S3 --> S7
     S4 --> S5
     S5 --> S6
@@ -84,3 +89,4 @@ flowchart TD
     B7a_cont --> S7
     D7a -- 五連/和局/斷線判負 --> S8
     S8 --> End
+    B2a_duel --> End

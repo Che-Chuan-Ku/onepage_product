@@ -1,8 +1,8 @@
 # demand_analysis 模組內部狀態（Hub 不碰）
 module: demand_analysis
-project_root: /Users/chechuanku/Documents/aiproject/gomoku
+project_root: /Users/chechuanku/Documents/aiproject/onepage_product
 mode: CHANGE                              # 既有 specs/ → Reconciler 增量更新
-last_run: "2026-05-24"
+last_run: "2026-07-04"
 
 discovery_steps:
   step1_composition: completed
@@ -21,32 +21,84 @@ tactical_layer:
   api_yml: completed
   bdd_examples: completed                 # Rule 皆已確認，Examples 隨 feature 產出
 
-open_sticky_notes: 0                      # 全數歸零：6 GAP/BDY 已決策、6 ASM 已確認
-resolved_clarifications:                  # 2026-05-24 Reconciler 增量傳導
-  Q1_disconnect: "心跳2s / 斷線閾值6s / 30s寬限 / 雙方斷線判和 / 對局未開始斷線不判負"
-  Q2_leaderboard: "主鍵 wins DESC、次鍵 winRate DESC；門檻 wins+losses>=10"
-  Q3_password: "minLength 8 + 須含小寫字母與數字（pattern）"
-  Q4_guest_rematch: "不可直接再戰；重新輸入暱稱進新局 + 強烈建議註冊提示"
-  Q5_spectator: "room_member_role(PLAYER/SPECTATOR)；對戰席滿後加入成觀戰者(唯讀)"
-  Q6_quickmatch_timeout: "60s 逾時退出佇列 + 提示排隊過久請重新開始配對"
-  ASM_A1_A6: "全部確認接受預設"
-affected_artifacts:                       # 本輪 Reconciler 實際異動
-  erm: ["room_member_role enum", "room_members.role", "player_stats.draws + leaderboard index"]
-  features: ["連線管理與斷線判負", "查看戰績與排行榜", "註冊帳號", "訪客模式進入", "快速配對", "加入房間", "標記準備與聊天", "+4 ASM 註記轉確認"]
-  api: ["RegisterRequest password", "getLeaderboard order", "joinRoom 觀戰", "toggleReady 403", "quickMatch 逾時", "RoomMemberItem/RoomDetail/RoomList role", "PlayerStatsResponse draws"]
-  actors: ["訪客玩家(Q4/Q5)", "註冊玩家(Q2/Q5)"]
-  ui: ["房間頁", "棋盤對局頁", "排行榜頁", "大廳與房間列表", "對局結束畫面"]
+open_sticky_notes: 0                      # 全數歸零：6 GAP/BDY 已決策、6 ASM 已確認（2026-05-24 輪）
+
+# ── 2026-07-04 CHANGE 輪：需求 #34-48「真劍勝負模式」───────
+round_2026_07_04:
+  scope: "documents/需求明細.csv #34-48（真劍勝負模式：場地/職業/技能/結算/回放）"
+  clarify_source: "documents/clarify/2026-07-04-1021.md（10問 + Round2 4問，已定案）"
+  discovery_steps:
+    step1_composition_change: completed   # CSV #34-48 為既有 Strategic 範圍的合法增量（新 Rule，非新 Actor）
+    step2_impact_analysis: completed      # 影響 erm/api/features/actors/activities/ui 六類
+    step5a_bfs_delta: completed           # 無新增 Actor；既有 註冊玩家/訪客玩家 追加可執行行為
+    step5b_dfs_delta: completed           # 技能/場地/推擠/隱藏格/回放/重連 路徑完整性已對齊 clarify Q1-Q10+R2
+    step7_quality_gate: passed            # 四視圖（activity/feature/erm/api）+ ui/actors 交叉引用一致
+  resolved_clarifications:
+    Q1_action_economy: "一般技能附掛落子同手結算；大絕取代落子＝該手行動"
+    Q2_resolution_order: "落子->技能->場地效果，結算完才唯一判定；同時五連行動方勝"
+    Q3_push_resolver: "連鎖推擠；末端出界移除；遇障礙物整列不動；橫劈/縱劈/海浪共用"
+    Q4_ultimate_geometry: "錨點(空格)+四方向，3寬x2深共6格；錨點格必須為空格"
+    Q5_volcano: "障礙物5-8格開局可見；噴發格隱藏<=5、一次性；燒周邊8格、觸發子不燒"
+    Q6_beach_geometry: "沙灘限定16x16；海洋/沙灘各半、海側隨機；漲潮後每次海浪追加侵蝕"
+    Q7_wave_tide: "海洋格可落子；5輪(10手)觸發海浪；侵蝕沙灘上棋子保留視為海洋棋子"
+    Q8_class_selection: "可同職業；Ready前可改、Ready鎖定；選擇階段對手不可見；對局開始揭曉"
+    Q9_mode_scope: "線上房間限定；與Swap2互斥；先手用既有投硬幣；優先級Should"
+    Q10_archer_slash_detail: "精準狙擊替換現存敵子；散射Chebyshev距離>=2；橫劈/縱劈方向與範圍"
+    R2_1_vfx: "需求僅標有特效，動畫留UI設計階段"
+    R2_2_spectator: "觀戰者同玩家視角，看不到隱藏格"
+    R2_3_reconnect: "技能已用狀態與場地狀態隨既有重連機制一併恢復"
+    R2_4_replay: "回放需記錄技能事件與場地事件"
+  affected_artifacts:
+    erm: ["新增enum battle_mode/field_type/class_type/skill_type/field_cell_kind/field_event_type/board_side",
+          "game_rooms.battle_mode/field_type", "room_members.class_type",
+          "games.battle_mode/field_type/black_class/white_class",
+          "新表 skill_usages/field_cells/field_states/field_events"]
+    api: ["RoomCreateRequest battleMode/fieldType", "新增 SelectClassRequest + /rooms/{id}/actions/select-class",
+          "RoomDetailResponse/RoomListResponse/RoomMemberItem 擴充", "MoveCreateRequest.skill + 新增 SkillActionRequest",
+          "GameDetailResponse/GameStateResponse 擴充(blackClass/whiteClass/fieldState/revealedHiddenCells/skillEvents)",
+          "GameReplayResponse 擴充(fieldEvents等)", "x-stomp-channels 註記擴充"]
+    features: ["room/真劍勝負房間建立與場地選擇(新)", "room/職業選擇與鎖定(新)",
+               "game/真劍勝負回合行動經濟(新)", "game/真劍勝負結算順序與勝負判定(新)",
+               "game/推擠解算器(新)", "game/火山場地(新)", "game/沙灘場地(新)",
+               "game/海浪與漲潮結算(新)", "game/劍士技能組(新)", "game/弓箭手技能組(新)",
+               "game/隱藏格資訊管理(新)", "game/技能與場地特效(新)", "game/本地真劍勝負(新,Could)",
+               "connection/連線管理與斷線判負(擴充#46)", "history/查看遊戲歷史與回放(擴充#47)"]
+    actors: ["註冊玩家(#34-37 #42 #43 #46)", "訪客玩家(#34-36)"]
+    activities: ["活動圖 真劍勝負模式.mmd(新)", "線上連線對戰.mmd(擴充D2a三向分支)"]
+    ui: ["職業選擇介面.md(新)", "大廳與房間列表.md(擴充)", "房間頁.md(擴充)",
+         "棋盤對局頁.md(擴充)", "對局結束畫面.md(擴充)", "回放頁.md(擴充)"]
+
 artifacts_summary:
-  activities: 3
+  activities: 5
   actors: 2
-  features: 17
-  ui_pages: 11
+  features: 30
+  ui_pages: 12
   erm: 1
   api: 1
   infrastructure: 1
   arguments: 1
 
+# ── 2026-07-04 審核修正輪（重跑，user_response=C）───────────
+round_2026_07_04_audit_fix:
+  trigger: "審核未通過，9 項發現（高風險2/中風險5/低風險2），user 選擇重跑修正"
+  fixes_applied:
+    high:
+      - "api.yml MoveCreateRequest 用 oneOf 拆 MoveCreateRequestNormal(row/col必填)/MoveCreateRequestUltimate(skill.anchor必填、禁止row/col)，並註明row/col maximum為場地聯集上界、backend依fieldType再驗證超界回422"
+      - "POST /rooms responses 補 422（互斥 + SERIOUS_DUEL未指定fieldType），真劍勝負房間建立與場地選擇.feature 兩個拒絕Example標注422"
+    medium:
+      - "MoveCreateRequest oneOf 分支恢復 required 保障（同高風險項1，同一次修正涵蓋）"
+      - "職業選擇與鎖定.feature 新增觀戰者可見雙方職業 Rule/Example；RoomMemberItem.classType / GameStateResponse 補觀戰者視角說明；房間頁.md/棋盤對局頁.md 補觀戰者可見職業與技能使用狀態（R2-2）"
+      - "線上連線對戰.mmd B1a_create 節點文字加註可選真劍勝負模式+場地"
+      - "erm.dbml skill_type 的 HEAVEN_EARTH_REVERSAL/PIONEER_STAR 補註記：錨點必須為空格"
+      - "erm.dbml field_event_type 新增 FIELD_GENERATED；field_events.move_number 改為 nullable 並加註；api.yml 兩處 eventType enum 同步新增 FIELD_GENERATED"
+    low:
+      - "erm.dbml/api.yml 統一 STONE_BURNED → STONES_BURNED（對齊 feature 側 StonesBurned 事件名與 STONES_CLEARED 命名慣例）"
+      - "職業揭曉時機明確綁定 games.status 轉為 PLAYING：erm.dbml black_class/white_class 註記、features/room/職業選擇與鎖定.feature Rule標題與header註解、api.yml blackClass/whiteClass description"
+  quality_gate: passed   # 四視圖（activity/feature/erm/api）+ ui 交叉引用重新掃描一致；未變動已通過部分
+  scope_discipline: "僅修正審核發現 9 項，未觸碰已通過內容"
+
 next_action: >
-  全部 8 類規格已通過 Quality Gate（CiC 歸零、四視圖一致）。
-  等待 Hub 進入後續實作模組（Phase 05-08）或下一輪 CHANGE。
+  2026-07-04 審核修正輪已完成全部 9 項發現的修正（高風險2/中風險5/低風險2），
+  範圍限定於審核發現，未變動已通過內容。四視圖與 ui/actors 交叉引用一致，Quality Gate 通過。
+  回傳 Hub interrupt(status=completed)，等待人工複審。
 rollback_count: 0

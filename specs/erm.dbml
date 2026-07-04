@@ -72,6 +72,59 @@ Enum swap2_choice {
   PLACE_TWO_MORE    [note: '放第4·5子，再由對手選色']
 }
 
+// ── 真劍勝負模式 Enums（需求 #34–#45）───────────────────
+Enum battle_mode {
+  NORMAL        [note: '普通模式']
+  SERIOUS_DUEL  [note: '真劍勝負模式；與 is_swap2_mode 互斥（Q9）']
+}
+
+Enum field_type {
+  VOLCANO [note: '火山場地，15×15（需求 #39）']
+  BEACH   [note: '沙灘場地，專用 16×16（需求 #40）']
+}
+
+Enum class_type {
+  WARRIOR [note: '劍士：橫劈/縱劈/大絕天地反轉（需求 #42）']
+  ARCHER  [note: '弓箭手：精準狙擊/散射/大絕開拓之星（需求 #43）']
+}
+
+Enum skill_type {
+  HORIZONTAL_SLASH       [note: '橫劈，劍士一般技能']
+  VERTICAL_SLASH         [note: '縱劈，劍士一般技能']
+  HEAVEN_EARTH_REVERSAL  [note: '大絕：天地反轉，劍士；施法錨點(anchor)必須為空格，backend 驗證（需求 #42）']
+  PRECISION_SNIPE        [note: '精準狙擊，弓箭手一般技能']
+  SCATTER_SHOT           [note: '散射，弓箭手一般技能']
+  PIONEER_STAR           [note: '大絕：開拓之星，弓箭手；施法錨點(anchor)必須為空格，backend 驗證（需求 #43）']
+}
+
+Enum field_cell_kind {
+  OBSTACLE [note: '火山障礙物，開局生成、雙方可見、禁止落子']
+  ERUPTION [note: '火山隱藏噴發格，server-only、一次性']
+  TIDE     [note: '沙灘隱藏漲潮格，server-only、一次性']
+}
+
+Enum field_event_type {
+  FIELD_GENERATED        [note: '對局建立時生成場地（障礙物/隱藏格/海洋沙灘分佈），move_number 為 null']
+  STONE_PUSHED           [note: '推擠解算器：棋子被推移']
+  STONE_REMOVED_OFF_BOARD [note: '推擠解算器：末端棋子被推出棋盤外移除']
+  STONES_BURNED          [note: '火山噴發燒毀棋子（對應 feature 事件 StonesBurned，與其餘複數效果事件如 STONES_CLEARED 命名一致）']
+  STONE_REPLACED         [note: '精準狙擊替換敵方棋子']
+  STONES_CLEARED         [note: '開拓之星清除範圍棋子']
+  COLORS_SWAPPED         [note: '天地反轉範圍顏色互換']
+  VOLCANO_ERUPTED        [note: '火山噴發觸發']
+  WAVE_SURGED            [note: '海浪觸發（每5輪/10手）']
+  TIDE_TRIGGERED         [note: '漲潮格被踩中觸發']
+  TIDE_RISEN             [note: '漲潮後海浪追加侵蝕沙灘']
+  SAND_ERODED            [note: '沙灘排被侵蝕為海洋']
+}
+
+Enum board_side {
+  NORTH
+  SOUTH
+  EAST
+  WEST
+}
+
 // ── 玩家 ─────────────────────────────────────────────
 Table players {
   id varchar(36) [pk]
@@ -124,6 +177,8 @@ Table game_rooms {
   visibility room_visibility [not null]
   status room_status [not null, default: 'WAITING']
   is_swap2_mode boolean [not null, default: false]
+  battle_mode battle_mode [not null, default: 'NORMAL', note: '普通/真劍勝負；SERIOUS_DUEL 與 is_swap2_mode=true 互斥（Q9，需求 #34）']
+  field_type field_type [note: '真劍勝負場地 VOLCANO/BEACH；battle_mode=NORMAL 時為 null（需求 #34）']
   host_player_id varchar(36) [not null]
   guest_player_id varchar(36) [note: '第二位對戰玩家，未加入前為 null（對戰席上限 2）']
 
@@ -148,6 +203,7 @@ Table room_members {
   player_id varchar(36) [not null]
   role room_member_role [not null, default: 'PLAYER', note: 'PLAYER=對戰席（上限2） / SPECTATOR=觀戰席']
   is_ready boolean [not null, default: false, note: '觀戰席恆 false，不參與 Ready 判定']
+  class_type class_type [note: '真劍勝負模式職業選擇；可同職業；Ready 前可改，Ready 即鎖定（需求 #35）']
 
   created_at timestamp [not null]
   updated_at timestamp [not null]
@@ -189,11 +245,15 @@ Table games {
   game_mode game_mode [not null]
   opening_type opening_type [not null, default: 'STANDARD']
   use_swap2 boolean [not null, default: false]
+  battle_mode battle_mode [not null, default: 'NORMAL', note: '建局時由房間快照；SERIOUS_DUEL 與 use_swap2=true 互斥（需求 #34）']
+  field_type field_type [note: '建局時由房間快照，僅 battle_mode=SERIOUS_DUEL 使用（需求 #34）']
   status game_status [not null, default: 'PLAYING']
 
   black_player_id varchar(36) [note: '顏色定案後填入；Swap2 開局期間可為 null']
   white_player_id varchar(36)
   tentative_first_player_id varchar(36) [note: 'Swap2 假先方']
+  black_class class_type [note: '真劍勝負：揭曉時機＝status 轉為 PLAYING（ClassesRevealed 觸發點；真劍勝負 opening_type=STANDARD 無 Swap2 開局，建局即為 PLAYING）（需求 #35）']
+  white_class class_type [note: '真劍勝負：揭曉時機＝status 轉為 PLAYING（同 black_class，需求 #35）']
 
   coin_result coin_result [note: '硬幣結果（後端決定）']
   current_turn stone_color [note: '當前輪到的顏色']
@@ -227,13 +287,13 @@ Table moves {
   game_id varchar(36) [not null]
   move_number int [not null, note: '落子序號，從 1 起；開局子見 opening_stones']
   color stone_color [not null]
-  row int [not null, note: '0..14']
-  col int [not null, note: '0..14']
+  row int [not null, note: '0..14（一般/火山 15×15）；真劍勝負沙灘場地為 0..15（16×16，需求 #40）']
+  col int [not null, note: '0..14（一般/火山 15×15）；真劍勝負沙灘場地為 0..15（16×16，需求 #40）']
   placed_at timestamp [not null]
 
   Indexes {
     (game_id, move_number) [unique, name: 'uk_moves_game_move_number']
-    (game_id, row, col) [unique, name: 'uk_moves_game_position']
+    (game_id, row, col) [unique, name: 'uk_moves_game_position', note: '僅適用一般模式；真劍勝負模式因燒毀/推走格可再下，該唯一約束不成立（backend V2 已 DROP，佔位格檢查改由 service 層執行）']
   }
   Note: '[exempt: created_at/updated_at/version/is_deleted, reason: 不可變對局事件流]'
 }
@@ -258,3 +318,86 @@ Table opening_stones {
 }
 Ref: opening_stones.game_id > games.id
 Ref: opening_stones.placed_by_player_id > players.id
+
+// ── 真劍勝負：技能使用紀錄（需求 #36 #42 #43）──────────
+// 不可變事件流，免審計欄位；每技能每局每玩家僅能使用一次
+Table skill_usages {
+  id varchar(36) [pk]
+  game_id varchar(36) [not null]
+  player_id varchar(36) [not null]
+  skill_type skill_type [not null]
+  move_number int [note: '觸發該技能的落子/施法序號']
+  used_at timestamp [not null]
+
+  Indexes {
+    (game_id, player_id, skill_type) [unique, name: 'uk_skill_usages_game_player_skill']
+  }
+  Note: '[exempt: created_at/updated_at/version/is_deleted, reason: 不可變技能使用事件流]'
+}
+Ref: skill_usages.game_id > games.id
+Ref: skill_usages.player_id > players.id
+
+// ── 真劍勝負：場地格資訊（需求 #39 #40 #44）─────────────
+// 障礙物（OBSTACLE）開局即可見；噴發/漲潮格（ERUPTION/TIDE）server-only、觸發後才可見
+Table field_cells {
+  id varchar(36) [pk]
+  game_id varchar(36) [not null]
+  cell_kind field_cell_kind [not null]
+  row int [not null]
+  col int [not null]
+  visible_to_players boolean [not null, default: false, note: 'OBSTACLE 預設 true；ERUPTION/TIDE 觸發前為 false']
+  triggered boolean [not null, default: false, note: 'ERUPTION/TIDE 一次性；觸發後轉為普通格']
+  triggered_at timestamp
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (game_id, row, col) [unique, name: 'uk_field_cells_game_position']
+    (game_id, cell_kind) [name: 'idx_field_cells_game_kind']
+  }
+}
+Ref: field_cells.game_id > games.id
+
+// ── 真劍勝負：場地整體狀態（需求 #40 #41 #46）───────────
+// 每局一列；沙灘侵蝕進度與海浪回合計數，用於斷線重連恢復
+Table field_states {
+  id varchar(36) [pk]
+  game_id varchar(36) [not null]
+  field_type field_type [not null]
+  sea_side board_side [note: '沙灘限定：海洋起始側，隨機決定']
+  eroded_rows int [not null, default: 0, note: '沙灘已侵蝕排數，漸進直到全海洋']
+  tide_triggered boolean [not null, default: false]
+  round_counter int [not null, default: 0, note: '雙方各下一手為1輪，累積滿5輪(10手)觸發海浪後歸零']
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    game_id [unique, name: 'uk_field_states_game_id']
+  }
+}
+Ref: field_states.game_id > games.id
+
+// ── 真劍勝負：技能／場地效果事件流（需求 #37 #38 #47）───
+// 不可變事件流；供結算重現與回放（含隱藏格觸發時點），免審計欄位
+Table field_events {
+  id varchar(36) [pk]
+  game_id varchar(36) [not null]
+  move_number int [note: '對應觸發此效果的落子/施法序號；FIELD_GENERATED 於建局時發生，move_number 為 null']
+  event_type field_event_type [not null]
+  row int
+  col int
+  detail varchar [note: 'JSON：如推擠方向、互換前後顏色、清除/替換座標清單等']
+  occurred_at timestamp [not null]
+
+  Indexes {
+    (game_id, move_number) [name: 'idx_field_events_game_move']
+  }
+  Note: '[exempt: created_at/updated_at/version/is_deleted, reason: 不可變場地/技能事件流，供回放重現]'
+}
+Ref: field_events.game_id > games.id
