@@ -1,3 +1,45 @@
+## 2026-07-04 CHANGE 輪：需求 #34–48「真劍勝負模式」真前後端對接
+
+**方法沿用**：分段全棧 E2E（backend compile → Cucumber e2e → compose 全棧 → Playwright 真 API），auto_fix。
+
+### Stage 結果
+| Stage | 結果 |
+|---|---|
+| 後端 compile / test-compile | PASS |
+| 後端 Cucumber e2e（含新 room/game 真劍勝負 features） | **124/124 PASS**（穩定重跑 2 次皆綠；期間 1 次因 VOLCANO 障礙物隨機座標撞上測試 filler 座標的既有 flake，與本輪改動無關） |
+| docker-compose 全棧（backend 用本輪程式碼重建） | healthy |
+| 前端 Playwright 真 API（`real-api.spec.ts` + `online.spec.ts`） | **12/12 PASS**（online 1 次 STOMP 雙瀏覽器已知 flaky，retry 後綠） |
+| 前端 MSW 回歸（`duel.spec.ts` + `full-coverage.spec.ts` + `smoke.spec.ts` + `play.spec.ts`） | 41/44（3 個既有失敗與本輪無關，見下） |
+| 前端 `next build` | PASS |
+
+### 4 個已知縫隙驗證結論
+1. **終局隱藏格全揭露**：**真 bug，已修**。`SeriousDuelService.buildRevealedHiddenCells` 只揭露 `isTriggered()` 的格，FINISHED 後仍過濾未觸發格；`specs/ui/對局結束畫面.md:20` 明定「結束後揭露本局所有隱藏格」。改為 `gameFinished || cell.isTriggered()`；以真後端跑一場沙灘對局到底驗證：5 個 TIDE 格全數出現於 `revealedHiddenCells`，即使全程 `tideTriggered=false`。
+2. **usedSkills 重連恢復**：**真 bug，已修**。前端 `usedSkills` 純本地追蹤，重連/reload 必reset 成 0/3，違反 R2-3。`GameReplayResponse` 新增 `skillUsages`（playerId+skillType）與 `currentTurn`；前端 `loadReplay()` 依 `blackPlayerId`/`whitePlayerId` 映射回填。一併發現並修：①`GameReplayResponse` 原無 `currentTurn`，duel 模式重連只能靠 moveCount 奇偶猜測，大絕（0 子）、散射（2 子）皆會猜錯——改用權威 `currentTurn`；②`if (moveCount>0)` 門檻在「第一手就是大絕」時會整組跳過重建（moveCount 停在 0）——改用「是否有非 FIELD_GENERATED 事件」判斷。
+3. **散射第二子 replay**：**查無 bug**。後端每子各存一筆 `Move`（同色、連續 moveNumber），前端回放用 `m.color` 逐筆渲染（非奇偶推斷），真後端驗證兩子皆正確出現於 `moves`。
+4. **seaSide 前端主路徑消費**：**真 bug，已修**。真後端 `FIELD_GENERATED` 事件的 `row/col` 恆為 null（game 級事件非格級），前端 `duelFieldMeta` 舊有 fallback 完全靠該事件座標推斷海側/障礙物，等同失效——BEACH 恆誤判為海在上方，VOLCANO 障礙物恆空。`GameReplayResponse` 新增權威 `obstacles`/`seaSide`（來源同 `GameStateResponse.fieldState`），`game/[gameId]` 與 `replay/[gameId]` 頁改為優先採用，事件推斷僅作 MSW mock 相容 fallback。真後端驗證：BEACH 房間 `seaSide=WEST` 正確回傳且前端採用。
+
+### 額外發現並修復（auto_fix 範圍內，整合層對齊）
+- **（高風險，已修）`GameStateResponse` zod schema 缺陷阻斷所有真後端落子**：後端 `GameStateResponse` 標註 `@JsonInclude(ALWAYS)`，NORMAL 對局的 `revealedHiddenCells`/`skillEvents` 顯式回傳 `null`；前端 zod schema 只有 `.optional()` 缺 `.nullable()`，`schema.parse()` 對顯式 `null` 拋 ZodError，被 `place()` 的 `catch` 誤判為業務錯誤（「落子不合法」toast），`applyState` 從未執行 → **UI 上任何一手棋（不分本地/線上、一般/真劍勝負模式）點擊後棋盤/回合/手數完全不更新**，但後端已正確落子。這是本輪 Playwright 真 API 回歸測試（`本地雙人對戰`）抓到的，MSW 因為 mock 手寫回應不會顯式帶 `null` 故未曾暴露。修法：兩欄位補 `.nullable()`。
+- **（中風險，已修）MSW `swap2-choice` handler 回歸**：`PLACE_TWO_MORE` 分支被移除，不論選項一律直接 finalize 成 `PLAYING`，導致既有「放第四五子二階段」流程（`full-coverage.spec.ts` S3）整條斷裂。補回分支＋`swap2TwoMoreChosen` 旗標＋開局子上限依旗標調整（3→5）。
+
+### 既有流程回歸
+- 一般模式 / Swap2（本地+線上）：real-api + online 套件全綠，S1–S5 全綠。
+- 3 個 MSW 既有失敗（`使用者頁登入失敗 toast`、`房間 Ready 按鈕文字`、`房間聊天 STOMP pageerror`）**與本輪改動無關**：分別為 mock 登入 handler 從不驗證帳密（pre-existing）、mock toggle-ready 回傳硬編 playerId 對不上動態 guestId（pre-existing，程式註解自承「pre-duel behavior verbatim」）、STOMP 斷線時序 pageerror（未追查根因，房間頁本輪未變動）。均與 `git diff` 確認非本輪或本 session 觸碰的程式碼，建議另開 ticket。
+
+### 修改檔案
+- `backend/src/main/java/com/gomoku/service/SeriousDuelService.java`（新，隨 backend_development 本輪產出；本模組修 `buildRevealedHiddenCells` 全揭露、新增 `listSkillUsages`/`buildFieldSummary`）
+- `backend/src/main/java/com/gomoku/service/GameService.java`（`getGameReplay` 新增 `currentTurn`/`skillUsages`/`obstacles`/`seaSide`）
+- `backend/src/main/java/com/gomoku/dto/response/GameReplayResponse.java`（同上新欄位，additive）
+- `backend/src/main/java/com/gomoku/repository/SkillUsageRepository.java`（新增 `findByGameIdOrderByUsedAtAsc`）
+- `frontend/src/lib/types/schemas.ts`（**關鍵修復**：`GameStateResponse.revealedHiddenCells`/`skillEvents` 補 `.nullable()`；`GameReplayResponse` 新增對應欄位）
+- `frontend/src/app/game/[gameId]/page.tsx`（duel `loadReplay()`：採用權威 currentTurn/obstacles/seaSide、usedSkills 重連回填、修 moveCount>0 門檻）
+- `frontend/src/app/replay/[gameId]/page.tsx`（duelMeta 優先採用權威 obstacles/seaSide）
+- `frontend/src/mocks/handlers/index.ts`（修復 swap2-choice PLACE_TWO_MORE 回歸）
+
+改動前均已 `cp <檔> <檔>.bak-20260704b`（或 c）備份於同目錄。
+
+---
+
 # 整合測試報告 — gomoku
 
 - **模組**：integration_test（AIBDD Workflow v3.0）
