@@ -5,6 +5,7 @@
 /backend/target
 /frontend/.next
 /frontend/out
+/frontend/test-results
 
 # OS / editor noise
 .DS_Store
