@@ -8,8 +8,28 @@ import { Modal } from "@/components/Modal";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { gameService, roomService } from "@/lib/api/services";
 import { ApiError } from "@/lib/api/client";
-import type { GameStateResponse, Color } from "@/lib/types/schemas";
-import type { PlacedStone, StoneColor } from "@/lib/game/GomokuBoard";
+import { USE_MOCKS } from "@/lib/api/config";
+import type {
+  Cell,
+  ClassType,
+  Color,
+  FieldType,
+  GameStateResponse,
+  MoveCreateRequest,
+  SkillDirection,
+  SkillType,
+} from "@/lib/types/schemas";
+import type { FieldCell, PlacedStone, RevealedCell, StoneColor } from "@/lib/game/GomokuBoard";
+import { isUltimate, ultimateRect, wavePushDirection, type OceanSide } from "@/lib/game/duel";
+import {
+  applyDuelEvents,
+  beachSideFor,
+  cellKey,
+  duelFieldMeta,
+  duelSnapshots,
+  stonesFromMap,
+  type StoneMap,
+} from "@/lib/game/duelClient";
 import { StompClient, type ConnState } from "@/lib/stomp/client";
 import { channels } from "@/lib/stomp/channels";
 import { useSession } from "@/lib/store/session";
@@ -18,6 +38,25 @@ import { toast } from "@/lib/store/toast";
 const lc = (c: Color): StoneColor => (c === "BLACK" ? "black" : "white");
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+// ── 真劍勝負 skill metadata (需求 #36 #42 #43, Q10) ──────────────
+const SKILL_INFO: Record<SkillType, { name: string; ico: string }> = {
+  HORIZONTAL_SLASH: { name: "橫劈", ico: "⚔️" },
+  VERTICAL_SLASH: { name: "縱劈", ico: "🗡️" },
+  HEAVEN_EARTH_REVERSAL: { name: "天地反轉（大絕）", ico: "🌗" },
+  PRECISION_SNIPE: { name: "精準狙擊", ico: "🎯" },
+  SCATTER_SHOT: { name: "散射", ico: "🏹" },
+  PIONEER_STAR: { name: "開拓之星（大絕）", ico: "💫" },
+};
+const CLASS_SKILLS_UI: Record<ClassType, SkillType[]> = {
+  WARRIOR: ["HORIZONTAL_SLASH", "VERTICAL_SLASH", "HEAVEN_EARTH_REVERSAL"],
+  ARCHER: ["PRECISION_SNIPE", "SCATTER_SHOT", "PIONEER_STAR"],
+};
+const classLabel = (c: ClassType) => (c === "WARRIOR" ? "⚔️ 劍士" : "🏹 弓箭手");
+const DIR_LABEL: Record<SkillDirection, string> = { UP: "上", DOWN: "下", LEFT: "左", RIGHT: "右" };
+/** direction options per skill: 橫劈 UP/DOWN、縱劈 LEFT/RIGHT、大絕四向 */
+const skillDirs = (s: SkillType): SkillDirection[] =>
+  s === "HORIZONTAL_SLASH" ? ["UP", "DOWN"] : s === "VERTICAL_SLASH" ? ["LEFT", "RIGHT"] : ["UP", "DOWN", "LEFT", "RIGHT"];
 
 /** Game board play — ports prototype/game (server-authoritative moves, win
  *  highlight, 4 result scenarios, reconnect, spectator read-only). */
@@ -44,6 +83,21 @@ export default function GamePage() {
   const [showLeave, setShowLeave] = useState(false);
   const [touchConfirm, setTouchConfirm] = useState(false);
   const [hasCursor, setHasCursor] = useState(false);
+  // ── 真劍勝負 state (需求 #34–#48) ──
+  const [duel, setDuel] = useState<{ fieldType: FieldType; blackClass: ClassType; whiteClass: ClassType } | null>(null);
+  const [obstacles, setObstacles] = useState<Cell[]>([]);
+  const [oceanSide, setOceanSide] = useState<OceanSide | null>(null);
+  const [erodedRows, setErodedRows] = useState(0);
+  const [tideTriggered, setTideTriggered] = useState(false);
+  const [revealed, setRevealed] = useState<RevealedCell[]>([]);
+  const [usedSkills, setUsedSkills] = useState<Record<Color, SkillType[]>>({ BLACK: [], WHITE: [] });
+  const [activeSkill, setActiveSkill] = useState<SkillType | null>(null);
+  const [skillDir, setSkillDir] = useState<SkillDirection | null>(null);
+  const [scatterFirst, setScatterFirst] = useState<Cell | null>(null);
+  const [previewCells, setPreviewCells] = useState<FieldCell[] | null>(null);
+  const [showReveal, setShowReveal] = useState(false);
+  const [revealFlipped, setRevealFlipped] = useState(false);
+  const revealShownRef = useRef(false);
   const stompRef = useRef<StompClient | null>(null);
   const boardRef = useRef<BoardHandle>(null);
   const mountedRef = useRef(true);
@@ -61,6 +115,10 @@ export default function GamePage() {
   }, []);
 
   useEffect(() => {
+    // reset on (re)mount: React StrictMode's dev unmount/remount keeps the
+    // ref instance, so without this the flag stays false after the simulated
+    // unmount and loadReplay() bails out before applying any server state.
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
@@ -113,6 +171,63 @@ export default function GamePage() {
         } catch {
           /* 查詢房間失敗 → 保留「黑方」/「白方」預設標籤 */
         }
+      }
+      // ── 真劍勝負：以完整事件時間軸重建盤面（推擠/燒毀/互換不在 moves 裡）──
+      if (replay.battleMode === "SERIOUS_DUEL" && replay.fieldType && replay.blackClass && replay.whiteClass) {
+        const size = replay.fieldType === "BEACH" ? 16 : 15;
+        // bug fix: prefer the authoritative obstacles/seaSide snapshot (real backend
+        // always sends FIELD_GENERATED with row=col=null, so the old fallback that
+        // inferred them from fieldEvents alone silently rendered BEACH as if the
+        // ocean were always on the top edge, and never showed VOLCANO obstacles).
+        const meta = duelFieldMeta(replay.fieldEvents, replay.fieldType, size, replay.seaSide ?? undefined);
+        setDuel({ fieldType: replay.fieldType, blackClass: replay.blackClass, whiteClass: replay.whiteClass });
+        setObstacles(replay.obstacles ?? meta.obstacles);
+        setOceanSide(meta.oceanSide);
+        // 重連/重新整理：以伺服器紀錄還原技能已用狀態（前端本地追蹤在此之前會重置為 0/3，
+        // 造成已用技能誤判為可再用；R2-3 要求技能已用狀態隨重連機制一併恢復）。
+        if (replay.skillUsages) {
+          const restored: Record<Color, SkillType[]> = { BLACK: [], WHITE: [] };
+          for (const su of replay.skillUsages) {
+            const color: Color | null =
+              su.playerId === replay.blackPlayerId ? "BLACK"
+                : su.playerId === replay.whitePlayerId ? "WHITE"
+                  : null;
+            if (color) restored[color].push(su.skillType);
+          }
+          setUsedSkills(restored);
+        }
+        // 開局揭曉（Q8）：對局開始（moveCount 0）時翻牌揭曉雙方職業
+        if (!revealShownRef.current && replay.moveCount === 0) {
+          revealShownRef.current = true;
+          setShowReveal(true);
+          setTimeout(() => setRevealFlipped(true), 400);
+          setTimeout(() => setShowReveal(false), 3000);
+        }
+        // bug fix: don't gate on moveCount>0 alone — a hand that ONLY casts an
+        // ultimate (anchor cell must stay empty, Q4) places 0 stones, so the very
+        // first hand of a game can leave moveCount at 0 even though a turn has
+        // already passed (currentTurn already flipped). Any non-FIELD_GENERATED
+        // field event proves at least one hand was played even with 0 stones.
+        const anyHandPlayed =
+          replay.moveCount > 0 ||
+          (replay.fieldEvents ?? []).some((e) => e.eventType !== "FIELD_GENERATED");
+        if (anyHandPlayed) {
+          const steps = duelSnapshots(replay);
+          const lastStep = steps[steps.length - 1];
+          setStones(lastStep.stones);
+          setRevealed(lastStep.revealed);
+          setErodedRows(lastStep.erodedRows);
+          setTideTriggered(lastStep.tideTriggered);
+          setMoveCount(replay.moveCount);
+          if (lastStep.move) setLastMove([lastStep.move.r, lastStep.move.c]);
+          // bug fix: moveCount parity is unreliable here — an ultimate cast places
+          // 0 stones and scatter-shot places 2 in one hand, so "odd/even stones
+          // placed" does not track "whose turn" once either skill has been used.
+          // Use the server-authoritative currentTurn (added to GameReplayResponse)
+          // instead, falling back to the old parity guess only if it's absent.
+          setTurn(replay.currentTurn ?? (replay.moveCount % 2 === 1 ? "WHITE" : "BLACK"));
+        }
+        return;
       }
       const opening = [...replay.openingStones]
         .sort((a, b) => a.sequence - b.sequence)
@@ -173,9 +288,129 @@ export default function GamePage() {
     }
   }, []);
 
+  function clearSkillUi() {
+    setActiveSkill(null);
+    setSkillDir(null);
+    setScatterFirst(null);
+    setPreviewCells(null);
+  }
+
+  /** 真劍勝負：套用一次結算（落子 + 事件差分 + 特效 + 揭露 + 勝負）。 */
+  const applyDuelState = useCallback(
+    (
+      state: GameStateResponse,
+      ctx: { placed: Cell[]; actor: Color; slashDir: SkillDirection | null },
+    ) => {
+      setStones((prev) => {
+        const map: StoneMap = {};
+        prev.forEach((s) => (map[cellKey(s.r, s.c)] = s.color));
+        for (const cell of ctx.placed) map[cellKey(cell.row, cell.col)] = lc(ctx.actor);
+        const flashes = applyDuelEvents(map, state.skillEvents ?? [], {
+          slashDir: ctx.slashDir,
+          waveDir: oceanSide ? wavePushDirection(oceanSide) : null,
+          actor: lc(ctx.actor),
+        });
+        for (const f of flashes) boardRef.current?.flashCells(f.cells, f.type);
+        return stonesFromMap(map);
+      });
+      if (state.lastMove) setLastMove([state.lastMove.row, state.lastMove.col]);
+      setMoveCount(state.moveCount);
+      if (state.currentTurn) setTurn(state.currentTurn);
+      // 隱藏格揭露累積（觸發時 + 終局全揭露，需求 #44；依 key 去重）
+      if (state.revealedHiddenCells?.length) {
+        setRevealed((prev) => {
+          const seen = new Set(prev.map((rc) => cellKey(rc.row, rc.col)));
+          const added = state.revealedHiddenCells!
+            .filter((rc) => !seen.has(cellKey(rc.row, rc.col)))
+            .map((rc) => ({ row: rc.row, col: rc.col, kind: rc.cellKind }));
+          return added.length ? [...prev, ...added] : prev;
+        });
+      }
+      if (state.fieldState) {
+        setErodedRows(state.fieldState.erodedRows);
+        setTideTriggered(state.fieldState.tideTriggered);
+      }
+      if (state.status === "FINISHED") {
+        setResult(state.result);
+        if (state.winningLine) setHighlight(state.winningLine.map((c) => [c.row, c.col]));
+        setTimeout(() => setShowResult(true), 900);
+      }
+    },
+    [oceanSide],
+  );
+
   async function place(r: number, c: number) {
     if (isSpectator) {
       toast("觀戰中，無法落子", "error");
+      return;
+    }
+    // ── 真劍勝負：依當前選取的技能組出 MoveCreateRequest（需求 #36）──
+    if (duel) {
+      const actor = turn;
+      let req: MoveCreateRequest;
+      const placed: Cell[] = [];
+      let slashDir: SkillDirection | null = null;
+      if (activeSkill && isUltimate(activeSkill)) {
+        // 大絕：取代本回合落子；點擊格 = 錨點（必須空格，Q4 補充）
+        if (!skillDir) {
+          toast("請先選擇大絕方向", "error");
+          return;
+        }
+        req = {
+          skill: {
+            skillType: activeSkill as "HEAVEN_EARTH_REVERSAL" | "PIONEER_STAR",
+            direction: skillDir,
+            anchor: { row: r, col: c },
+          },
+        };
+      } else if (activeSkill === "PRECISION_SNIPE") {
+        const clicked = stones.find((s) => s.r === r && s.c === c)?.color;
+        if (clicked !== lc(actor === "BLACK" ? "WHITE" : "BLACK")) {
+          toast("精準狙擊須點擊一顆現存的敵方棋子", "error");
+          return;
+        }
+        req = { row: r, col: c, skill: { skillType: "PRECISION_SNIPE", target: { row: r, col: c } } };
+      } else if (activeSkill === "SCATTER_SHOT") {
+        if (!scatterFirst) {
+          setScatterFirst({ row: r, col: c });
+          toast("已選第 1 子，請點第 2 個空格（間隔 ≥ 2）");
+          return;
+        }
+        if (Math.max(Math.abs(scatterFirst.row - r), Math.abs(scatterFirst.col - c)) < 2) {
+          toast("散射兩子不得在彼此九宮格內（Chebyshev ≥ 2）", "error");
+          return;
+        }
+        req = {
+          row: scatterFirst.row,
+          col: scatterFirst.col,
+          skill: { skillType: "SCATTER_SHOT", secondStone: { row: r, col: c } },
+        };
+        placed.push(scatterFirst, { row: r, col: c });
+      } else if (activeSkill === "HORIZONTAL_SLASH" || activeSkill === "VERTICAL_SLASH") {
+        if (!skillDir) {
+          toast("請先選擇劈砍方向", "error");
+          return;
+        }
+        slashDir = skillDir;
+        req = { row: r, col: c, skill: { skillType: activeSkill, direction: skillDir } };
+        placed.push({ row: r, col: c });
+      } else {
+        req = { row: r, col: c };
+        placed.push({ row: r, col: c });
+      }
+      try {
+        const state = await gameService.placeMove(gameId, req);
+        // MSW 無 STOMP 廣播 → 直接套用回應；真後端 online 模式仍走廣播
+        if (mode !== "online" || USE_MOCKS) applyDuelState(state, { placed, actor, slashDir });
+        if (activeSkill) {
+          const s = activeSkill;
+          setUsedSkills((prev) => ({ ...prev, [actor]: [...prev[actor], s] }));
+        }
+        clearSkillUi();
+      } catch (err) {
+        const msg = err instanceof ApiError ? err.message : "落子不合法";
+        toast(msg, "error");
+      }
       return;
     }
     try {
@@ -187,6 +422,34 @@ export default function GamePage() {
       // InvalidMoveRejected (422) — show non-blocking toast (MoveToast)
       const msg = err instanceof ApiError ? err.message : "落子不合法";
       toast(msg, "error");
+    }
+  }
+
+  /** 技能列點擊：切換選取；同技能再點一次取消（需求 #36）。 */
+  function onSkillClick(skill: SkillType) {
+    if (usedSkills[turn].includes(skill)) return;
+    if (activeSkill === skill) {
+      clearSkillUi();
+      return;
+    }
+    clearSkillUi();
+    setActiveSkill(skill);
+    if (skill === "PRECISION_SNIPE") toast("點擊一顆敵方棋子以替換成己方顏色");
+    if (skill === "SCATTER_SHOT") toast("點擊兩個空格（Chebyshev 距離 ≥ 2）");
+  }
+
+  function pickDir(dir: SkillDirection) {
+    setSkillDir(dir);
+    if (activeSkill && isUltimate(activeSkill)) {
+      toast("移動游標預覽 3×2 範圍，點擊空格作為錨點");
+    }
+  }
+
+  /** 大絕錨點階段：hover 即時顯示 3寬×2深 預覽框（Q4）。 */
+  const N = duel?.fieldType === "BEACH" ? 16 : 15;
+  function handleHover(r: number, c: number) {
+    if (duel && activeSkill && isUltimate(activeSkill) && skillDir) {
+      setPreviewCells(ultimateRect({ row: r, col: c }, skillDir, N));
     }
   }
 
@@ -210,11 +473,18 @@ export default function GamePage() {
         <div className={`player-chip${turn === "BLACK" ? " active" : ""}`}>
           <span className="stone-dot black" />
           <span>{p1Name}</span>
+          {duel && <span className="dim" style={{ fontSize: 12 }}>{classLabel(duel.blackClass)}</span>}
         </div>
         <div className={`player-chip${turn === "WHITE" ? " active" : ""}`}>
           <span className="stone-dot white" />
           <span>{p2Name}</span>
+          {duel && <span className="dim" style={{ fontSize: 12 }}>{classLabel(duel.whiteClass)}</span>}
         </div>
+        {duel && (
+          <span className="badge badge-duel">
+            {duel.fieldType === "BEACH" ? "🏖️ 沙灘 16×16" : "🌋 火山 15×15"}
+          </span>
+        )}
         <span className="grow" />
         <span className="dim num">第 {moveCount} 手</span>
         <span className="dim num">{fmt(seconds)}</span>
@@ -241,9 +511,73 @@ export default function GamePage() {
             interactive={!isSpectator && !result}
             requireConfirm={touchConfirm}
             spectating={isSpectator}
+            boardSize={N}
+            obstacles={duel?.fieldType === "VOLCANO" ? obstacles : undefined}
+            beach={duel?.fieldType === "BEACH" && oceanSide ? { side: beachSideFor(oceanSide), erodedRows } : null}
+            revealedCells={revealed}
+            previewCells={previewCells}
+            allowOccupied={!!duel && activeSkill === "PRECISION_SNIPE"}
             onPlace={place}
             onCursorChange={setHasCursor}
+            onHover={handleHover}
+            onBlocked={() =>
+              toast(
+                activeSkill && isUltimate(activeSkill) ? "大絕錨點必須是空格" : "該格為障礙物，禁止落子",
+                "error",
+              )
+            }
           />
+          {/* 真劍勝負技能列：附掛技能與大絕（需求 #36 #42 #43）。
+              本地示範/MSW 下由當前行動方操作；觀戰者唯讀。 */}
+          {duel && !isSpectator && !result && (
+            <div className="card pad mt-8" data-testid="skill-bar">
+              <div className="row" style={{ marginBottom: 8 }}>
+                <b style={{ fontSize: 14 }}>
+                  技能（{turn === "BLACK" ? "黑方" : "白方"} · {classLabel(turn === "BLACK" ? duel.blackClass : duel.whiteClass)}）
+                </b>
+                <span className="grow" />
+                <span className="dim" style={{ fontSize: 12 }}>每個技能一場限用一次</span>
+              </div>
+              <div className="skill-bar">
+                {CLASS_SKILLS_UI[turn === "BLACK" ? duel.blackClass : duel.whiteClass].map((s) => {
+                  const used = usedSkills[turn].includes(s);
+                  return (
+                    <button
+                      key={s}
+                      className={`skill-btn${activeSkill === s ? " active" : ""}${used ? " used" : ""}`}
+                      disabled={used}
+                      onClick={() => onSkillClick(s)}
+                    >
+                      {SKILL_INFO[s].ico} {SKILL_INFO[s].name}
+                      {used ? "（已用）" : ""}
+                    </button>
+                  );
+                })}
+              </div>
+              {activeSkill && skillDirs(activeSkill).length > 0 && (activeSkill === "HORIZONTAL_SLASH" || activeSkill === "VERTICAL_SLASH" || isUltimate(activeSkill)) && (
+                <div className="mt-8">
+                  <p className="dim" style={{ fontSize: 13, marginBottom: 6, textAlign: "center" }}>
+                    {isUltimate(activeSkill)
+                      ? skillDir
+                        ? "已選方向 — 點擊棋盤空格作為錨點（3寬×2深）"
+                        : "選擇大絕方向"
+                      : "選擇劈砍方向後落子"}
+                  </p>
+                  <div className="dir-pad" data-testid="dir-pad">
+                    {skillDirs(activeSkill).map((d) => (
+                      <button
+                        key={d}
+                        className={`btn ${skillDir === d ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => pickDir(d)}
+                      >
+                        {DIR_LABEL[d]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <p className="dim center mt-8" style={{ fontSize: 13 }} aria-live="polite">
             輪到{turn === "BLACK" ? "黑" : "白"}方落子
           </p>
@@ -265,8 +599,36 @@ export default function GamePage() {
             <h3 style={{ marginBottom: 10 }}>對局資訊</h3>
             <div className="row" style={{ justifyContent: "space-between" }}>
               <span className="dim">模式</span>
-              <span>{mode === "local" ? "本地雙人" : "線上連線"}</span>
+              <span>{duel ? "⚔️ 真劍勝負" : mode === "local" ? "本地雙人" : "線上連線"}</span>
             </div>
+            {duel && (
+              <>
+                <div className="row mt-8" style={{ justifyContent: "space-between" }}>
+                  <span className="dim">場地</span>
+                  <span>{duel.fieldType === "BEACH" ? "🏖️ 沙灘 16×16" : "🌋 火山 15×15"}</span>
+                </div>
+                {duel.fieldType === "BEACH" && (
+                  <>
+                    <div className="row mt-8" style={{ justifyContent: "space-between" }}>
+                      <span className="dim">漲潮</span>
+                      <span>{tideTriggered ? `已觸發 · 已侵蝕 ${erodedRows} 排` : "未觸發"}</span>
+                    </div>
+                    <div className="row mt-8" style={{ justifyContent: "space-between" }}>
+                      <span className="dim">下次海浪</span>
+                      <span className="num">{10 - (moveCount % 10)} 手後</span>
+                    </div>
+                  </>
+                )}
+                <div className="row mt-8" style={{ justifyContent: "space-between" }}>
+                  <span className="dim">黑方技能</span>
+                  <span className="num">{usedSkills.BLACK.length}/3 已用</span>
+                </div>
+                <div className="row mt-8" style={{ justifyContent: "space-between" }}>
+                  <span className="dim">白方技能</span>
+                  <span className="num">{usedSkills.WHITE.length}/3 已用</span>
+                </div>
+              </>
+            )}
             <div className="row mt-8" style={{ justifyContent: "space-between" }}>
               <span className="dim">回合</span>
               <span>{turn === "BLACK" ? "黑方" : "白方"}</span>
@@ -287,6 +649,14 @@ export default function GamePage() {
           {result === "DRAW" && (
             <p className="dim" style={{ textAlign: "center", marginTop: 6 }}>
               （含雙方同時斷線判和）
+            </p>
+          )}
+          {/* 真劍勝負：結束畫面揭露所有隱藏格（需求 #44；沙灘/漲潮與火山/噴發皆涵蓋） */}
+          {duel && (
+            <p className="dim" style={{ textAlign: "center", marginTop: 6 }} data-testid="duel-reveal-note">
+              {duel.fieldType === "BEACH"
+                ? "🏖️ 沙灘場地 · 本局隱藏的漲潮格已全數揭露（🌊 標記）"
+                : "🌋 火山場地 · 本局隱藏的噴發格已全數揭露（🌋 標記）"}
             </p>
           )}
           <div className="win-stat">
@@ -326,6 +696,23 @@ export default function GamePage() {
             </Link>
           </div>
         </Modal>
+      )}
+
+      {/* 真劍勝負：開局揭曉雙方職業（Q8 — 選擇階段互相隱藏，開局翻牌揭曉） */}
+      {showReveal && duel && (
+        <div className="duel-reveal" data-testid="duel-reveal" onClick={() => setShowReveal(false)}>
+          {([["黑方", duel.blackClass], ["白方", duel.whiteClass]] as const).map(([who, cls]) => (
+            <div key={who} className={`reveal-card${revealFlipped ? " show" : ""}`}>
+              <div className="flip">
+                <div className="face">❓ {who}</div>
+                <div className="face back">
+                  <span style={{ fontSize: 26 }}>{cls === "WARRIOR" ? "⚔️" : "🏹"}</span>
+                  <span>{who} · {cls === "WARRIOR" ? "劍士" : "弓箭手"}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {showLeave && (

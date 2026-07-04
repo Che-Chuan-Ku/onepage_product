@@ -126,6 +126,32 @@ a { color: var(--c-accent); text-decoration: none; }
 .badge-ready { background: #214a21; color: #bdf0bd; }
 .badge-wait { background: #3a322a; color: var(--c-text-dim); }
 .badge-spec { background: #2f2533; color: #d9c4e6; }
+.badge-duel { background: #4a1e28; color: #ffb3c2; }
+
+/* 真劍勝負 — class selection (需求 #35) */
+.class-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .class-grid { grid-template-columns: 1fr; } }
+.class-card { text-align: left; background: var(--c-surface-2); border: 2px solid transparent; border-radius: var(--r-lg); padding: 12px 14px; cursor: pointer; color: var(--c-text); }
+.class-card.selected { border-color: var(--c-primary); }
+.class-card:disabled { opacity: 0.55; cursor: not-allowed; }
+.class-card .skills { font-size: 12px; color: var(--c-text-dim); margin-top: 6px; }
+.opp-hidden { background: var(--c-bg); border-radius: var(--r-lg); padding: 10px 14px; color: var(--c-text-dim); font-size: 14px; }
+
+/* 真劍勝負 — skill bar + direction pad (需求 #36 #42 #43) */
+.skill-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+.skill-btn { flex: 1; min-width: 96px; min-height: 44px; background: var(--c-surface-2); border: 2px solid transparent; border-radius: var(--r-lg); color: var(--c-text); font-weight: 600; font-size: 13px; cursor: pointer; padding: 6px 8px; }
+.skill-btn.active { border-color: var(--c-win); background: #3a3018; }
+.skill-btn.used, .skill-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.dir-pad { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.dir-pad .btn { min-width: 64px; }
+
+/* 真劍勝負 — class reveal banner (開局揭曉, 需求 #35) */
+.duel-reveal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; gap: 18px; background: rgba(10, 10, 14, 0.72); z-index: 60; }
+.reveal-card { perspective: 700px; width: 150px; height: 110px; }
+.reveal-card .flip { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.7s; }
+.reveal-card.show .flip { transform: rotateY(180deg); }
+.reveal-card .face { position: absolute; inset: 0; border-radius: var(--r-lg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; backface-visibility: hidden; background: var(--c-surface-2); box-shadow: var(--sh-card); font-weight: 700; }
+.reveal-card .face.back { transform: rotateY(180deg); background: #3a3018; }
 .conn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 .conn .led { width: 9px; height: 9px; border-radius: 50%; }
 .conn.online .led { background: var(--c-success); box-shadow: 0 0 8px var(--c-success); }

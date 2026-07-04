@@ -5,21 +5,36 @@ import {
   LoginRequest,
   GuestEnterRequest,
   RoomCreateRequest,
+  SelectClassRequest,
   LocalGameCreateRequest,
   MoveCreateRequest,
   OpeningStoneCreateRequest,
   Swap2ChoiceRequest,
+  type ClassType,
   type Color,
+  type FieldType,
   type GameStatus,
   type GameResult,
+  type RoomStatus,
+  type RoomVisibility,
 } from "@/lib/types/schemas";
 import { checkWin, key, type Board } from "@/lib/game/winCheck";
+import {
+  applyDuelMove,
+  createDuelGame,
+  duelGames,
+  duelGameDetail,
+  duelGameReplay,
+  duelGameState,
+  ensureDemoDuelGames,
+} from "./duelEngine";
 import {
   leaderboard,
   myStats,
   publicRooms,
   makeRoomDetail,
   replayGame,
+  duelReplayGame,
 } from "../data/fixtures";
 
 /** Standard success envelope (ManageResponse + data). */
@@ -45,6 +60,11 @@ interface GameState {
   board: Board;
   moveCount: number;
   openingStones: { row: number; col: number; color: Color }[];
+  /** Swap2 二階段（PLACE_TWO_MORE）已選定：允許再放 2 子（共 5），下一次
+   * swap2-choice 只能二選一（執黑/執白）finalize（regression fix）。 */
+  swap2TwoMoreChosen: boolean;
+  /** ordered move log so GET /replay can rebuild THIS game (not a fixture) */
+  moves: { moveNumber: number; color: Color; row: number; col: number }[];
   lastMove: { color: Color; row: number; col: number } | null;
   result: GameResult | null;
   winningLine: { row: number; col: number }[] | null;
@@ -63,12 +83,33 @@ function newGame(useSwap2: boolean, mode: "LOCAL" | "ONLINE"): GameState {
     board: {},
     moveCount: 0,
     openingStones: [],
+    swap2TwoMoreChosen: false,
+    moves: [],
     lastMove: null,
     result: null,
     winningLine: null,
   };
   games.set(gameId, g);
   return g;
+}
+
+/** Truthful replay for a mock-created game（fresh games must NOT inherit the
+ *  demo fixture — the game page rebuilds its board from this response）. */
+function gameReplay(g: GameState) {
+  return {
+    gameId: g.gameId,
+    result: g.result,
+    winnerPlayerId: null,
+    moveCount: g.moveCount,
+    useSwap2: g.useSwap2,
+    openingStones: g.openingStones.map((s, i) => ({
+      sequence: i + 1,
+      color: s.color,
+      row: s.row,
+      col: s.col,
+    })),
+    moves: g.moves,
+  };
 }
 
 function gameState(g: GameState) {
@@ -89,6 +130,63 @@ function gameDetail(g: GameState) {
     useSwap2: g.useSwap2,
     status: g.status,
     currentTurn: g.currentTurn,
+  };
+}
+
+// ── in-memory room state (serious-duel class selection flow) ───
+interface MockRoom {
+  roomId: string;
+  roomCode: string;
+  visibility: RoomVisibility;
+  isSwap2Mode: boolean;
+  battleMode: "NORMAL" | "SERIOUS_DUEL";
+  fieldType: FieldType | null;
+  status: RoomStatus;
+  hostClass: ClassType | null;
+  hostReady: boolean;
+  /** the fake opponent's (阿哲) pick — hidden until game start (Q8) */
+  opponentClass: ClassType;
+  gameId?: string;
+}
+const mockRooms = new Map<string, MockRoom>();
+
+function mockRoomDetail(room: MockRoom) {
+  const duel = room.battleMode === "SERIOUS_DUEL";
+  // Opponent classType stays null for the requester (single mock user =
+  // host, a battle player) until ClassesRevealed at game start (Q8).
+  const revealOpponent = duel && room.status === "IN_PROGRESS";
+  return {
+    roomId: room.roomId,
+    roomCode: room.roomCode,
+    visibility: room.visibility,
+    status: room.status,
+    isSwap2Mode: room.isSwap2Mode,
+    battleMode: room.battleMode,
+    fieldType: room.fieldType,
+    hostPlayerId: "p-001",
+    joinedAsRole: "PLAYER" as const,
+    spectatorCount: 0,
+    members: [
+      {
+        playerId: "p-001",
+        nickname: "KuPlayer",
+        role: "PLAYER" as const,
+        isReady: room.hostReady,
+        classType: duel ? room.hostClass : null,
+      },
+      // fake opponent member (existing mock convention: 阿哲 / p-zhe)
+      ...(duel
+        ? [
+            {
+              playerId: "p-zhe",
+              nickname: "阿哲",
+              role: "PLAYER" as const,
+              isReady: true,
+              classType: revealOpponent ? room.opponentClass : null,
+            },
+          ]
+        : []),
+    ],
   };
 }
 
@@ -134,10 +232,35 @@ export const handlers = [
   http.post(p("/rooms"), async ({ request }) => {
     const body = RoomCreateRequest.safeParse(await request.json());
     if (!body.success) return fail(400, "400001", "房間資料不合法");
+    // 真劍勝負參數衝突（api.yml:211-215, code 422002）
+    if (body.data.battleMode === "SERIOUS_DUEL") {
+      if (body.data.isSwap2Mode)
+        return fail(422, "422002", "真劍勝負模式與 Swap2 開局互斥");
+      if (!body.data.fieldType)
+        return fail(422, "422002", "真劍勝負模式必須指定場地（fieldType）");
+    } else if (body.data.fieldType) {
+      return fail(422, "422002", "fieldType 僅限真劍勝負模式指定");
+    }
     const roomId = `r-${Date.now().toString(36)}`;
+    const room: MockRoom = {
+      roomId,
+      roomCode: Math.random().toString(36).slice(2, 6).toUpperCase(),
+      visibility: body.data.visibility,
+      isSwap2Mode: body.data.isSwap2Mode,
+      battleMode: body.data.battleMode,
+      fieldType: body.data.fieldType ?? null,
+      status: "WAITING",
+      hostClass: null,
+      hostReady: false,
+      opponentClass: "ARCHER",
+    };
+    mockRooms.set(roomId, room);
+    if (room.battleMode === "SERIOUS_DUEL")
+      return created(mockRoomDetail(room), "房間已建立");
+    // NORMAL rooms: keep the pre-duel response shape verbatim
     return created(
       makeRoomDetail(roomId, {
-        roomCode: Math.random().toString(36).slice(2, 6).toUpperCase(),
+        roomCode: room.roomCode,
         visibility: body.data.visibility,
         isSwap2Mode: body.data.isSwap2Mode,
         spectatorCount: 0,
@@ -147,6 +270,29 @@ export const handlers = [
       }),
       "房間已建立",
     );
+  }),
+  // Room snapshot — duel rooms come from the in-memory store; known public
+  // fixtures fall back to makeRoomDetail; anything else 404s (the room page
+  // tolerates failure, matching the previously-unhandled behavior).
+  http.get(p("/rooms/:roomId"), ({ params }) => {
+    const roomId = String(params.roomId);
+    const room = mockRooms.get(roomId);
+    if (room) return ok(mockRoomDetail(room));
+    if (publicRooms.some((r) => r.roomId === roomId)) return ok(makeRoomDetail(roomId));
+    return fail(404, "404001", "房間不存在");
+  }),
+  // 真劍勝負職業選擇（operationId selectClass, api.yml:310-352）
+  http.post(p("/rooms/:roomId/actions/select-class"), async ({ params, request }) => {
+    const room = mockRooms.get(String(params.roomId));
+    if (!room) return fail(404, "404001", "房間不存在");
+    if (room.battleMode !== "SERIOUS_DUEL")
+      return fail(422, "422001", "非真劍勝負房間");
+    if (room.hostReady || room.status !== "WAITING")
+      return fail(422, "422002", "Ready 後職業已鎖定");
+    const body = SelectClassRequest.safeParse(await request.json());
+    if (!body.success) return fail(422, "422001", "職業選擇不合法");
+    room.hostClass = body.data.classType;
+    return ok(mockRoomDetail(room), "200000", "職業已選擇");
   }),
   http.get(p("/rooms"), () =>
     ok({ items: publicRooms, totalCount: publicRooms.length }),
@@ -173,6 +319,15 @@ export const handlers = [
   ),
   http.post(p("/rooms/:roomId/actions/toggle-ready"), ({ params }) => {
     const roomId = String(params.roomId);
+    const room = mockRooms.get(roomId);
+    if (room && room.battleMode === "SERIOUS_DUEL") {
+      // Ready locks the class pick (Q8); un-ready re-opens it.
+      room.hostReady = !room.hostReady;
+      if (room.status === "WAITING" || room.status === "READY")
+        room.status = room.hostReady ? "READY" : "WAITING";
+      return ok(mockRoomDetail(room), "200000", "切換成功");
+    }
+    // NORMAL rooms: pre-duel behavior verbatim
     return ok(
       makeRoomDetail(roomId, {
         status: "READY",
@@ -183,6 +338,41 @@ export const handlers = [
       }),
       "200000",
       "切換成功",
+    );
+  }),
+  // Start the duel game from a READY duel room (idempotent). NORMAL rooms
+  // keep 404ing here — same failure path as when this route was unhandled.
+  http.post(p("/rooms/:roomId/actions/start-game"), ({ params }) => {
+    const room = mockRooms.get(String(params.roomId));
+    if (!room || room.battleMode !== "SERIOUS_DUEL" || !room.fieldType)
+      return fail(404, "404001", "房間不存在或非真劍勝負房間");
+    if (!room.gameId) {
+      room.gameId = `duel-${room.roomId}`;
+      // deterministic seed per room so reloads keep the same hidden cells
+      let seed = 7;
+      for (const ch of room.roomId) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
+      createDuelGame({
+        gameId: room.gameId,
+        fieldType: room.fieldType,
+        blackClass: room.hostClass ?? "WARRIOR",
+        whiteClass: room.opponentClass,
+        gameMode: "ONLINE",
+        seed,
+      });
+      room.status = "IN_PROGRESS";
+    }
+    return ok(
+      {
+        event: "GameStarted",
+        gameId: room.gameId,
+        useSwap2: false,
+        status: "PLAYING",
+        tentativeFirstPlayerId: null,
+        blackPlayerId: "p-001",
+        whitePlayerId: "p-zhe",
+      },
+      "200000",
+      "對局開始",
     );
   }),
 
@@ -208,11 +398,28 @@ export const handlers = [
   }),
 
   http.post(p("/games/:gameId/moves"), async ({ params, request }) => {
-    const g = games.get(String(params.gameId));
+    ensureDemoDuelGames();
+    const gameId = String(params.gameId);
+    // ── serious-duel games: dispatch to the duel engine ──
+    const dg = duelGames.get(gameId);
+    if (dg) {
+      const body = MoveCreateRequest.safeParse(await request.json());
+      if (!body.success) return fail(422, "422001", "落子資料不合法");
+      const res = applyDuelMove(dg, body.data);
+      if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+      return created(duelGameState(res.game), "落子成功");
+    }
+    // ── normal games: pre-duel behavior (15x15, no skills) ──
+    const g = games.get(gameId);
     if (!g) return fail(404, "404001", "對局不存在");
     const body = MoveCreateRequest.safeParse(await request.json());
     if (!body.success) return fail(422, "422001", "落子位置超出棋盤");
+    if (!("row" in body.data) || body.data.skill)
+      return fail(422, "422001", "非真劍勝負對局不支援技能");
     const { row, col } = body.data;
+    // schema upper bound is now the two-field union (15); normal games stay
+    // strictly 0..14, so re-reject 15 with the pre-duel message.
+    if (row > 14 || col > 14) return fail(422, "422001", "落子位置超出棋盤");
     if (g.status !== "PLAYING" || g.currentTurn == null)
       return fail(422, "422003", "目前無法落子");
     if (g.board[key(row, col)]) return fail(422, "422002", "該位置已有棋子");
@@ -220,6 +427,7 @@ export const handlers = [
     const color = g.currentTurn;
     g.board[key(row, col)] = color;
     g.moveCount += 1;
+    g.moves.push({ moveNumber: g.moveCount, color, row, col });
     g.lastMove = { color, row, col };
 
     const line = checkWin(g.board, row, col, color);
@@ -245,7 +453,9 @@ export const handlers = [
       return fail(422, "422001", "非開局階段");
     const body = OpeningStoneCreateRequest.safeParse(await request.json());
     if (!body.success) return fail(422, "422001", "開局子資料不合法");
-    if (g.openingStones.length >= 3) return fail(422, "422002", "開局子已滿 3 顆");
+    // regression fix: after PLACE_TWO_MORE the cap is 5, not 3 (放第四、五子二階段).
+    const cap = g.swap2TwoMoreChosen ? 5 : 3;
+    if (g.openingStones.length >= cap) return fail(422, "422002", `開局子已滿 ${cap} 顆`);
     const { row, col, color } = body.data;
     if (g.board[key(row, col)]) return fail(422, "422003", "該位置已有棋子");
     g.board[key(row, col)] = color;
@@ -267,26 +477,54 @@ export const handlers = [
   http.post(p("/games/:gameId/actions/swap2-choice"), async ({ params, request }) => {
     const g = games.get(String(params.gameId));
     if (!g) return fail(404, "404001", "對局不存在");
-    if (g.openingStones.length < 3 && g.status === "OPENING") {
-      // PLACE_TWO_MORE branch may legitimately have <5; keep simple: require >=3
-    }
     const body = Swap2ChoiceRequest.safeParse(await request.json());
     if (!body.success) return fail(422, "422001", "選擇不合法");
-    // Finalize colors -> enter PLAYING. After 3 opening stones (B,W,B) it is
-    // White's turn in the running game.
+    // regression fix: PLACE_TWO_MORE must stay in OPENING for the 4th/5th
+    // stone stage (not finalize into PLAYING) — it was unconditionally
+    // finalizing regardless of choice, breaking the whole two-stage flow.
+    if (body.data.choice === "PLACE_TWO_MORE" && !g.swap2TwoMoreChosen) {
+      g.swap2TwoMoreChosen = true;
+      return ok(gameState(g), "200000", "放第四、五子，續放 2 子後由對手選色");
+    }
+    // Finalize colors -> enter PLAYING. After 3 (or 5, if PLACE_TWO_MORE was
+    // taken) opening stones it is White's turn in the running game.
     g.status = "PLAYING";
     g.currentTurn = "WHITE";
     return ok(gameState(g), "200000", "選擇完成，進入正式對局");
   }),
 
   http.post(p("/games/:gameId/actions/rematch"), ({ params }) => {
-    const old = games.get(String(params.gameId));
+    const gameId = String(params.gameId);
+    const oldDuel = duelGames.get(gameId);
+    if (oldDuel) {
+      const g = createDuelGame({
+        gameId: `${gameId}-r${Date.now().toString(36)}`,
+        fieldType: oldDuel.fieldType,
+        blackClass: oldDuel.blackClass,
+        whiteClass: oldDuel.whiteClass,
+        gameMode: oldDuel.gameMode,
+      });
+      return created(duelGameDetail(g), "新局已建立");
+    }
+    const old = games.get(gameId);
     const useSwap2 = old?.useSwap2 ?? false;
     const mode = old?.gameMode ?? "LOCAL";
     return created(gameDetail(newGame(useSwap2, mode)), "新局已建立");
   }),
 
-  http.get(p("/games/:gameId/replay"), ({ params }) =>
-    ok({ ...replayGame, gameId: String(params.gameId) }),
-  ),
+  http.get(p("/games/:gameId/replay"), ({ params }) => {
+    ensureDemoDuelGames();
+    const gameId = String(params.gameId);
+    // live duel games replay from the engine's recorded event timeline
+    const dg = duelGames.get(gameId);
+    if (dg) return ok(duelGameReplay(dg));
+    // mock-created games replay their own move log — falling through to the
+    // demo fixture here used to pollute every fresh game's board rebuild
+    const g = games.get(gameId);
+    if (g) return ok(gameReplay(g));
+    // curated duel replay fixture（需求 #47 示例：沙灘場地完整事件時間軸）
+    if (gameId === duelReplayGame.gameId) return ok(duelReplayGame);
+    // unknown id: keep the demo fixture (smoke test navigates to /replay/g1)
+    return ok({ ...replayGame, gameId });
+  }),
 ];

@@ -9,7 +9,8 @@ import {
   PlayerStatsResponse,
   LeaderboardEntryResponse,
   ManagePageResponse,
-  RoomCreateRequest,
+  RoomCreateRequestInput,
+  SelectClassRequest,
   RoomDetailResponse,
   RoomListResponse,
   QuickMatchResponse,
@@ -50,8 +51,13 @@ export const playerService = {
 // ── rooms ─────────────────────────────────────────────────────
 const RoomListPage = ManagePageResponse(RoomListResponse);
 export const roomService = {
-  create: (body: RoomCreateRequest) =>
+  // Input type: battleMode defaults to NORMAL, so pre-duel call sites
+  // (visibility + isSwap2Mode only) keep compiling unchanged.
+  create: (body: RoomCreateRequestInput) =>
     api.post("/rooms", RoomDetailResponse, body),
+  /** 真劍勝負職業選擇（operationId: selectClass, api.yml:310-352）. */
+  selectClass: (roomId: string, body: SelectClassRequest) =>
+    api.post(`/rooms/${roomId}/actions/select-class`, RoomDetailResponse, body),
   get: (roomId: string) =>
     api.get(`/rooms/${roomId}`, RoomDetailResponse),
   listPublic: (params?: { skip?: number; top?: number; order?: string }) =>

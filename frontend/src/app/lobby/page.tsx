@@ -5,8 +5,12 @@ import { useRouter } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
 import { Modal } from "@/components/Modal";
 import { roomService } from "@/lib/api/services";
-import type { RoomListResponse, RoomVisibility } from "@/lib/types/schemas";
+import { ApiError } from "@/lib/api/client";
+import type { FieldType, RoomListResponse, RoomVisibility } from "@/lib/types/schemas";
 import { toast } from "@/lib/store/toast";
+
+/** Room modes are mutually exclusive: SERIOUS_DUEL cannot combine with Swap2 (Q9). */
+type RoomMode = "normal" | "swap2" | "duel";
 
 /** Lobby — public rooms, create, join-by-code, quick match (需求 #5 #6). */
 export default function LobbyPage() {
@@ -15,7 +19,8 @@ export default function LobbyPage() {
   const [code, setCode] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [visibility, setVisibility] = useState<RoomVisibility>("PUBLIC");
-  const [isSwap2, setIsSwap2] = useState(false);
+  const [roomMode, setRoomMode] = useState<RoomMode>("normal");
+  const [fieldType, setFieldType] = useState<FieldType>("VOLCANO");
   const [matching, setMatching] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const qmTimer = useRef<ReturnType<typeof setInterval>>();
@@ -63,11 +68,18 @@ export default function LobbyPage() {
 
   async function createRoom() {
     try {
-      const detail = await roomService.create({ visibility, isSwap2Mode: isSwap2 });
+      const detail = await roomService.create({
+        visibility,
+        isSwap2Mode: roomMode === "swap2",
+        battleMode: roomMode === "duel" ? "SERIOUS_DUEL" : "NORMAL",
+        // fieldType is duel-only; must stay unset otherwise (api.yml 422)
+        ...(roomMode === "duel" ? { fieldType } : {}),
+      });
       setShowCreate(false);
       router.push(`/room/${detail.roomId}`);
-    } catch {
-      toast("建立房間失敗", "error");
+    } catch (err) {
+      // 422002 = duel parameter conflict (Swap2 mutex / missing fieldType)
+      toast(err instanceof ApiError ? err.message : "建立房間失敗", "error");
     }
   }
 
@@ -139,9 +151,15 @@ export default function LobbyPage() {
                     <div className="dim" style={{ fontSize: 12 }}>觀戰</div>
                     <div className="num">{r.spectatorCount} 人</div>
                   </div>
-                  <span className={`badge ${r.isSwap2Mode ? "badge-swap2" : "badge-normal"}`}>
-                    {r.isSwap2Mode ? "Swap2" : "普通"}
-                  </span>
+                  {r.battleMode === "SERIOUS_DUEL" ? (
+                    <span className="badge badge-duel">
+                      ⚔️ 真劍勝負 {r.fieldType === "BEACH" ? "🏖️ 沙灘" : "🌋 火山"}
+                    </span>
+                  ) : (
+                    <span className={`badge ${r.isSwap2Mode ? "badge-swap2" : "badge-normal"}`}>
+                      {r.isSwap2Mode ? "Swap2" : "普通"}
+                    </span>
+                  )}
                   <span className="grow" />
                   <button
                     className={`btn ${r.playerCount >= 2 ? "btn-ghost" : "btn-primary"}`}
@@ -197,12 +215,23 @@ export default function LobbyPage() {
             </div>
           </div>
           <div className="field">
-            <label>開局模式</label>
+            <label>房間模式</label>
+            {/* 三選一互斥：真劍勝負與 Swap2 不可同時（Q9） */}
             <div className="tabs">
-              <div className={`tab${!isSwap2 ? " active" : ""}`} onClick={() => setIsSwap2(false)}>普通</div>
-              <div className={`tab${isSwap2 ? " active" : ""}`} onClick={() => setIsSwap2(true)}>Swap2</div>
+              <div className={`tab${roomMode === "normal" ? " active" : ""}`} onClick={() => setRoomMode("normal")}>普通</div>
+              <div className={`tab${roomMode === "swap2" ? " active" : ""}`} onClick={() => setRoomMode("swap2")}>Swap2</div>
+              <div className={`tab${roomMode === "duel" ? " active" : ""}`} onClick={() => setRoomMode("duel")}>⚔️ 真劍勝負</div>
             </div>
           </div>
+          {roomMode === "duel" && (
+            <div className="field" data-testid="field-picker">
+              <label>場地（真劍勝負必選，需求 #34）</label>
+              <div className="tabs">
+                <div className={`tab${fieldType === "VOLCANO" ? " active" : ""}`} onClick={() => setFieldType("VOLCANO")}>🌋 火山 15×15</div>
+                <div className={`tab${fieldType === "BEACH" ? " active" : ""}`} onClick={() => setFieldType("BEACH")}>🏖️ 沙灘 16×16</div>
+              </div>
+            </div>
+          )}
           <button className="btn btn-primary btn-block mt-8" onClick={createRoom}>
             建立並進入房間
           </button>

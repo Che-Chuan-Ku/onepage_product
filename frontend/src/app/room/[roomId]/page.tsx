@@ -5,7 +5,9 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { roomService } from "@/lib/api/services";
-import type { RoomMemberItem } from "@/lib/types/schemas";
+import { ApiError } from "@/lib/api/client";
+import { USE_MOCKS } from "@/lib/api/config";
+import type { ClassType, FieldType, RoomMemberItem } from "@/lib/types/schemas";
 import { StompClient, type ConnState } from "@/lib/stomp/client";
 import { channels } from "@/lib/stomp/channels";
 import { useSession } from "@/lib/store/session";
@@ -15,6 +17,15 @@ interface ChatMsg {
   who: string;
   text: string;
 }
+
+/** Class kits shown on the selection cards (Q1/Q10). */
+const CLASS_OPTIONS: { id: ClassType; name: string; ico: string; skills: string }[] = [
+  { id: "WARRIOR", name: "劍士", ico: "⚔️", skills: "橫劈 · 縱劈 · 大絕「天地反轉」" },
+  { id: "ARCHER", name: "弓箭手", ico: "🏹", skills: "精準狙擊 · 散射 · 大絕「開拓之星」" },
+];
+
+const classLabel = (c: ClassType | null | undefined) =>
+  c === "WARRIOR" ? "⚔️ 劍士" : c === "ARCHER" ? "🏹 弓箭手" : null;
 
 /** Room — real members + Ready→start-game + STOMP chat (需求 #7 #26, Q5). */
 export default function RoomPage() {
@@ -30,6 +41,9 @@ export default function RoomPage() {
   const [status, setStatus] = useState<string>("WAITING");
   const [roomCode, setRoomCode] = useState<string>("");
   const [hostId, setHostId] = useState<string | null>(null);
+  // 真劍勝負：房間模式/場地（需求 #34 #35）
+  const [isDuel, setIsDuel] = useState(false);
+  const [fieldType, setFieldType] = useState<FieldType | null>(null);
   const startingRef = useRef(false);
   const [conn, setConn] = useState<ConnState>("offline");
   const [chat, setChat] = useState<ChatMsg[]>([]);
@@ -57,9 +71,13 @@ export default function RoomPage() {
   function goToGame(gameId: string, useSwap2: boolean, tentativeFirstPlayerId?: string | null) {
     if (navigatedRef.current) return;
     navigatedRef.current = true;
+    // Duel rooms under MSW run without STOMP broadcasts, so the game page
+    // must apply move responses directly — mode=local does exactly that
+    // (the mock opponent shares this browser). Real backend keeps online.
+    const duelMode = USE_MOCKS ? "local" : "online";
     const dest = useSwap2
       ? `/opening/${gameId}?ctx=online${tentativeFirstPlayerId ? `&tf=${tentativeFirstPlayerId}` : ""}`
-      : `/game/${gameId}?mode=online`;
+      : `/game/${gameId}?mode=${isDuel ? duelMode : "online"}`;
     setTimeout(() => router.push(dest), 400);
   }
 
@@ -88,6 +106,8 @@ export default function RoomPage() {
         setStatus(d.status);
         setRoomCode(d.roomCode);
         setHostId(d.hostPlayerId ?? null);
+        setIsDuel(d.battleMode === "SERIOUS_DUEL");
+        setFieldType(d.fieldType ?? null);
       } catch {
         /* 進房失敗：保持空，STOMP 廣播會補 */
       }
@@ -150,6 +170,11 @@ export default function RoomPage() {
   }
 
   async function toggleReady() {
+    // 真劍勝負：Ready 前必須先選職業（Ready 即鎖定，Q8）
+    if (isDuel && !iAmReady && !myClass) {
+      toast("請先選擇職業再標記 Ready", "error");
+      return;
+    }
     try {
       const detail = await roomService.toggleReady(roomId);
       setMembers(detail.members);
@@ -159,6 +184,19 @@ export default function RoomPage() {
       // start-game 由反應式 effect 觸發（依最新 status/hostId/myId）
     } catch {
       toast("無法切換準備狀態", "error");
+    }
+  }
+
+  // 真劍勝負職業選擇（Ready 前可自由變更；Ready 後鎖定回 422, Q8）。
+  // MSW fallback: the mock's single user is always the host member (p-001),
+  // so when the session id doesn't match any member, read the host's slot.
+  const myClass = (me ?? players[0])?.classType ?? null;
+  async function pickClass(classType: ClassType) {
+    try {
+      const detail = await roomService.selectClass(roomId, { classType });
+      setMembers(detail.members);
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : "職業選擇失敗", "error");
     }
   }
 
@@ -185,6 +223,11 @@ export default function RoomPage() {
           >
             房間碼：{roomCode || "…"}（點擊複製）
           </button>
+          {isDuel && (
+            <span className="badge badge-duel">
+              ⚔️ 真劍勝負 {fieldType === "BEACH" ? "🏖️ 沙灘 16×16" : "🌋 火山 15×15"}
+            </span>
+          )}
           <span className="grow" />
           <ConnectionBadge state={conn} />
         </div>
@@ -209,6 +252,12 @@ export default function RoomPage() {
                       />
                       <b>{p ? p.nickname : "（空位 — 等待對手）"}</b>
                       {p && p.playerId === hostId && <span className="dim">（房主）</span>}
+                      {/* 真劍勝負：選擇階段對手職業互相隱藏（Q8）；觀戰者可見（R2-2 補充） */}
+                      {isDuel && p && (
+                        <span className="dim" style={{ fontSize: 13 }}>
+                          {classLabel(p.classType) ?? "❓ 選擇中"}
+                        </span>
+                      )}
                       <span className="grow" />
                       {p && (
                         <span className={`badge ${p.isReady ? "badge-ready" : "badge-wait"}`}>
@@ -227,9 +276,51 @@ export default function RoomPage() {
               <p className="dim mt-8" style={{ fontSize: 13, textAlign: "center" }}>
                 {isSpectator
                   ? "你以觀戰者身份在此房間（唯讀，可聊天）"
-                  : "雙方皆 Ready 後自動進入開局"}
+                  : isDuel
+                    ? "選擇職業並 Ready；Ready 後職業鎖定，開局時揭曉"
+                    : "雙方皆 Ready 後自動進入開局"}
               </p>
             </div>
+
+            {isDuel && !isSpectator && (
+              <div className="card pad" data-testid="class-select">
+                <h3 style={{ marginBottom: 6 }}>選擇職業</h3>
+                <p className="dim" style={{ fontSize: 13, marginBottom: 12 }}>
+                  技能每場限用一次；選擇階段對手看不到你的職業，對局開始時才揭曉（Q8）
+                </p>
+                <div className="class-grid">
+                  {CLASS_OPTIONS.map((c) => (
+                    <button
+                      key={c.id}
+                      className={`class-card${myClass === c.id ? " selected" : ""}`}
+                      disabled={iAmReady}
+                      onClick={() => pickClass(c.id)}
+                    >
+                      <div style={{ fontSize: 22 }}>{c.ico} <b>{c.name}</b>{myClass === c.id ? "（已選）" : ""}</div>
+                      <div className="skills">{c.skills}</div>
+                    </button>
+                  ))}
+                </div>
+                <div className="opp-hidden mt-8">
+                  對手職業：{classLabel(players.find((p) => p !== (me ?? players[0]))?.classType) ?? "❓ 選擇中（開局揭曉）"}
+                </div>
+              </div>
+            )}
+
+            {isDuel && isSpectator && (
+              <div className="card pad">
+                <h3 style={{ marginBottom: 8 }}>雙方職業（觀戰視角）</h3>
+                {/* 觀戰者於選擇階段即可見雙方職業（R2-2 補充定案） */}
+                <div className="dim" style={{ fontSize: 14 }}>
+                  {players.map((p) => (
+                    <div key={p.playerId} className="row gap-8 mt-8">
+                      <span>{p.nickname}</span>
+                      <span>{classLabel(p.classType) ?? "尚未選擇"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="card pad">
               <div className="row gap-8" style={{ marginBottom: 10 }}>

@@ -47,6 +47,47 @@ export const Swap2Choice = z.enum(["TAKE_BLACK", "TAKE_WHITE", "PLACE_TWO_MORE"]
 export type Swap2Choice = z.infer<typeof Swap2Choice>;
 export const CoinSide = z.enum(["HEADS", "TAILS"]);
 
+// ── Serious-duel enums (api.yml 需求 #34–#47) ────────────────
+export const BattleMode = z.enum(["NORMAL", "SERIOUS_DUEL"]);
+export type BattleMode = z.infer<typeof BattleMode>;
+export const FieldType = z.enum(["VOLCANO", "BEACH"]);
+export type FieldType = z.infer<typeof FieldType>;
+export const ClassType = z.enum(["WARRIOR", "ARCHER"]);
+export type ClassType = z.infer<typeof ClassType>;
+export const SkillType = z.enum([
+  "HORIZONTAL_SLASH",
+  "VERTICAL_SLASH",
+  "HEAVEN_EARTH_REVERSAL",
+  "PRECISION_SNIPE",
+  "SCATTER_SHOT",
+  "PIONEER_STAR",
+]);
+export type SkillType = z.infer<typeof SkillType>;
+export const UltimateSkillType = z.enum(["HEAVEN_EARTH_REVERSAL", "PIONEER_STAR"]);
+export type UltimateSkillType = z.infer<typeof UltimateSkillType>;
+export const SkillDirection = z.enum(["UP", "DOWN", "LEFT", "RIGHT"]);
+export type SkillDirection = z.infer<typeof SkillDirection>;
+export const SkillEventType = z.enum([
+  "FIELD_GENERATED",
+  "STONE_PUSHED",
+  "STONE_REMOVED_OFF_BOARD",
+  "STONES_BURNED",
+  "STONE_REPLACED",
+  "STONES_CLEARED",
+  "COLORS_SWAPPED",
+  "VOLCANO_ERUPTED",
+  "WAVE_SURGED",
+  "TIDE_TRIGGERED",
+  "TIDE_RISEN",
+  "SAND_ERODED",
+]);
+export type SkillEventType = z.infer<typeof SkillEventType>;
+export const HiddenCellKind = z.enum(["ERUPTION", "TIDE"]);
+export type HiddenCellKind = z.infer<typeof HiddenCellKind>;
+
+export const Cell = z.object({ row: z.number().int(), col: z.number().int() });
+export type Cell = z.infer<typeof Cell>;
+
 // ── Auth ────────────────────────────────────────────────────
 export const RegisterRequest = z.object({
   username: z.string().min(1),
@@ -124,14 +165,31 @@ export type LeaderboardEntryResponse = z.infer<typeof LeaderboardEntryResponse>;
 export const RoomCreateRequest = z.object({
   visibility: RoomVisibility,
   isSwap2Mode: z.boolean().default(false),
+  // 真劍勝負（需求 #34，Q9）: SERIOUS_DUEL is mutually exclusive with
+  // isSwap2Mode and requires fieldType — enforced at handler level (422),
+  // not in the schema, so the error carries the api.yml business code.
+  battleMode: BattleMode.default("NORMAL"),
+  fieldType: FieldType.nullable().optional(),
 });
 export type RoomCreateRequest = z.infer<typeof RoomCreateRequest>;
+// Input-side type: battleMode/isSwap2Mode have defaults, so existing call
+// sites may omit them (api.yml: battleMode default NORMAL).
+export type RoomCreateRequestInput = z.input<typeof RoomCreateRequest>;
+
+export const SelectClassRequest = z.object({
+  classType: ClassType,
+});
+export type SelectClassRequest = z.infer<typeof SelectClassRequest>;
 
 export const RoomMemberItem = z.object({
   playerId: z.string(),
   nickname: z.string(),
   role: RoomRole,
   isReady: z.boolean(),
+  // Serious duel only. Own selection is echoed back; the opponent's stays
+  // null until ClassesRevealed (game start). Optional so NORMAL-mode
+  // payloads without the field still validate.
+  classType: ClassType.nullable().optional(),
 });
 export type RoomMemberItem = z.infer<typeof RoomMemberItem>;
 
@@ -141,6 +199,9 @@ export const RoomDetailResponse = z.object({
   visibility: RoomVisibility,
   status: RoomStatus,
   isSwap2Mode: z.boolean(),
+  // Additive duel fields — optional to tolerate backends that predate #34.
+  battleMode: BattleMode.optional(),
+  fieldType: FieldType.nullable().optional(),
   hostPlayerId: z.string().nullable().optional(),
   joinedAsRole: RoomRole.nullable().optional(),
   spectatorCount: z.number().int(),
@@ -155,6 +216,8 @@ export const RoomListResponse = z.object({
   playerCount: z.number().int(),
   spectatorCount: z.number().int(),
   isSwap2Mode: z.boolean(),
+  battleMode: BattleMode.optional(),
+  fieldType: FieldType.nullable().optional(),
 });
 export type RoomListResponse = z.infer<typeof RoomListResponse>;
 
@@ -177,6 +240,8 @@ export const GameDetailResponse = z.object({
   gameId: z.string(),
   gameMode: GameMode,
   useSwap2: z.boolean(),
+  battleMode: BattleMode.optional(),
+  fieldType: FieldType.nullable().optional(),
   status: GameStatus,
   currentTurn: Color.nullable(),
 });
@@ -203,14 +268,82 @@ export const CoinTossResponse = z.object({
 });
 export type CoinTossResponse = z.infer<typeof CoinTossResponse>;
 
-export const MoveCreateRequest = z.object({
-  row: z.number().int().min(0).max(14),
-  col: z.number().int().min(0).max(14),
+// Serious-duel skill payload (api.yml SkillActionRequest, 需求 #36 #42 #43).
+export const SkillActionRequest = z.object({
+  skillType: SkillType,
+  // HORIZONTAL_SLASH: UP/DOWN; VERTICAL_SLASH: LEFT/RIGHT; ultimates: any.
+  direction: SkillDirection.nullable().optional(),
+  // Ultimate anchor — must be an empty cell (validated by the engine).
+  anchor: Cell.nullable().optional(),
+  // PRECISION_SNIPE: coordinates of an existing enemy stone.
+  target: Cell.nullable().optional(),
+  // SCATTER_SHOT: second stone, Chebyshev distance >= 2 from row/col.
+  secondStone: Cell.nullable().optional(),
 });
+export type SkillActionRequest = z.infer<typeof SkillActionRequest>;
+
+/**
+ * MoveCreateRequest — oneOf (api.yml 需求 #36):
+ * Normal = row/col required (0..15 = union upper bound of both fields; the
+ * effective bound — 14 for VOLCANO / normal games, 15 for BEACH — is
+ * re-validated per fieldType by the backend/mock engine, 422 beyond it),
+ * optionally carrying a regular skill.
+ * Ultimate = skill only (HEAVEN_EARTH_REVERSAL / PIONEER_STAR, anchor
+ * required); row/col are forbidden.
+ */
+export const MoveCreateRequestNormal = z.object({
+  row: z.number().int().min(0).max(15),
+  col: z.number().int().min(0).max(15),
+  skill: SkillActionRequest.optional(),
+});
+export type MoveCreateRequestNormal = z.infer<typeof MoveCreateRequestNormal>;
+
+// .strict() rejects extra keys, so a payload carrying row/col can never
+// match this branch (api.yml: ultimate forbids row/col).
+export const MoveCreateRequestUltimate = z
+  .object({
+    skill: SkillActionRequest.extend({
+      skillType: UltimateSkillType,
+      anchor: Cell,
+    }),
+  })
+  .strict();
+export type MoveCreateRequestUltimate = z.infer<typeof MoveCreateRequestUltimate>;
+
+export const MoveCreateRequest = z.union([
+  MoveCreateRequestNormal,
+  MoveCreateRequestUltimate,
+]);
 export type MoveCreateRequest = z.infer<typeof MoveCreateRequest>;
 
-export const Cell = z.object({ row: z.number().int(), col: z.number().int() });
-export type Cell = z.infer<typeof Cell>;
+// Serious-duel field snapshot; hidden cells (untriggered ERUPTION/TIDE)
+// never appear here (需求 #44).
+export const FieldState = z.object({
+  fieldType: FieldType,
+  obstacles: z.array(Cell),
+  // Beach ocean-start side (api.yml:1057-1061, 需求 #40); BEACH only, tolerant
+  // like the other beach-only fields (erodedRows/tideTriggered/roundCounter).
+  seaSide: z.enum(["NORTH", "SOUTH", "EAST", "WEST"]).nullable().optional(),
+  erodedRows: z.number().int(),
+  tideTriggered: z.boolean(),
+  roundCounter: z.number().int(),
+});
+export type FieldState = z.infer<typeof FieldState>;
+
+export const RevealedHiddenCell = z.object({
+  cellKind: HiddenCellKind,
+  row: z.number().int(),
+  col: z.number().int(),
+});
+export type RevealedHiddenCell = z.infer<typeof RevealedHiddenCell>;
+
+export const SkillEvent = z.object({
+  eventType: SkillEventType,
+  row: z.number().int().nullable(),
+  col: z.number().int().nullable(),
+  effectTriggered: z.boolean(),
+});
+export type SkillEvent = z.infer<typeof SkillEvent>;
 
 export const GameStateResponse = z.object({
   gameId: z.string(),
@@ -222,6 +355,22 @@ export const GameStateResponse = z.object({
     .nullable(),
   result: GameResult.nullable(),
   winningLine: z.array(Cell).nullable(),
+  // ── Serious-duel additive fields (NORMAL games send them as explicit
+  // JSON null, not omitted — GameStateResponse.java is annotated
+  // @JsonInclude(ALWAYS) — so every one of these needs BOTH .nullable()
+  // AND .optional(); .optional() alone rejects an explicit `null` value.
+  // Bug fix: revealedHiddenCells/skillEvents were missing .nullable(), so
+  // .parse() threw a ZodError on every single NORMAL-mode placeMove
+  // response, silently swallowed by the caller's catch(ApiError) branch as
+  // a bogus "落子不合法" toast — every move appeared to do nothing (server
+  // accepted it, but the board/turn/moveCount never updated on screen).
+  blackClass: ClassType.nullable().optional(),
+  whiteClass: ClassType.nullable().optional(),
+  fieldState: FieldState.nullable().optional(),
+  // Hidden cells newly triggered by this settlement (需求 #44).
+  revealedHiddenCells: z.array(RevealedHiddenCell).nullable().optional(),
+  // Skill/field events produced by this settlement (需求 #37 #38 #45).
+  skillEvents: z.array(SkillEvent).nullable().optional(),
 });
 export type GameStateResponse = z.infer<typeof GameStateResponse>;
 
@@ -248,6 +397,14 @@ export const ReplayMove = z.object({
   row: z.number().int(),
   col: z.number().int(),
 });
+// Serious-duel skill/field event timeline entry (需求 #47).
+export const FieldEventItem = z.object({
+  moveNumber: z.number().int(),
+  eventType: SkillEventType,
+  row: z.number().int().nullable(),
+  col: z.number().int().nullable(),
+});
+export type FieldEventItem = z.infer<typeof FieldEventItem>;
 export const GameReplayResponse = z.object({
   gameId: z.string(),
   // nullable: 未結束的對局 result 為 null，否則 zod 解析失敗 → 回放整頁 0/0 載不出來。
@@ -255,6 +412,26 @@ export const GameReplayResponse = z.object({
   winnerPlayerId: z.string().nullable(),
   moveCount: z.number().int(),
   useSwap2: z.boolean(),
+  // Additive (bug fix): authoritative whose-turn-now for page-load/reconnect;
+  // moveCount parity is unreliable for Serious Duel (ultimates place 0 stones,
+  // scatter-shot places 2 in one hand). null once FINISHED.
+  currentTurn: Color.nullable().optional(),
+  // ── Serious-duel additive fields (optional for NORMAL replays) ──
+  battleMode: BattleMode.optional(),
+  fieldType: FieldType.nullable().optional(),
+  blackClass: ClassType.nullable().optional(),
+  whiteClass: ClassType.nullable().optional(),
+  fieldEvents: z.array(FieldEventItem).optional(),
+  // Additive (bug fix): per-player used-skill history so the game page can
+  // restore its client-tracked usedSkills state on reconnect/reload (R2-3).
+  skillUsages: z.array(z.object({ playerId: z.string(), skillType: SkillType })).optional(),
+  // Additive (bug fix): fieldEvents' FIELD_GENERATED entries carry row=col=null
+  // on the real backend, so obstacle layout / beach ocean side cannot be
+  // inferred from fieldEvents alone (primary/replay path was silently wrong —
+  // BEACH always defaulted to ocean-on-UP). Authoritative snapshot mirroring
+  // GameStateResponse.fieldState.
+  obstacles: z.array(z.object({ row: z.number().int(), col: z.number().int() })).optional(),
+  seaSide: z.enum(["NORTH", "SOUTH", "EAST", "WEST"]).nullable().optional(),
   openingStones: z.array(ReplayOpeningStone),
   moves: z.array(ReplayMove),
   // Additive fields (bug fix): lets the game page resolve real nicknames +
