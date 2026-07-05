@@ -28,10 +28,13 @@ import com.gomoku.repository.PlayerRepository;
 import com.gomoku.repository.RoomMemberRepository;
 import com.gomoku.web.PageData;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +44,21 @@ public class RoomService {
     private static final String CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int CODE_LENGTH = 6;
     private static final int MAX_PLAYERS = 2;
+
+    /**
+     * TTL for stale WAITING rooms — abandoned lobbies that never reached Ready.
+     * Reused both by listPublicRooms (excludes stale rows immediately, no lag)
+     * and by the periodic sweepExpiredRooms job (soft-deletes them from the DB).
+     */
+    private static final long WAITING_ROOM_TTL_MINUTES = 30;
+    /**
+     * TTL for FINISHED rooms — grace window after a game ends (see
+     * GameService#closeRoomIfOnline) before the room row is swept, so
+     * reconnecting players/spectators still viewing the result can resolve it.
+     */
+    private static final long FINISHED_ROOM_TTL_MINUTES = 10;
+    /** Cadence for #sweepExpiredRooms. */
+    private static final long SWEEP_INTERVAL_MS = 5 * 60 * 1000L;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -264,11 +282,16 @@ public class RoomService {
     @Transactional(readOnly = true)
     public PageData<RoomListResponse> listPublicRooms(int skip, int top) {
         int page = top <= 0 ? 0 : skip / top;
+        // Bug fix: only ever show WAITING rooms that haven't gone stale — the
+        // periodic sweepExpiredRooms job soft-deletes them too, but that runs on
+        // a 5-minute cadence, so this inline cutoff closes the gap immediately.
+        Instant waitingCutoff = Instant.now().minus(WAITING_ROOM_TTL_MINUTES, ChronoUnit.MINUTES);
         List<GameRoom> rooms = roomRepository
-                .findByVisibilityAndStatusAndDeletedFalseOrderByCreatedAtDesc(
-                        RoomVisibility.PUBLIC, RoomStatus.WAITING, PageRequest.of(page, Math.max(top, 1)));
-        long total = roomRepository.countByVisibilityAndStatusAndDeletedFalse(
-                RoomVisibility.PUBLIC, RoomStatus.WAITING);
+                .findByVisibilityAndStatusAndDeletedFalseAndUpdatedAtAfterOrderByCreatedAtDesc(
+                        RoomVisibility.PUBLIC, RoomStatus.WAITING, waitingCutoff,
+                        PageRequest.of(page, Math.max(top, 1)));
+        long total = roomRepository.countByVisibilityAndStatusAndDeletedFalseAndUpdatedAtAfter(
+                RoomVisibility.PUBLIC, RoomStatus.WAITING, waitingCutoff);
 
         List<RoomListResponse> items = new ArrayList<>();
         for (GameRoom r : rooms) {
@@ -375,6 +398,13 @@ public class RoomService {
         if (member.getRole() != RoomMemberRole.PLAYER) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "觀戰者不可切換 Ready");
         }
+        // Bug fix: toggleReady used to be callable with no guard on room.status,
+        // so a room whose game already started (IN_PROGRESS) or ended (FINISHED)
+        // could still be toggled — silently corrupting state (e.g. flipping a
+        // FINISHED room back to WAITING). Only WAITING/READY rooms are toggleable.
+        if (room.getStatus() != RoomStatus.WAITING && room.getStatus() != RoomStatus.READY) {
+            throw new BusinessException(ErrorCode.UNPROCESSABLE, "房間狀態不可切換 Ready");
+        }
         member.setReady(!member.isReady());
         memberRepository.save(member);
 
@@ -385,6 +415,25 @@ public class RoomService {
 
         broadcaster.broadcastRoom(roomId, toDetail(room, null, null));
         return toDetail(room, playerId, member.getRole());
+    }
+
+    /**
+     * Bug fix: rooms had no lifecycle end — a WAITING room abandoned before Ready,
+     * or a FINISHED room past its grace window (see closeRoomIfOnline), lingered
+     * in the DB forever. Periodic TTL sweep soft-deletes both so they drop out of
+     * listPublicRooms / getRoom / joinRoom (all filter on deletedFalse). Runs every
+     * SWEEP_INTERVAL_MS; needs @EnableScheduling on the Spring Boot application.
+     */
+    @Scheduled(fixedRate = SWEEP_INTERVAL_MS)
+    @Transactional
+    public void sweepExpiredRooms() {
+        Instant waitingCutoff = Instant.now().minus(WAITING_ROOM_TTL_MINUTES, ChronoUnit.MINUTES);
+        Instant finishedCutoff = Instant.now().minus(FINISHED_ROOM_TTL_MINUTES, ChronoUnit.MINUTES);
+        List<GameRoom> expired = roomRepository.findExpiredRooms(waitingCutoff, finishedCutoff);
+        for (GameRoom room : expired) {
+            room.setDeleted(true);
+            roomRepository.save(room);
+        }
     }
 
     // ── helpers ──────────────────────────────────────────────────────

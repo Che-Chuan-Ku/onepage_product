@@ -2,6 +2,7 @@ package com.gomoku.service;
 
 import com.gomoku.domain.entity.FieldEvent;
 import com.gomoku.domain.entity.Game;
+import com.gomoku.domain.entity.GameRoom;
 import com.gomoku.domain.entity.Move;
 import com.gomoku.domain.entity.OpeningStone;
 import com.gomoku.domain.enums.BattleMode;
@@ -9,6 +10,7 @@ import com.gomoku.domain.enums.CoinResult;
 import com.gomoku.domain.enums.GameMode;
 import com.gomoku.domain.enums.GameResult;
 import com.gomoku.domain.enums.GameStatus;
+import com.gomoku.domain.enums.RoomStatus;
 import com.gomoku.domain.enums.StoneColor;
 import com.gomoku.domain.enums.Swap2Choice;
 import com.gomoku.dto.request.LocalGameCreateRequest;
@@ -25,6 +27,7 @@ import com.gomoku.game.GomokuRules;
 import com.gomoku.game.Swap2Phase;
 import com.gomoku.repository.FieldEventRepository;
 import com.gomoku.repository.GameRepository;
+import com.gomoku.repository.GameRoomRepository;
 import com.gomoku.repository.MoveRepository;
 import com.gomoku.repository.OpeningStoneRepository;
 import org.springframework.stereotype.Service;
@@ -52,6 +55,7 @@ public class GameService {
     private final SecureRandom random = new SecureRandom();
 
     private final GameRepository gameRepository;
+    private final GameRoomRepository gameRoomRepository;
     private final MoveRepository moveRepository;
     private final OpeningStoneRepository openingStoneRepository;
     private final FieldEventRepository fieldEventRepository;
@@ -60,6 +64,7 @@ public class GameService {
     private final GameBroadcaster broadcaster;
 
     public GameService(GameRepository gameRepository,
+                       GameRoomRepository gameRoomRepository,
                        MoveRepository moveRepository,
                        OpeningStoneRepository openingStoneRepository,
                        FieldEventRepository fieldEventRepository,
@@ -67,6 +72,7 @@ public class GameService {
                        SeriousDuelService seriousDuelService,
                        GameBroadcaster broadcaster) {
         this.gameRepository = gameRepository;
+        this.gameRoomRepository = gameRoomRepository;
         this.moveRepository = moveRepository;
         this.openingStoneRepository = openingStoneRepository;
         this.fieldEventRepository = fieldEventRepository;
@@ -167,6 +173,12 @@ public class GameService {
         if (game.getBattleMode() == BattleMode.SERIOUS_DUEL) {
             GameStateResponse response = seriousDuelService.resolveHand(game, playerId, req);
             gameRepository.save(game);
+            // Bug fix: SeriousDuelService.resolveHand can also drive the game to
+            // FINISHED (ultimate win, board full) — same room-closing rule as the
+            // standard win/draw branches below applies here too.
+            if (game.getStatus() == GameStatus.FINISHED) {
+                closeRoomIfOnline(game);
+            }
             return response;
         }
         if (req.skill() != null) {
@@ -230,6 +242,7 @@ public class GameService {
                     ? game.getBlackPlayerId() : game.getWhitePlayerId();
             game.setWinnerPlayerId(winnerPlayerId);
             gameRepository.save(game);
+            closeRoomIfOnline(game);
 
             updateStats(game, result);
 
@@ -249,6 +262,7 @@ public class GameService {
             game.setCurrentTurn(null);
             game.setEndedAt(Instant.now());
             gameRepository.save(game);
+            closeRoomIfOnline(game);
 
             updateStats(game, GameResult.DRAW);
 
@@ -475,6 +489,11 @@ public class GameService {
         if (newGame.getBattleMode() == BattleMode.SERIOUS_DUEL) {
             seriousDuelService.initializeField(newGame); // fresh random field per game
         }
+        // Bug fix: the old game's room was closed to FINISHED when it ended
+        // (see closeRoomIfOnline). Rematch reuses the same room for the new game,
+        // so the room must come back to a usable (IN_PROGRESS) state — otherwise
+        // it would be stuck FINISHED forever and swept by the room TTL job.
+        reopenRoomIfOnline(newGame);
         return toDetail(newGame);
     }
 
@@ -573,6 +592,38 @@ public class GameService {
     private Game requireGame(String gameId) {
         return gameRepository.findByIdAndDeletedFalse(gameId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "遊戲不存在"));
+    }
+
+    /**
+     * Bug fix: an ONLINE game finishing used to leave its GameRoom stuck at
+     * IN_PROGRESS forever — the room never showed as done, toggleReady stayed
+     * callable on a dead room, and the lobby/TTL sweep had no signal that the
+     * match was over. Close the room the moment its game reaches FINISHED.
+     * LOCAL games have no roomId and are skipped (no-op).
+     */
+    private void closeRoomIfOnline(Game game) {
+        if (game.getGameMode() != GameMode.ONLINE || game.getRoomId() == null) {
+            return;
+        }
+        gameRoomRepository.findByIdAndDeletedFalse(game.getRoomId()).ifPresent(room -> {
+            room.setStatus(RoomStatus.FINISHED);
+            gameRoomRepository.save(room);
+        });
+    }
+
+    /**
+     * Counterpart to closeRoomIfOnline: rematchGame creates a fresh game bound to
+     * the same room, so the room needs to leave FINISHED and become usable again.
+     * Mirrors the state startOnlineGame puts a freshly-started room into.
+     */
+    private void reopenRoomIfOnline(Game game) {
+        if (game.getGameMode() != GameMode.ONLINE || game.getRoomId() == null) {
+            return;
+        }
+        gameRoomRepository.findByIdAndDeletedFalse(game.getRoomId()).ifPresent(room -> {
+            room.setStatus(RoomStatus.IN_PROGRESS);
+            gameRoomRepository.save(room);
+        });
     }
 
     private void requireTentativeFirst(Game game, String playerId) {

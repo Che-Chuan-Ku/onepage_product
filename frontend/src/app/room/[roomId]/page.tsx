@@ -67,7 +67,22 @@ export default function RoomPage() {
   const isSpectator = me?.role === "SPECTATOR" || search.get("role") === "spectator";
   const iAmReady = !!me?.isReady;
 
-  // 導航到對局/開局（去重）。線上 Swap2 帶 tf=假先方 id 供 opening 頁判角色。
+  // Bug fix: goToGame() used to never forward the viewer's spectator identity to
+  // the game page, so a spectator navigating via GameStarted broadcast (or the
+  // self-navigate path below) landed on /game with no ?role=spectator — the game
+  // page then treated them as a player (interactive board, could attempt moves).
+  // isSpectatorRef mirrors isSpectator via its own effect (deps=[isSpectator]) so
+  // that even the STOMP subscribe callback registered once at mount (closure over
+  // an old goToGame instance) reads the *current* value through the ref, not a
+  // stale render-time closure.
+  const isSpectatorRef = useRef(isSpectator);
+  useEffect(() => {
+    isSpectatorRef.current = isSpectator;
+  }, [isSpectator]);
+
+  // 導航到對局/開局（去重）。線上 Swap2 帶 tf=假先方 id 供 opening 頁判角色；
+  // 觀戰者一律附 role=spectator（兩條呼叫路徑：自我導航 ensureStartAndGo 與
+  // GameStarted 廣播處理都經過本函式，改這裡即同時覆蓋兩者）。
   function goToGame(gameId: string, useSwap2: boolean, tentativeFirstPlayerId?: string | null) {
     if (navigatedRef.current) return;
     navigatedRef.current = true;
@@ -75,9 +90,10 @@ export default function RoomPage() {
     // must apply move responses directly — mode=local does exactly that
     // (the mock opponent shares this browser). Real backend keeps online.
     const duelMode = USE_MOCKS ? "local" : "online";
+    const spectatorParam = isSpectatorRef.current ? "&role=spectator" : "";
     const dest = useSwap2
-      ? `/opening/${gameId}?ctx=online${tentativeFirstPlayerId ? `&tf=${tentativeFirstPlayerId}` : ""}`
-      : `/game/${gameId}?mode=${isDuel ? duelMode : "online"}`;
+      ? `/opening/${gameId}?ctx=online${tentativeFirstPlayerId ? `&tf=${tentativeFirstPlayerId}` : ""}${spectatorParam}`
+      : `/game/${gameId}?mode=${isDuel ? duelMode : "online"}${spectatorParam}`;
     setTimeout(() => router.push(dest), 400);
   }
 
@@ -91,7 +107,8 @@ export default function RoomPage() {
       // 對手由 GameStarted 廣播導航。navigatedRef 去重。
       const g = await roomService.startGame(roomId);
       goToGame(g.gameId, g.useSwap2, g.tentativeFirstPlayerId ?? null);
-    } catch {
+    } catch (err) {
+      if (!(err instanceof ApiError)) console.error("startGame failed", err);
       startingRef.current = false;
       toast("無法開始對局", "error");
     }
@@ -108,8 +125,10 @@ export default function RoomPage() {
         setHostId(d.hostPlayerId ?? null);
         setIsDuel(d.battleMode === "SERIOUS_DUEL");
         setFieldType(d.fieldType ?? null);
-      } catch {
-        /* 進房失敗：保持空，STOMP 廣播會補 */
+      } catch (err) {
+        // 進房失敗：保持空，STOMP 廣播會補；non-ApiError（schema mismatch 等）
+        // 印出來，避免真正的 bug 被誤當成「等廣播補」而無聲吃掉。
+        if (!(err instanceof ApiError)) console.error("room fetch failed", err);
       }
     })();
   }, [roomId]);
@@ -132,7 +151,30 @@ export default function RoomPage() {
       }
       // 房間明細更新（成員/狀態）→ 只更新 state；start-game 由下方反應式 effect 觸發
       if (Array.isArray(msg.members)) {
-        setMembers(msg.members as RoomMemberItem[]);
+        // Bug fix: broadcast copies are rendered with viewerId=null (backend
+        // RoomService.toDetail's "most restrictive" comment) — a single WS
+        // message goes to every subscriber (both players + spectators), so
+        // it can never reveal either player's own classType without leaking
+        // it to the opponent too. REST responses DO echo the caller's own
+        // selection, but any broadcast arriving afterwards (the opponent's
+        // own selectClass/toggleReady, or even our own) blindly overwrote
+        // that locally-known value back to null — silently making the
+        // player look like they'd never chosen a class, which then blocked
+        // toggleReady ("請先選擇職業再標記 Ready") even though they clearly
+        // had picked one. Preserve our own already-known classType across
+        // broadcast-driven member refreshes; the opponent's stays exactly
+        // as the broadcast says (correctly hidden pre-reveal).
+        const myId = useSession.getState().playerId;
+        const incoming = msg.members as RoomMemberItem[];
+        setMembers((prev) =>
+          incoming.map((m) => {
+            if (m.classType == null && myId && m.playerId === myId) {
+              const known = prev.find((p) => p.playerId === myId)?.classType;
+              if (known != null) return { ...m, classType: known };
+            }
+            return m;
+          }),
+        );
         if (typeof msg.hostPlayerId === "string") setHostId(msg.hostPlayerId as string);
         if (typeof msg.status === "string") setStatus(msg.status as string);
         return;
@@ -182,7 +224,8 @@ export default function RoomPage() {
       if (detail.hostPlayerId) setHostId(detail.hostPlayerId);
       if (detail.status === "READY") toast("雙方皆已準備，進入開局…", "success");
       // start-game 由反應式 effect 觸發（依最新 status/hostId/myId）
-    } catch {
+    } catch (err) {
+      if (!(err instanceof ApiError)) console.error("toggleReady failed", err);
       toast("無法切換準備狀態", "error");
     }
   }
@@ -196,6 +239,7 @@ export default function RoomPage() {
       const detail = await roomService.selectClass(roomId, { classType });
       setMembers(detail.members);
     } catch (err) {
+      if (!(err instanceof ApiError)) console.error("selectClass failed", err);
       toast(err instanceof ApiError ? err.message : "職業選擇失敗", "error");
     }
   }

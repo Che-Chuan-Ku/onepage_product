@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,11 +26,23 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, String> {
 
     boolean existsByRoomCodeAndDeletedFalse(String roomCode);
 
-    List<GameRoom> findByVisibilityAndStatusAndDeletedFalseOrderByCreatedAtDesc(
-            RoomVisibility visibility, RoomStatus status, Pageable pageable);
+    /** Bug fix: excludes stale WAITING rooms past their TTL (see RoomService). */
+    List<GameRoom> findByVisibilityAndStatusAndDeletedFalseAndUpdatedAtAfterOrderByCreatedAtDesc(
+            RoomVisibility visibility, RoomStatus status, Instant updatedAfter, Pageable pageable);
 
-    long countByVisibilityAndStatusAndDeletedFalse(RoomVisibility visibility, RoomStatus status);
+    long countByVisibilityAndStatusAndDeletedFalseAndUpdatedAtAfter(
+            RoomVisibility visibility, RoomStatus status, Instant updatedAfter);
 
     Optional<GameRoom> findFirstByVisibilityAndStatusAndDeletedFalseOrderByCreatedAtAsc(
             RoomVisibility visibility, RoomStatus status);
+
+    /**
+     * Bug fix (room TTL): rooms stuck WAITING (abandoned lobby, no Ready reached)
+     * or FINISHED (game ended, see GameService#closeRoomIfOnline) past their
+     * respective cutoffs — swept periodically by RoomService#sweepExpiredRooms.
+     */
+    @Query("select r from GameRoom r where r.deleted = false and ("
+            + "(r.status = com.gomoku.domain.enums.RoomStatus.WAITING and r.updatedAt < :waitingCutoff) or "
+            + "(r.status = com.gomoku.domain.enums.RoomStatus.FINISHED and r.updatedAt < :finishedCutoff))")
+    List<GameRoom> findExpiredRooms(Instant waitingCutoff, Instant finishedCutoff);
 }
