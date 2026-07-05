@@ -239,9 +239,15 @@ export function duelSnapshots(replay: GameReplayResponse): DuelStep[] {
   const moveAt = new Map(replay.moves.map((m) => [m.moveNumber, m]));
   const byMove = new Map<number, FieldEventItem[]>();
   for (const e of replay.fieldEvents ?? []) {
-    const list = byMove.get(e.moveNumber) ?? [];
+    // moveNumber is null for FIELD_GENERATED (happens at build time, before
+    // any move — real backend sends null; erm.dbml field_events.move_number
+    // is nullable for exactly this reason). Group it under step 0 alongside
+    // the initial empty-board snapshot; every other event type always has a
+    // concrete moveNumber.
+    const n = e.moveNumber ?? 0;
+    const list = byMove.get(n) ?? [];
     list.push(e);
-    byMove.set(e.moveNumber, list);
+    byMove.set(n, list);
   }
   const numberSet = new Set<number>();
   moveAt.forEach((_, n) => n > 0 && numberSet.add(n));

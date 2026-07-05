@@ -398,8 +398,15 @@ export const ReplayMove = z.object({
   col: z.number().int(),
 });
 // Serious-duel skill/field event timeline entry (需求 #47).
+// Bug fix: real backend's FIELD_GENERATED entry carries moveNumber=null (it
+// happens at build time, before any move — see erm.dbml field_events.move_
+// number "FIELD_GENERATED 於建局時發生，move_number 為 null"). moveNumber was
+// missing .nullable() here (row/col already had it), so .parse() threw a
+// ZodError on every SERIOUS_DUEL /replay response, silently swallowed by
+// loadReplay()'s empty catch — duel never entered its branch, so obstacles /
+// skill bar / class badges never rendered (silent degrade to a blank board).
 export const FieldEventItem = z.object({
-  moveNumber: z.number().int(),
+  moveNumber: z.number().int().nullable(),
   eventType: SkillEventType,
   row: z.number().int().nullable(),
   col: z.number().int().nullable(),

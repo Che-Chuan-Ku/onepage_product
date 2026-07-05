@@ -197,11 +197,20 @@ export function createDuelGame(opts: {
     winningLine: null,
     lastEvents: genEvents,
     lastRevealed: [],
+    // Bug fix: the real backend's FIELD_GENERATED replay entry always carries
+    // moveNumber/row/col = null (it happens at build time, before any move —
+    // see erm.dbml field_events.move_number). The mock used to fake real
+    // coordinates here "for convenience" (genEvents' row/col), which masked
+    // the schema/consumer bug this fixture family exists to catch — mock
+    // shape must follow the contract, not convenience. Obstacle/ocean-side
+    // info for consumers now comes from the authoritative `obstacles`/
+    // `seaSide` fields on GameReplayResponse (see duelGameReplay below),
+    // exactly like the real backend.
     fieldEvents: genEvents.map((e) => ({
-      moveNumber: 0,
+      moveNumber: null,
       eventType: e.eventType,
-      row: e.row,
-      col: e.col,
+      row: null,
+      col: null,
     })),
     moves: [],
   };
@@ -495,11 +504,21 @@ export function duelGameReplay(g: DuelGame) {
     winnerPlayerId: null,
     moveCount: g.moveCount,
     useSwap2: false,
+    currentTurn: g.currentTurn,
     battleMode: g.battleMode,
     fieldType: g.fieldType,
     blackClass: g.blackClass,
     whiteClass: g.whiteClass,
     fieldEvents: g.fieldEvents,
+    // Bug fix: now that fieldEvents' FIELD_GENERATED carries row=col=null
+    // (matching the real backend), obstacle/ocean-side can no longer be
+    // inferred from the event timeline alone — mirror the authoritative
+    // snapshot the real backend sends (GameReplayResponse.obstacles/seaSide,
+    // same source as GameStateResponse.fieldState) so consumers (game page /
+    // replay page) render correctly instead of silently falling back to an
+    // empty obstacle list / default ocean side.
+    obstacles: g.fieldType === "VOLCANO" ? g.obstacles : [],
+    seaSide: g.fieldType === "BEACH" ? OCEAN_SIDE_TO_SEA_SIDE[g.oceanSide] : null,
     openingStones: [],
     moves: g.moves,
   };

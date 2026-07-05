@@ -66,9 +66,26 @@ export default function GamePage() {
   const router = useRouter();
   const gameId = params.gameId;
   const mode = search.get("mode") || "local"; // local | online
-  const isSpectator = search.get("role") === "spectator";
   const isGuest = useSession((s) => s.identity) === "guest";
   const myId = useSession((s) => s.playerId);
+  // Bug fix: identity used to come solely from the ?role=spectator URL param, so
+  // any navigation path that forgot to attach it (e.g. the room page's
+  // GameStarted broadcast handler before its own fix) silently treated a
+  // spectator as a player — interactive board, could attempt moves that the
+  // backend would then reject one-by-one. Fallback: once both colors are
+  // revealed (ONLINE mode, blackPlayerId/whitePlayerId resolved via replay
+  // below), anyone whose id matches neither color is a spectator even with no
+  // role param at all.
+  const [blackPlayerId, setBlackPlayerId] = useState<string | null>(null);
+  const [whitePlayerId, setWhitePlayerId] = useState<string | null>(null);
+  const isSpectator =
+    search.get("role") === "spectator" ||
+    (mode === "online" &&
+      !!myId &&
+      !!blackPlayerId &&
+      !!whitePlayerId &&
+      myId !== blackPlayerId &&
+      myId !== whitePlayerId);
 
   const [stones, setStones] = useState<PlacedStone[]>([]);
   const [openingStones, setOpeningStones] = useState<PlacedStone[]>([]);
@@ -153,6 +170,10 @@ export default function GamePage() {
     try {
       const replay = await gameService.replay(gameId);
       if (!mountedRef.current) return;
+      // 觀戰者身份 fallback 用（見上方 isSpectator）：replay 一律帶 blackPlayerId/
+      // whitePlayerId（不限真劍勝負），一有值就記錄，供「無 role 參數」時判斷。
+      setBlackPlayerId(replay.blackPlayerId ?? null);
+      setWhitePlayerId(replay.whitePlayerId ?? null);
       // 線上模式：用 replay 帶回的 roomId 查房間成員取得真實暱稱，
       // 並依 blackPlayerId/whitePlayerId 正確對應黑白子（修正原本寫死假名的 bug）。
       if (mode === "online" && replay.roomId) {
@@ -168,8 +189,10 @@ export default function GamePage() {
             if (replay.blackPlayerId) setP1Name(label(replay.blackPlayerId));
             if (replay.whitePlayerId) setP2Name(label(replay.whitePlayerId));
           }
-        } catch {
-          /* 查詢房間失敗 → 保留「黑方」/「白方」預設標籤 */
+        } catch (err) {
+          // 查詢房間失敗 → 保留「黑方」/「白方」預設標籤；non-ApiError（如 schema
+          // 不合的 ZodError）不應無聲吞掉，否則同類 mismatch 又會再次難以排查。
+          if (!(err instanceof ApiError)) console.error("loadReplay: room fetch failed", err);
         }
       }
       // ── 真劍勝負：以完整事件時間軸重建盤面（推擠/燒毀/互換不在 moves 裡）──
@@ -244,8 +267,11 @@ export default function GamePage() {
       if (last) setLastMove([last.r, last.c]);
       // N 子已落：N 奇→白方續落，偶→黑方（與後端 currentTurn 一致）
       setTurn(all.length % 2 === 1 ? "WHITE" : "BLACK");
-    } catch {
-      /* 全新局或 replay 不可用 → 保留預設 */
+    } catch (err) {
+      // 全新局或 replay 不可用 → 保留預設；non-ApiError（schema mismatch 等）
+      // 印出來，避免真正的 bug（如 ZodError）被誤當成「新局」而無聲吃掉
+      // （這正是真劍勝負 duel 狀態靜默不渲染的根因，見 schemas.ts 的修法）。
+      if (!(err instanceof ApiError)) console.error("loadReplay failed", err);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId, mode, myId]);
@@ -408,6 +434,9 @@ export default function GamePage() {
         }
         clearSkillUi();
       } catch (err) {
+        // non-ApiError（如回應 schema 不合的 ZodError）不應被 "落子不合法" toast
+        // 蓋掉——那會讓 schema mismatch（伺服器其實已接受落子）誤判成業務錯誤。
+        if (!(err instanceof ApiError)) console.error("placeMove (duel) failed", err);
         const msg = err instanceof ApiError ? err.message : "落子不合法";
         toast(msg, "error");
       }
@@ -420,6 +449,9 @@ export default function GamePage() {
       if (mode !== "online") applyState(state);
     } catch (err) {
       // InvalidMoveRejected (422) — show non-blocking toast (MoveToast)
+      // non-ApiError (e.g. response schema mismatch) shouldn't be masked as
+      // a bogus business rejection — surface it so mismatches aren't silent.
+      if (!(err instanceof ApiError)) console.error("placeMove failed", err);
       const msg = err instanceof ApiError ? err.message : "落子不合法";
       toast(msg, "error");
     }
@@ -740,7 +772,8 @@ function RematchButton({ gameId, mode }: { gameId: string; mode: string }) {
     try {
       const game = await gameService.rematch(gameId);
       router.push(`/game/${game.gameId}?mode=${mode}`);
-    } catch {
+    } catch (err) {
+      if (!(err instanceof ApiError)) console.error("rematch failed", err);
       toast("無法發起再戰", "error");
     }
   }

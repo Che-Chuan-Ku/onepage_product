@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
 import { Board } from "@/components/Board";
 import { gameService } from "@/lib/api/services";
+import { ApiError } from "@/lib/api/client";
 import type { ClassType, GameReplayResponse, Color } from "@/lib/types/schemas";
 import type { PlacedStone, StoneColor } from "@/lib/game/GomokuBoard";
 import { beachSideFor, duelFieldMeta, duelSnapshots } from "@/lib/game/duelClient";
@@ -48,7 +49,8 @@ export default function ReplayPage() {
     (async () => {
       try {
         setReplay(await gameService.replay(gameId));
-      } catch {
+      } catch (err) {
+        if (!(err instanceof ApiError)) console.error("replay load failed", err);
         toast("無法載入回放", "error");
       }
     })();

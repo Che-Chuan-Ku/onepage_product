@@ -226,7 +226,10 @@ paths:
       tags: [rooms]
       operationId: listPublicRooms
       summary: 公開房間列表
-      description: 列出 PUBLIC 且 WAITING 的房間（需求 #5）。
+      description: >
+        列出 PUBLIC 且 WAITING 的房間（需求 #5）。Bug fix（additive）：WAITING 逾 30
+        分鐘未達 Ready 的房間視為逾期，不再回傳（房間 TTL，見 RoomService 常數
+        WAITING_ROOM_TTL_MINUTES）；逾期房間亦由後端排程定期軟刪除。
       parameters:
         - name: skip
           in: query
@@ -385,6 +388,9 @@ paths:
       description: >
         切換自己的 Ready；兩名對戰玩家皆 Ready 觸發開局。對應 PlayerReadyToggled / AllPlayersReady。
         僅 role=PLAYER 可操作，觀戰者呼叫回 403（Q5）。
+        Bug fix（additive）：房間狀態非 WAITING/READY（即對局已開始 IN_PROGRESS 或已結束
+        FINISHED）時回 422 ——對局結束時房間會自動轉為 FINISHED（見 GameService
+        closeRoomIfOnline），避免已結束房間的 Ready 仍可被切換而弄亂狀態。
       parameters:
         - name: roomId
           in: path
@@ -405,6 +411,18 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: >
+            房間狀態不可切換 Ready（Bug fix，additive）：房間已進入 IN_PROGRESS 或 FINISHED。
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      code: { type: string, example: "422001" }
+                      data: { type: object }
 
   /rooms/{roomId}/actions/start-game:
     post:
@@ -1121,7 +1139,10 @@ components:
           items:
             type: object
             properties:
-              moveNumber: { type: integer }
+              # Additive bug fix: FIELD_GENERATED happens at game build time
+              # (before any move), so the real backend sends moveNumber:null
+              # for it (mirrors erm.dbml field_events.move_number, nullable).
+              moveNumber: { type: integer, nullable: true }
               eventType:
                 type: string
                 enum: [FIELD_GENERATED, STONE_PUSHED, STONE_REMOVED_OFF_BOARD, STONES_BURNED, STONE_REPLACED, STONES_CLEARED, COLORS_SWAPPED, VOLCANO_ERUPTED, WAVE_SURGED, TIDE_TRIGGERED, TIDE_RISEN, SAND_ERODED]
