@@ -194,6 +194,12 @@ canvas.board {
   background: linear-gradient(135deg, #4a1e28, #6b2a1a); border-color: #ff7a28; color: #ffd9a0;
   font-size: 15px; box-shadow: 0 0 18px rgba(255, 122, 40, 0.45), var(--sh-card);
 }
+/* 真劍勝負 — 場地事件警示：漲潮觸發用更醒目樣式（比 wave/erosion 的預設 toast 更搶眼） */
+.toast.tide {
+  background: linear-gradient(135deg, #0d2f42, #0a5878); border-color: #5ac8f0; color: #d8f4ff;
+  font-size: 16px; font-weight: 800; box-shadow: 0 0 22px rgba(90, 200, 240, 0.6), var(--sh-card);
+  animation: toastIn 0.25s ease, tidePulse 0.7s ease-in-out 2;
+}
 
 /* Modal / overlay */
 .overlay { position: fixed; inset: 0; background: rgba(10, 8, 6, 0.72); z-index: 90; display: flex; align-items: center; justify-content: center; padding: 18px; backdrop-filter: blur(3px); }
@@ -235,6 +241,7 @@ table.tbl { width: 100%; border-collapse: collapse; }
 /* Animations */
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes tidePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
 @keyframes coinflip { to { transform: rotateX(1980deg); } }
 

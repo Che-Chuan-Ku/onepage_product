@@ -32,12 +32,34 @@ export interface RevealedCell extends FieldCell {
 /** One-shot flash effect flavor (skill feedback). */
 export type FlashType = "burn" | "tide" | "wave" | "slash";
 
+/**
+ * 真劍勝負技能施放動畫（機能性，辨識度優先於華麗）— distinct from the
+ * simpler radial `flashCells` above (which stays for the plain per-cell
+ * burn/tide/wave/slash glow). One `SkillAnim` = one skill cast; auto-clears
+ * after `duration` ms (0.5–1s per spec) and never touches pointer/keyboard
+ * handling — it is a purely additive, temporary draw pass appended at the
+ * end of `draw()`.
+ *  - slash: direction-aware sweeping blade across the pushed cells (橫劈/縱劈).
+ *  - reversal: 3×2 box highlight + per-cell coin-flip disc (天地反轉).
+ *  - pioneer: 3×2 box highlight + per-cell disperse burst (開拓之星).
+ *  - snipe/scatter: arrow(s) flying in from outside the board + impact flash
+ *    (精準狙擊／散射).
+ */
+export type SkillAnim =
+  | { kind: "slash"; axis: "row" | "col"; origin: FieldCell; cells: FieldCell[] }
+  | { kind: "reversal"; box: FieldCell[]; flipCells: FieldCell[] }
+  | { kind: "pioneer"; box: FieldCell[]; clearCells: FieldCell[] }
+  | { kind: "snipe"; target: FieldCell }
+  | { kind: "scatter"; targets: FieldCell[] };
+
 export interface BoardOptions {
   interactive?: boolean;
   requireConfirm?: boolean;
   onPlace?: (r: number, c: number) => void;
   /** Notifies React when the preview cursor changes (enables Confirm btn). */
   onCursorChange?: (cursor: [number, number] | null) => void;
+  /** Notifies React when a skill-cast animation starts/finishes (e2e hook). */
+  onSkillAnimChange?: (active: boolean) => void;
   /** Board size (lines per side). Defaults to 15; 16 is used by beach mode. */
   size?: number;
   /**
@@ -73,6 +95,8 @@ function starPoints(n: number): [number, number][] {
   return pts;
 }
 
+const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
 export class GomokuBoard {
   readonly N: number;
   private readonly stars: [number, number][];
@@ -100,6 +124,10 @@ export class GomokuBoard {
   private fx: { r: number; c: number; type: FlashType; until: number }[] = [];
   private fxLoopRunning = false;
   private lastHover: [number, number] | null = null;
+  // 真劍勝負技能施放動畫 (SkillAnim) — separate one-shot queue from `fx` above.
+  private skillAnims: (SkillAnim & { start: number; duration: number })[] = [];
+  private skillLoopRunning = false;
+  private onSkillAnimChange?: (active: boolean) => void;
 
   private dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
   private px = 0;
@@ -127,6 +155,7 @@ export class GomokuBoard {
     this.onBlocked = opts.onBlocked || null;
     this.onHover = opts.onHover || null;
     this.isBlockedOpt = opts.isBlocked || null;
+    this.onSkillAnimChange = opts.onSkillAnimChange;
     this.bind();
     this.resize();
     window.addEventListener("resize", this.onResize, { signal: this.ac.signal });
@@ -135,6 +164,7 @@ export class GomokuBoard {
   destroy() {
     this.ac.abort(); // drops all listeners bound with this signal
     this.fx = []; // lets any pending flash rAF loop exit on its next frame
+    this.skillAnims = []; // ditto for any pending skill-anim rAF loop
   }
 
   private bind() {
@@ -333,6 +363,35 @@ export class GomokuBoard {
       this.draw();
       if (this.fx.length) requestAnimationFrame(loop);
       else this.fxLoopRunning = false;
+    };
+    requestAnimationFrame(loop);
+  }
+
+  /**
+   * One-shot skill-cast animation (see `SkillAnim` doc). Non-blocking: pure
+   * canvas draw, no effect on pointer/keyboard handling. `duration` defaults
+   * to 700ms (inside the required 0.5–1s window).
+   */
+  playSkillAnim(anim: SkillAnim, duration = 700) {
+    const wasEmpty = this.skillAnims.length === 0;
+    this.skillAnims.push({ ...anim, start: now(), duration });
+    if (wasEmpty) this.onSkillAnimChange?.(true);
+    this.draw();
+    this.runSkillLoop();
+  }
+  private runSkillLoop() {
+    if (this.skillLoopRunning || !this.skillAnims.length) return;
+    this.skillLoopRunning = true;
+    const loop = () => {
+      const t = now();
+      this.skillAnims = this.skillAnims.filter((a) => t - a.start < a.duration);
+      this.draw();
+      if (this.skillAnims.length) {
+        requestAnimationFrame(loop);
+      } else {
+        this.skillLoopRunning = false;
+        this.onSkillAnimChange?.(false);
+      }
     };
     requestAnimationFrame(loop);
   }
@@ -608,6 +667,227 @@ export class GomokuBoard {
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(x, y, rad + 2, 0, 7);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // 真劍勝負技能施放動畫 (SkillAnim) — drawn last so it reads clearly on top
+    // of stones/cursor; purely additive to the render pipeline above.
+    this.drawSkillAnims();
+  }
+
+  // ── 真劍勝負技能施放動畫 (SkillAnim) rendering ──────────────────
+  private drawSkillAnims() {
+    if (!this.skillAnims.length) return;
+    const ctx = this.ctx;
+    const t = now();
+    const ease = (x: number) => 1 - Math.pow(1 - x, 3);
+    for (const a of this.skillAnims) {
+      const progress = Math.max(0, Math.min(1, (t - a.start) / a.duration));
+      ctx.save();
+      if (a.kind === "slash") this.drawSlashAnim(a, progress, ease(progress));
+      else if (a.kind === "reversal") this.drawBoxFlipAnim(a, progress);
+      else if (a.kind === "pioneer") this.drawBoxDisperseAnim(a, progress, ease(progress));
+      else if (a.kind === "snipe") this.drawArrowAnim(a.target, progress);
+      else if (a.kind === "scatter") a.targets.forEach((tg, i) => this.drawArrowAnim(tg, progress, i));
+      ctx.restore();
+    }
+  }
+
+  /** 橫劈/縱劈：a horizontal (or vertical) light blade sweeps along the push
+   * axis through the pushed cells, plus a brief burst as it passes each one. */
+  private drawSlashAnim(
+    a: Extract<SkillAnim, { kind: "slash" }>,
+    progress: number,
+    eased: number,
+  ) {
+    const ctx = this.ctx;
+    const g = this.gap;
+    const originVal = a.axis === "row" ? a.origin.row : a.origin.col;
+    const perpVal = a.axis === "row" ? a.origin.col : a.origin.row;
+    const travelVals = a.cells.map((c) => (a.axis === "row" ? c.row : c.col));
+    const farVal = travelVals.length ? travelVals[travelVals.length - 1] : originVal;
+    const dirSign = Math.sign(farVal - originVal) || 1;
+    const endVal = farVal + dirSign * 0.5; // slight follow-through past the last cell
+    const span = endVal - originVal || 1;
+    const curVal = originVal + span * eased;
+    const toXY = (v: number): [number, number] =>
+      a.axis === "row" ? this.xy(v, perpVal) : this.xy(perpVal, v);
+
+    // fading trail behind the blade head
+    const steps = 5;
+    for (let i = steps; i >= 1; i--) {
+      const v = curVal - dirSign * (i / steps) * g * 0.9;
+      const [x, y] = toXY(v);
+      const alpha = (1 - i / steps) * 0.45;
+      ctx.fillStyle = `rgba(235,235,245,${alpha})`;
+      if (a.axis === "row") ctx.fillRect(x - g * 0.6, y - g * 0.05, g * 1.2, g * 0.1);
+      else ctx.fillRect(x - g * 0.05, y - g * 0.6, g * 0.1, g * 1.2);
+    }
+    // bright blade head
+    const [hx, hy] = toXY(curVal);
+    ctx.save();
+    ctx.shadowColor = "rgba(255,255,255,.9)";
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = "rgba(245,245,255,.95)";
+    if (a.axis === "row") ctx.fillRect(hx - g * 0.68, hy - g * 0.09, g * 1.36, g * 0.18);
+    else ctx.fillRect(hx - g * 0.09, hy - g * 0.68, g * 0.18, g * 1.36);
+    ctx.restore();
+    // burst on each pushed cell as the blade passes it
+    a.cells.forEach((cell) => {
+      const cv = a.axis === "row" ? cell.row : cell.col;
+      const threshold = (cv - originVal) / span;
+      const local = progress - threshold;
+      const win = 0.3;
+      if (local >= 0 && local <= win) {
+        const bt = local / win;
+        const [x, y] = this.xy(cell.row, cell.col);
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255,255,255,${1 - bt})`;
+        ctx.lineWidth = 2;
+        ctx.arc(x, y, g * (0.25 + 0.55 * bt), 0, 7);
+        ctx.stroke();
+      }
+    });
+  }
+
+  /** Shared 3×2 box outline (bounding rect of the given cells), used by both
+   * 天地反轉 and 開拓之星 — `alpha`/`color`/dash configurable per caller. */
+  private drawAnimBox(cells: FieldCell[], color: string, dash: number[] = []) {
+    if (!cells.length) return;
+    const ctx = this.ctx;
+    const g = this.gap;
+    const rows = cells.map((c) => c.row);
+    const cols = cells.map((c) => c.col);
+    const r0 = Math.min(...rows);
+    const r1 = Math.max(...rows);
+    const c0 = Math.min(...cols);
+    const c1 = Math.max(...cols);
+    const [x0, y0] = this.xy(r0, c0);
+    const [x1, y1] = this.xy(r1, c1);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.setLineDash(dash);
+    ctx.strokeRect(x0 - g / 2 + 2, y0 - g / 2 + 2, x1 - x0 + g - 4, y1 - y0 + g - 4);
+    ctx.restore();
+  }
+
+  /** 天地反轉：3×2 box pulse + per-cell coin-flip disc (black⇄white shimmer). */
+  private drawBoxFlipAnim(a: Extract<SkillAnim, { kind: "reversal" }>, progress: number) {
+    const ctx = this.ctx;
+    const g = this.gap;
+    const pulse = Math.sin(Math.min(progress, 1) * Math.PI);
+    this.drawAnimBox(a.box, `rgba(255,211,77,${0.35 + 0.5 * pulse})`);
+    const flipScale = Math.max(0.06, Math.abs(Math.cos(Math.min(progress, 1) * Math.PI)));
+    const rad = g * 0.42;
+    a.flipCells.forEach((cell) => {
+      const [x, y] = this.xy(cell.row, cell.col);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(1, flipScale);
+      const grad = ctx.createLinearGradient(-rad, 0, rad, 0);
+      grad.addColorStop(0, "rgba(255,255,255,.95)");
+      grad.addColorStop(0.5, "rgba(255,225,150,.95)");
+      grad.addColorStop(1, "rgba(20,20,25,.95)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, 7);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  /** 開拓之星：3×2 box pulse (dashed, teal) + per-cell disperse burst. */
+  private drawBoxDisperseAnim(
+    a: Extract<SkillAnim, { kind: "pioneer" }>,
+    progress: number,
+    eased: number,
+  ) {
+    const ctx = this.ctx;
+    const g = this.gap;
+    const pulse = Math.sin(Math.min(progress, 1) * Math.PI);
+    this.drawAnimBox(a.box, `rgba(120,220,190,${0.4 + 0.4 * pulse})`, [6, 4]);
+    const alpha = Math.max(0, 1 - progress * 1.1);
+    a.clearCells.forEach((cell) => {
+      const [x, y] = this.xy(cell.row, cell.col);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = "rgba(150,240,210,.9)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, g * 0.42 * (1 + eased * 0.6), 0, 7);
+      ctx.stroke();
+      for (let k = 0; k < 4; k++) {
+        const ang = (Math.PI / 2) * k + Math.PI / 4;
+        const dist = g * 0.6 * eased;
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(150,240,210,.9)";
+        ctx.arc(x + Math.cos(ang) * dist, y + Math.sin(ang) * dist, g * 0.06, 0, 7);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+  }
+
+  /** 精準狙擊/散射：an arrow flies in from outside the board toward `target`
+   * (direction derived from the board centre so it always reads as "from off
+   * screen"), then a brief impact flash. `idx` (scatter's 2nd arrow) rotates
+   * the incoming angle so both shots read as visually distinct. */
+  private drawArrowAnim(target: FieldCell, progress: number, idx = 0) {
+    const ctx = this.ctx;
+    const g = this.gap;
+    const S = this.px;
+    const [tx, ty] = this.xy(target.row, target.col);
+    const cx = S / 2;
+    const cy = S / 2;
+    let vx = tx - cx || (idx === 1 ? 1 : -1);
+    let vy = ty - cy || -1;
+    const len = Math.hypot(vx, vy) || 1;
+    vx /= len;
+    vy /= len;
+    if (idx === 1) {
+      const rot = 0.6; // ~34°, so scatter's 2 arrows read as distinct
+      const nx = vx * Math.cos(rot) - vy * Math.sin(rot);
+      const ny = vx * Math.sin(rot) + vy * Math.cos(rot);
+      vx = nx;
+      vy = ny;
+    }
+    const dist = S * 0.9; // guaranteed outside the visible board
+    const sx = tx + vx * dist;
+    const sy = ty + vy * dist;
+    const flightEnd = 0.75;
+    if (progress < flightEnd) {
+      const t = progress / flightEnd;
+      const et = 1 - Math.pow(1 - t, 2);
+      const x = sx + (tx - sx) * et;
+      const y = sy + (ty - sy) * et;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.atan2(ty - sy, tx - sx));
+      ctx.fillStyle = "#ffd34d";
+      ctx.strokeStyle = "rgba(0,0,0,.4)";
+      ctx.beginPath();
+      ctx.moveTo(g * 0.5, 0);
+      ctx.lineTo(-g * 0.15, -g * 0.14);
+      ctx.lineTo(-g * 0.15, g * 0.14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,211,77,.8)";
+      ctx.lineWidth = g * 0.06;
+      ctx.beginPath();
+      ctx.moveTo(-g * 0.15, 0);
+      ctx.lineTo(-g * 0.9, 0);
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      const it = (progress - flightEnd) / (1 - flightEnd);
+      ctx.save();
+      ctx.globalAlpha = 1 - it;
+      ctx.strokeStyle = "#ffd34d";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(tx, ty, g * (0.3 + 0.9 * it), 0, 7);
       ctx.stroke();
       ctx.restore();
     }

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 
-export type ToastType = "info" | "error" | "success" | "skill";
+// "tide" (需求：場地事件警示 — 漲潮觸發用更醒目樣式) added alongside the
+// existing types; see globals.css .toast.tide for the styling.
+export type ToastType = "info" | "error" | "success" | "skill" | "tide";
 export interface ToastItem {
   id: number;
   msg: string;

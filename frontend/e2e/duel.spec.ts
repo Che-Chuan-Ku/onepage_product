@@ -99,6 +99,9 @@ test.describe("真劍勝負：火山場地與技能（需求 #36 #39 #42 #43）"
     await expect(page.getByText("已選方向 — 點擊棋盤空格作為錨點（3寬×2深）")).toBeVisible();
     // 錨點（空格）施放：大絕取代本回合落子（Q1）
     await clickBoard(page, 5, 5, 15);
+    // 機能性技能動畫（新增）：施放觸發 GomokuBoard 的一次性 canvas VFX
+    // （3×2 範圍框＋翻轉），canvas 像素不可直接斷言，改用 e2e hook 屬性驗證。
+    await expect(page.getByTestId("skill-anim")).toHaveAttribute("data-active", "true");
     await expect(page.getByText("第 1 手")).toBeVisible();
     await expect(page.getByText("輪到白方落子")).toBeVisible();
     await expect(page.getByText("1/3 已用")).toBeVisible();
@@ -130,6 +133,8 @@ test.describe("真劍勝負：沙灘場地（需求 #40 #41，Q6 Q7）", () => {
     await clickBoard(page, 10, 3, 16);
     await expect(page.getByText("已選第 1 子，請點第 2 個空格（間隔 ≥ 2）")).toBeVisible();
     await clickBoard(page, 10, 6, 16);
+    // 機能性技能動畫（新增）：散射兩箭同時飛向兩個落點的 canvas VFX 已觸發
+    await expect(page.getByTestId("skill-anim")).toHaveAttribute("data-active", "true");
     await expect(page.getByText("第 1 手")).toBeVisible();
     await expect(page.getByText("輪到白方落子")).toBeVisible();
   });

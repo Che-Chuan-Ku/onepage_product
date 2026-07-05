@@ -17,10 +17,11 @@ import type {
   GameStateResponse,
   MoveCreateRequest,
   SkillDirection,
+  SkillEvent,
   SkillType,
 } from "@/lib/types/schemas";
-import type { FieldCell, PlacedStone, RevealedCell, StoneColor } from "@/lib/game/GomokuBoard";
-import { isUltimate, ultimateRect, wavePushDirection, type OceanSide } from "@/lib/game/duel";
+import type { FieldCell, PlacedStone, RevealedCell, SkillAnim, StoneColor } from "@/lib/game/GomokuBoard";
+import { DIR_DELTA, isUltimate, ultimateRect, wavePushDirection, type OceanSide } from "@/lib/game/duel";
 import {
   applyDuelEvents,
   beachSideFor,
@@ -58,6 +59,139 @@ const DIR_LABEL: Record<SkillDirection, string> = { UP: "上", DOWN: "下", LEFT
 /** direction options per skill: 橫劈 UP/DOWN、縱劈 LEFT/RIGHT、大絕四向 */
 const skillDirs = (s: SkillType): SkillDirection[] =>
   s === "HORIZONTAL_SLASH" ? ["UP", "DOWN"] : s === "VERTICAL_SLASH" ? ["LEFT", "RIGHT"] : ["UP", "DOWN", "LEFT", "RIGHT"];
+
+// ── 真劍勝負 skill-cast VFX + field-event warnings (機能性技能動畫＋場地警示) ──
+
+type AnyEvent = Pick<SkillEvent, "eventType" | "row" | "col">;
+
+/**
+ * Build the caster-side SkillAnim spec (the local/MSW direct-apply path,
+ * exercised by e2e — see applyDuelState below). Uses the exact cast context
+ * (placed cells / chosen direction / ultimate anchor) the caster's own UI
+ * already knows, plus this settlement's skillEvents for the affected cells.
+ * Returns null when the skill produced nothing worth animating (e.g. an
+ * ultimate cast entirely on empty cells still gets its box, but a skill with
+ * no context at all — shouldn't happen — safely no-ops).
+ */
+function buildCasterSkillAnim(
+  skillType: SkillType,
+  ctx: {
+    events: AnyEvent[];
+    placed: Cell[];
+    slashDir: SkillDirection | null;
+    anchor: Cell | null;
+    ultimateDir: SkillDirection | null;
+    snipeTarget: Cell | null;
+    N: number;
+  },
+): SkillAnim | null {
+  switch (skillType) {
+    case "HORIZONTAL_SLASH":
+    case "VERTICAL_SLASH": {
+      if (!ctx.slashDir || !ctx.placed[0]) return null;
+      const waveIdx = ctx.events.findIndex((e) => e.eventType === "WAVE_SURGED");
+      const preWave = waveIdx === -1 ? ctx.events : ctx.events.slice(0, waveIdx);
+      const pushed = preWave.filter(
+        (e) => e.eventType === "STONE_PUSHED" || e.eventType === "STONE_REMOVED_OFF_BOARD",
+      );
+      const delta = DIR_DELTA[ctx.slashDir];
+      const cells = pushed
+        .filter((e) => e.row != null && e.col != null)
+        .map((e) => ({ row: e.row! + delta.dr, col: e.col! + delta.dc }));
+      if (!cells.length) return null;
+      return {
+        kind: "slash",
+        axis: skillType === "HORIZONTAL_SLASH" ? "row" : "col",
+        origin: { row: ctx.placed[0].row, col: ctx.placed[0].col },
+        cells,
+      };
+    }
+    case "HEAVEN_EARTH_REVERSAL": {
+      if (!ctx.anchor || !ctx.ultimateDir) return null;
+      const box = ultimateRect(ctx.anchor, ctx.ultimateDir, ctx.N);
+      const flipCells = ctx.events
+        .filter((e) => e.eventType === "COLORS_SWAPPED" && e.row != null && e.col != null)
+        .map((e) => ({ row: e.row!, col: e.col! }));
+      return { kind: "reversal", box, flipCells };
+    }
+    case "PIONEER_STAR": {
+      if (!ctx.anchor || !ctx.ultimateDir) return null;
+      const box = ultimateRect(ctx.anchor, ctx.ultimateDir, ctx.N);
+      const clearCells = ctx.events
+        .filter((e) => e.eventType === "STONES_CLEARED" && e.row != null && e.col != null)
+        .map((e) => ({ row: e.row!, col: e.col! }));
+      return { kind: "pioneer", box, clearCells };
+    }
+    case "PRECISION_SNIPE":
+      return ctx.snipeTarget ? { kind: "snipe", target: ctx.snipeTarget } : null;
+    case "SCATTER_SHOT":
+      return ctx.placed.length === 2
+        ? { kind: "scatter", targets: ctx.placed.map((c) => ({ row: c.row, col: c.col })) }
+        : null;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Best-effort broadcast-side SkillAnim (opponent/spectator via STOMP, real
+ * backend only — MSW never sends a duel broadcast, so this path has no e2e
+ * coverage). Reuses inferSkillCast's own event coordinates directly (no
+ * origin+delta arithmetic — applyDuelBroadcast's doc notes the real
+ * backend's STONE_PUSHED row/col is already the destination cell here).
+ * SCATTER_SHOT has no event signature (documented gap) and is skipped.
+ */
+function buildBroadcastSkillAnim(skill: SkillType, events: AnyEvent[], lastMove: Cell | null): SkillAnim | null {
+  switch (skill) {
+    case "HORIZONTAL_SLASH":
+    case "VERTICAL_SLASH": {
+      const waveIdx = events.findIndex((e) => e.eventType === "WAVE_SURGED");
+      const preWave = waveIdx === -1 ? events : events.slice(0, waveIdx);
+      const pushed = preWave
+        .filter((e) => e.eventType === "STONE_PUSHED" || e.eventType === "STONE_REMOVED_OFF_BOARD")
+        .filter((e) => e.row != null && e.col != null)
+        .map((e) => ({ row: e.row!, col: e.col! }));
+      if (!pushed.length || !lastMove) return null;
+      return {
+        kind: "slash",
+        axis: skill === "HORIZONTAL_SLASH" ? "row" : "col",
+        origin: lastMove,
+        cells: pushed,
+      };
+    }
+    case "HEAVEN_EARTH_REVERSAL": {
+      const cells = events
+        .filter((e) => e.eventType === "COLORS_SWAPPED" && e.row != null && e.col != null)
+        .map((e) => ({ row: e.row!, col: e.col! }));
+      return cells.length ? { kind: "reversal", box: cells, flipCells: cells } : null;
+    }
+    case "PIONEER_STAR": {
+      const cells = events
+        .filter((e) => e.eventType === "STONES_CLEARED" && e.row != null && e.col != null)
+        .map((e) => ({ row: e.row!, col: e.col! }));
+      return cells.length ? { kind: "pioneer", box: cells, clearCells: cells } : null;
+    }
+    case "PRECISION_SNIPE": {
+      const e = events.find((e) => e.eventType === "STONE_REPLACED" && e.row != null && e.col != null);
+      return e ? { kind: "snipe", target: { row: e.row!, col: e.col! } } : null;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * 場地事件警示（海浪結算 / 漲潮觸發 / 沙灘侵蝕）— non-blocking toasts, one per
+ * distinct event type present in this settlement (a single wave can carry
+ * more than one, e.g. WAVE_SURGED + SAND_ERODED together).
+ */
+function announceFieldEvents(events: AnyEvent[] | null | undefined) {
+  if (!events?.length) return;
+  const types = new Set(events.map((e) => e.eventType));
+  if (types.has("WAVE_SURGED")) toast("🌊 海浪來襲！", "info", 2500);
+  if (types.has("TIDE_TRIGGERED")) toast("🌊 漲潮了！", "tide", 3500);
+  if (types.has("SAND_ERODED")) toast("海洋侵蝕了一排沙灘！", "info", 2500);
+}
 
 /** Game board play — ports prototype/game (server-authoritative moves, win
  *  highlight, 4 result scenarios, reconnect, spectator read-only). */
@@ -445,12 +579,17 @@ export default function GamePage() {
       // the settlement's own skillEvents (see inferSkillCast doc; known gap:
       // SCATTER_SHOT has no event signature and won't be announced here).
       if (state.skillEvents?.length) {
-        const inferred = inferSkillCast(
-          state.skillEvents,
-          state.lastMove ? { row: state.lastMove.row, col: state.lastMove.col } : null,
-        );
-        if (inferred) announceSkillCast(actorColor, inferred);
+        const lastMoveCell = state.lastMove ? { row: state.lastMove.row, col: state.lastMove.col } : null;
+        const inferred = inferSkillCast(state.skillEvents, lastMoveCell);
+        if (inferred) {
+          announceSkillCast(actorColor, inferred);
+          // 機能性技能動畫（新增）：best-effort — see buildBroadcastSkillAnim doc.
+          const anim = buildBroadcastSkillAnim(inferred, state.skillEvents, lastMoveCell);
+          if (anim) boardRef.current?.playSkillAnim(anim);
+        }
       }
+      // 場地事件警示（新增，需求 #2）：海浪來襲/漲潮/侵蝕 — 每位觀眾（含觀戰者）都看得到。
+      announceFieldEvents(state.skillEvents);
       if (state.revealedHiddenCells?.length) {
         setRevealed((prev) => {
           const seen = new Set(prev.map((rc) => cellKey(rc.row, rc.col)));
@@ -484,7 +623,18 @@ export default function GamePage() {
   const applyDuelState = useCallback(
     (
       state: GameStateResponse,
-      ctx: { placed: Cell[]; actor: Color; slashDir: SkillDirection | null; skillType: SkillType | null },
+      ctx: {
+        placed: Cell[];
+        actor: Color;
+        slashDir: SkillDirection | null;
+        skillType: SkillType | null;
+        // 機能性技能動畫（新增）用的額外施放脈絡 — 大絕錨點/方向、精準狙擊目標、
+        // 場地大小；一般落子/劈砍技能不需要這三者，留 null 即可。
+        anchor: Cell | null;
+        ultimateDir: SkillDirection | null;
+        snipeTarget: Cell | null;
+        boardSize: number;
+      },
     ) => {
       setStones((prev) => {
         const map: StoneMap = {};
@@ -514,6 +664,23 @@ export default function GamePage() {
       // UI fix（對手施放技能提示）: the direct-apply path already knows the
       // exact skill (the caster's own UI selection) — no inference needed.
       if (ctx.skillType) announceSkillCast(ctx.actor, ctx.skillType);
+      // 機能性技能動畫（新增）：六技能各自的方向性 canvas 動畫，見
+      // buildCasterSkillAnim 文件；資料來源為本次結算的 skillEvents + 施放
+      // 當下的本地脈絡（方向/錨點/目標）。0.5–1s、不阻擋操作（純 canvas 疊繪）。
+      if (ctx.skillType) {
+        const anim = buildCasterSkillAnim(ctx.skillType, {
+          events: state.skillEvents ?? [],
+          placed: ctx.placed,
+          slashDir: ctx.slashDir,
+          anchor: ctx.anchor,
+          ultimateDir: ctx.ultimateDir,
+          snipeTarget: ctx.snipeTarget,
+          N: ctx.boardSize,
+        });
+        if (anim) boardRef.current?.playSkillAnim(anim);
+      }
+      // 場地事件警示（新增，需求 #2）：海浪來襲/漲潮/侵蝕。
+      announceFieldEvents(state.skillEvents);
       // 隱藏格揭露累積（觸發時 + 終局全揭露，需求 #44；依 key 去重）
       if (state.revealedHiddenCells?.length) {
         setRevealed((prev) => {
@@ -548,12 +715,18 @@ export default function GamePage() {
       let req: MoveCreateRequest;
       const placed: Cell[] = [];
       let slashDir: SkillDirection | null = null;
+      // 機能性技能動畫（新增）用的額外脈絡，只有對應技能會填值。
+      let anchor: Cell | null = null;
+      let ultimateDir: SkillDirection | null = null;
+      let snipeTarget: Cell | null = null;
       if (activeSkill && isUltimate(activeSkill)) {
         // 大絕：取代本回合落子；點擊格 = 錨點（必須空格，Q4 補充）
         if (!skillDir) {
           toast("請先選擇大絕方向", "error");
           return;
         }
+        anchor = { row: r, col: c };
+        ultimateDir = skillDir;
         req = {
           skill: {
             skillType: activeSkill as "HEAVEN_EARTH_REVERSAL" | "PIONEER_STAR",
@@ -567,6 +740,7 @@ export default function GamePage() {
           toast("精準狙擊須點擊一顆現存的敵方棋子", "error");
           return;
         }
+        snipeTarget = { row: r, col: c };
         req = { row: r, col: c, skill: { skillType: "PRECISION_SNIPE", target: { row: r, col: c } } };
       } else if (activeSkill === "SCATTER_SHOT") {
         if (!scatterFirst) {
@@ -600,7 +774,16 @@ export default function GamePage() {
         const state = await gameService.placeMove(gameId, req);
         // MSW 無 STOMP 廣播 → 直接套用回應；真後端 online 模式仍走廣播
         if (mode !== "online" || USE_MOCKS)
-          applyDuelState(state, { placed, actor, slashDir, skillType: activeSkill });
+          applyDuelState(state, {
+            placed,
+            actor,
+            slashDir,
+            skillType: activeSkill,
+            anchor,
+            ultimateDir,
+            snipeTarget,
+            boardSize: N,
+          });
         if (activeSkill) {
           const s = activeSkill;
           setUsedSkills((prev) => ({ ...prev, [actor]: [...prev[actor], s] }));

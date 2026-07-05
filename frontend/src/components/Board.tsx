@@ -8,6 +8,7 @@ import {
   type FlashType,
   type PlacedStone,
   type RevealedCell,
+  type SkillAnim,
 } from "@/lib/game/GomokuBoard";
 
 export interface BoardHandle {
@@ -16,6 +17,8 @@ export interface BoardHandle {
   hasCursor: boolean;
   /** One-shot skill flash on the given cells (auto-clears after ~750ms). */
   flashCells: (cells: FieldCell[], type: FlashType) => void;
+  /** One-shot skill-cast animation (direction-aware blade/box/arrow VFX). */
+  playSkillAnim: (anim: SkillAnim, duration?: number) => void;
 }
 
 interface BoardProps {
@@ -80,6 +83,10 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boardRef = useRef<GomokuBoard | null>(null);
   const [hasCursor, setHasCursor] = useState(false);
+  // e2e-testability hook (機能性技能動畫驗收)：true while a SkillAnim is
+  // playing on the canvas — canvas pixels aren't directly assertable, so this
+  // mirrors the play/idle state onto a DOM attribute tests can read.
+  const [skillAnimActive, setSkillAnimActive] = useState(false);
 
   // keep latest callbacks without re-instantiating the board
   const onPlaceRef = useRef(onPlace);
@@ -106,6 +113,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
       onHover: (r, c) => onHoverRef.current?.(r, c),
       onBlocked: (r, c) => onBlockedRef.current?.(r, c),
       isBlocked: (r, c) => isBlockedRef.current?.(r, c) ?? false,
+      onSkillAnimChange: (active) => setSkillAnimActive(active),
     });
     boardRef.current = b;
     // initial sync: when re-instantiating (size change) the sync effects
@@ -160,6 +168,8 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
       hasCursor,
       flashCells: (cells: FieldCell[], type: FlashType) =>
         boardRef.current?.flashCells(cells, type),
+      playSkillAnim: (anim: SkillAnim, duration?: number) =>
+        boardRef.current?.playSkillAnim(anim, duration),
     }),
     [hasCursor],
   );
@@ -167,6 +177,13 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
   return (
     <div className={`board-wrap${spectating ? " spectating" : ""}`}>
       <canvas className="board" ref={canvasRef} />
+      {/* e2e hook only — zero visual footprint; asserts a skill cast actually
+          triggered the canvas VFX (data-testid="skill-anim" 見驗收條件). */}
+      <span
+        data-testid="skill-anim"
+        data-active={String(skillAnimActive)}
+        style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}
+      />
     </div>
   );
 });
