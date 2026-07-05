@@ -328,6 +328,103 @@ public class SeriousFieldSteps {
         prepareBeach(BoardSide.NORTH, true, 7);
     }
 
+    // ----------------------------------------------------------------
+    // Regression repro: real 10-hand game, wave push amount (bug report)
+    // ----------------------------------------------------------------
+
+    /**
+     * 真實下滿 9 手（非 fixture）：seaSide 固定北側（列 &lt;8 為海洋），黑方
+     * (alice) 於欄 7 連續下 5 手（列 3,4,5,6,8，刻意留列 7 空著給第 10 手填），
+     * 白方 (bob) 於列 12 欄 0..3 下 4 手（沙灘、遠離欄 7，避免干擾）。
+     */
+    @Given("沙灘場地海在北側，雙方已自然下滿 9 手於海洋沙灘交界密集排列")
+    public void beachNaturalNineHandsNearBoundary() {
+        support.createSeriousGame("BEACH", "WARRIOR", "ARCHER");
+        support.clearFieldCells();
+        FieldState state = support.fieldState();
+        state.setSeaSide(BoardSide.NORTH);
+        support.saveFieldState(state);
+
+        int[][] aliceCol7Rows = {{3, 7}, {4, 7}, {5, 7}, {6, 7}, {8, 7}}; // hands 1,3,5,7,9
+        int[][] bobFillers = {{12, 0}, {12, 1}, {12, 2}, {12, 3}};        // hands 2,4,6,8
+        int a = 0;
+        int b = 0;
+        for (int hand = 1; hand <= 9; hand++) {
+            String user = support.currentTurnUser();
+            int[] pos = (hand % 2 == 1) ? aliceCol7Rows[a++] : bobFillers[b++];
+            support.placeAs(user, String.format("{\"row\":%d,\"col\":%d}", pos[0], pos[1]));
+            assertLastSuccess();
+        }
+        Assertions.assertThat(support.fieldState().getRoundCounter()).isEqualTo(9);
+    }
+
+    @When("第 10 手玩家於海洋格 \\({int},{int}\\) 落子")
+    public void tenthHandOnOcean(int row, int col) {
+        String user = support.currentTurnUser();
+        ctx.putMemo("hand10Color", user.equals("alice") ? StoneColor.BLACK : StoneColor.WHITE);
+        support.placeAs(user, String.format("{\"row\":%d,\"col\":%d}", row, col));
+        assertLastSuccess();
+    }
+
+    /**
+     * Verifies the just-placed (10th hand) stone landed exactly 1 cell toward
+     * the sand — NOT vacated-and-gone, since a chain member's original cell is
+     * legitimately refilled by the stone immediately behind it sliding in
+     * (e.g. col 7 chain rows 3..8: after the push, (7,7) is correctly occupied
+     * by the row-6 stone that slid in, while the just-placed stone itself is
+     * the one now sitting at (8,7)). The bug-report symptom under test is
+     * "jumped all the way to the board's last row" — assert that instead.
+     */
+    @Then("\\({int},{int}\\) 上剛落下的棋子最終落點為 \\({int},{int}\\)，而非棋盤最下方")
+    public void justPlacedStoneEndsAt(int origRow, int origCol, int expectedRow, int expectedCol) {
+        Assertions.assertThat(support.eventsOfType(FieldEventType.WAVE_SURGED)).isNotEmpty();
+        StoneColor hand10Color = (StoneColor) ctx.getMemo("hand10Color");
+        Assertions.assertThat(support.stoneColorAt(expectedRow, expectedCol))
+                .as("just-placed stone must land at (%d,%d) — pushed exactly 1 cell, not to the board bottom",
+                        expectedRow, expectedCol)
+                .isEqualTo(hand10Color);
+        // Explicitly guard against the reported symptom: it must NOT be sitting
+        // on the last row of the 16x16 beach board.
+        Assertions.assertThat(support.stoneColorAt(15, origCol))
+                .as("just-placed stone must not have jumped all the way to the bottom row")
+                .isNull();
+        // The topmost cell of the chain (3,7) has nothing behind it to slide
+        // in, so it alone must end up truly vacated.
+        Assertions.assertThat(support.stoneColorAt(3, origCol))
+                .as("chain's topmost original cell (3,%d) must be vacated (pushed away, nothing refills it)", origCol)
+                .isNull();
+    }
+
+    @And("交界處原有棋子 \\({int},{int}\\),\\({int},{int}\\),\\({int},{int}\\),\\({int},{int}\\),\\({int},{int}\\) 各自只被推 1 格")
+    public void boundaryStonesEachPushedByOne(int r1, int c1, int r2, int c2, int r3, int c3,
+                                              int r4, int c4, int r5, int c5) {
+        // All 5 pre-existing fixture stones on col 7 were placed by alice
+        // (BLACK); each must land exactly 1 cell down from where it stood
+        // (chain members are refilled by their upstream neighbour, so we only
+        // assert the destination color here — see justPlacedStoneEndsAt for
+        // the "topmost cell truly vacated" check).
+        int[][] originals = {{r1, c1}, {r2, c2}, {r3, c3}, {r4, c4}, {r5, c5}};
+        for (int[] cell : originals) {
+            Assertions.assertThat(support.stoneColorAt(cell[0] + 1, cell[1]))
+                    .as("stone originally at (%d,%d) must land exactly 1 cell down at (%d,%d)",
+                            cell[0], cell[1], cell[0] + 1, cell[1])
+                    .isEqualTo(StoneColor.BLACK);
+        }
+    }
+
+    @When("第 10 手玩家於孤立沙灘格 \\({int},{int}\\) 落子")
+    public void tenthHandOnIsolatedSand(int row, int col) {
+        support.placeAs(support.currentTurnUser(), String.format("{\"row\":%d,\"col\":%d}", row, col));
+        assertLastSuccess();
+    }
+
+    @Then("\\({int},{int}\\) 上剛落下的棋子維持原地，不被推擠")
+    public void justPlacedStoneStaysPut(int row, int col) {
+        Assertions.assertThat(support.stoneColorAt(row, col))
+                .as("isolated sand-cell stone must stay put (not part of any ocean chain)")
+                .isNotNull();
+    }
+
     @When("所有沙灘排皆已被侵蝕")
     public void allSandErodedAfterWave() {
         playOneHand(); // erodes the last sand line (7 → 8)
