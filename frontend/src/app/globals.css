@@ -189,6 +189,11 @@ canvas.board {
 }
 .toast.error { background: #3a1f19; border-color: var(--c-danger); color: #ffd0c6; }
 .toast.success { background: #1f3a1f; border-color: var(--c-success); color: #cdf0cd; }
+/* 真劍勝負 — opponent skill-cast banner (需求：對手施放技能提示) */
+.toast.skill {
+  background: linear-gradient(135deg, #4a1e28, #6b2a1a); border-color: #ff7a28; color: #ffd9a0;
+  font-size: 15px; box-shadow: 0 0 18px rgba(255, 122, 40, 0.45), var(--sh-card);
+}
 
 /* Modal / overlay */
 .overlay { position: fixed; inset: 0; background: rgba(10, 8, 6, 0.72); z-index: 90; display: flex; align-items: center; justify-content: center; padding: 18px; backdrop-filter: blur(3px); }

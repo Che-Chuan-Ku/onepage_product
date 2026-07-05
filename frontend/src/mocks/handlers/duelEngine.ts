@@ -509,6 +509,11 @@ export function duelGameReplay(g: DuelGame) {
     fieldType: g.fieldType,
     blackClass: g.blackClass,
     whiteClass: g.whiteClass,
+    // Same fixed ids as the room start-game broadcast (index.ts) — lets the
+    // game page's isSpectator/myColor fallback resolve identity under
+    // mode=online even for the pre-seeded demo fixtures (no real room flow).
+    blackPlayerId: "p-001",
+    whitePlayerId: "p-zhe",
     fieldEvents: g.fieldEvents,
     // Bug fix: now that fieldEvents' FIELD_GENERATED carries row=col=null
     // (matching the real backend), obstacle/ocean-side can no longer be

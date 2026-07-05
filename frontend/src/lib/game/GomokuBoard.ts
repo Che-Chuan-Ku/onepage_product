@@ -402,23 +402,46 @@ export class GomokuBoard {
       ctx.arc(x, y, g * 0.1, 0, 7);
       ctx.fill();
     });
-    // volcano obstacles — visibly unplayable rock cells
+    // volcano obstacles — visibly unplayable lava-cone cells (red/orange
+    // volcano style: hot-rock halo + gradient cone body + molten crater glow,
+    // deliberately warm-toned to contrast the board's amber wood grain).
     if (this.obstacles.size) {
       ctx.save();
-      ctx.font = `${Math.round(g * 0.55)}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
       this.obstacles.forEach((k) => {
         const [r, c] = k.split(",").map(Number);
         const [x, y] = this.xy(r, c);
-        ctx.fillStyle = "#3a2c22";
+        const R = g * 0.42;
+        // outer halo — hot rock radiating heat
+        const halo = ctx.createRadialGradient(x, y, 0, x, y, R * 1.7);
+        halo.addColorStop(0, "rgba(255,90,30,.35)");
+        halo.addColorStop(1, "rgba(255,90,30,0)");
+        ctx.fillStyle = halo;
         ctx.beginPath();
-        ctx.arc(x, y, g * 0.4, 0, 7);
+        ctx.arc(x, y, R * 1.7, 0, 7);
         ctx.fill();
-        ctx.strokeStyle = "#1f1712";
+        // cone body — dark maroon base rising to a bright ember peak
+        const body = ctx.createLinearGradient(x, y + R, x, y - R);
+        body.addColorStop(0, "#3a0e08");
+        body.addColorStop(0.55, "#8a2a10");
+        body.addColorStop(1, "#ff7a28");
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.moveTo(x, y - R);
+        ctx.lineTo(x + R * 0.85, y + R * 0.8);
+        ctx.quadraticCurveTo(x, y + R * 1.05, x - R * 0.85, y + R * 0.8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "#2a0805";
         ctx.lineWidth = 1.5;
         ctx.stroke();
-        ctx.fillText("🪨", x, y + 1);
+        // molten crater glow at the peak
+        const core = ctx.createRadialGradient(x, y - R * 0.55, 0, x, y - R * 0.55, R * 0.42);
+        core.addColorStop(0, "rgba(255,214,120,.95)");
+        core.addColorStop(1, "rgba(255,110,30,0)");
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(x, y - R * 0.55, R * 0.42, 0, 7);
+        ctx.fill();
       });
       ctx.restore();
     }
@@ -430,6 +453,17 @@ export class GomokuBoard {
       ctx.textBaseline = "middle";
       this.revealed.forEach(({ row, col, kind }) => {
         const [x, y] = this.xy(row, col);
+        // eruption reveal gets a brighter orange-red glow (coordinates with
+        // the volcano obstacle's lava-cone palette); tide reveal unchanged.
+        if (kind === "ERUPTION") {
+          const glow = ctx.createRadialGradient(x, y, 0, x, y, g * 0.62);
+          glow.addColorStop(0, "rgba(255,150,60,.6)");
+          glow.addColorStop(1, "rgba(255,90,20,0)");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(x, y, g * 0.62, 0, 7);
+          ctx.fill();
+        }
         ctx.setLineDash([3, 3]);
         ctx.lineWidth = 2;
         ctx.strokeStyle = kind === "ERUPTION" ? "#ff7a28" : "#5ac8f0";

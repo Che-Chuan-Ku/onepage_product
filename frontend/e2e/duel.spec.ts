@@ -171,3 +171,53 @@ test.describe("真劍勝負：結束揭露與回放（需求 #44 #45 #47）", ()
     await expect(page.getByText("25 / 25")).toBeVisible();
   });
 });
+
+test.describe("真劍勝負：對局頁 UI 改進（不洩漏對手技能 + 施放提示）", () => {
+  test("D9 online 模式：技能列鎖定己方職業，對手回合置灰但不消失（不顯示對手技能名稱）", async ({ page }) => {
+    // 直接把 session 種進 localStorage（zustand persist 格式），把自己釘死在
+    // duelEngine.ts duelGameReplay() 現在回傳的 blackPlayerId="p-001" —
+    // 讓 game 頁的 myColor 判斷（mode=online 分支）能解析出「我是黑方」。
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "gmk-session",
+        JSON.stringify({
+          state: { identity: "guest", nickname: "測試黑方", playerId: "p-001", token: null },
+          version: 0,
+        }),
+      );
+    });
+    await page.goto("/game/duel-volcano-demo?mode=online");
+    await expect(page.getByTestId("skill-bar")).toBeVisible();
+    // 黑方（我）= 劍士：技能列顯示自己的技能，白方（弓箭手）技能名稱完全不出現
+    await expect(page.getByRole("button", { name: /橫劈/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /精準狙擊/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /散射/ })).toHaveCount(0);
+    // 黑方落一手普通子（未用技能），輪到白方
+    await clickBoard(page, 2, 4, 15);
+    await expect(page.getByText("第 1 手")).toBeVisible();
+    await expect(page.getByText("輪到白方落子")).toBeVisible();
+    // 對手（白方）回合：技能列仍是「我方」（黑方）技能 — 置灰停用、不消失，
+    // 且依然看不到白方（對手）的任何技能名稱
+    await expect(page.getByTestId("skill-bar")).toBeVisible();
+    const horizontalSlash = page.getByRole("button", { name: /橫劈/ });
+    await expect(horizontalSlash).toBeVisible();
+    await expect(horizontalSlash).toBeDisabled();
+    await expect(page.getByRole("button", { name: /精準狙擊/ })).toHaveCount(0);
+    await expect(page.getByText("對方回合，暫時無法使用")).toBeVisible();
+  });
+
+  test("D10 本地對局：施放大絕時彈出「對方發動了」提示，約 3 秒後自動消失且不阻擋操作", async ({ page }) => {
+    await page.goto("/game/duel-volcano-demo?mode=local");
+    await expect(page.getByTestId("skill-bar")).toBeVisible();
+    await page.getByRole("button", { name: /天地反轉/ }).click();
+    await page.getByTestId("dir-pad").getByRole("button", { name: "右", exact: true }).click();
+    await clickBoard(page, 5, 5, 15);
+    // 施放後彈出提示：「對方發動了 天地反轉（大絕）！」
+    await expect(page.getByText(/對方發動了.*天地反轉/)).toBeVisible();
+    // 不阻擋操作：提示顯示的同時，落子/回合切換都已正常完成
+    await expect(page.getByText("第 1 手")).toBeVisible();
+    await expect(page.getByText("輪到白方落子")).toBeVisible();
+    // 自動消失（toast 預設 3 秒 ttl），給緩衝避免 flaky
+    await expect(page.getByText(/對方發動了.*天地反轉/)).toHaveCount(0, { timeout: 5000 });
+  });
+});

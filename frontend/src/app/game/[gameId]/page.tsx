@@ -27,6 +27,7 @@ import {
   cellKey,
   duelFieldMeta,
   duelSnapshots,
+  inferSkillCast,
   stonesFromMap,
   type StoneMap,
 } from "@/lib/game/duelClient";
@@ -86,6 +87,19 @@ export default function GamePage() {
       !!whitePlayerId &&
       myId !== blackPlayerId &&
       myId !== whitePlayerId);
+  // UI fix (對手回合不顯示對手技能): a player's own fixed color, resolvable
+  // only in online mode once the replay has echoed both ids — local/hotseat
+  // mode has no such fixed identity (both sides share this one client, and
+  // the skill bar intentionally keeps following `turn` there, see below).
+  // Unknown (ids not yet loaded) safely falls back to the pre-fix behavior.
+  const myColor: Color | null =
+    mode === "online" && myId && blackPlayerId && whitePlayerId
+      ? myId === blackPlayerId
+        ? "BLACK"
+        : myId === whitePlayerId
+          ? "WHITE"
+          : null
+      : null;
 
   const [stones, setStones] = useState<PlacedStone[]>([]);
   const [openingStones, setOpeningStones] = useState<PlacedStone[]>([]);
@@ -133,6 +147,14 @@ export default function GamePage() {
   // gameId/mode, so the closure would see the stale null from first render) —
   // mirror it into a ref that's always current.
   const duelRef = useRef<{ fieldType: FieldType; blackClass: ClassType; whiteClass: ClassType } | null>(null);
+  // UI fix (對手施放技能提示): mirrors of `turn`/`myColor` for use inside the
+  // STOMP broadcast callback (applyDuelBroadcast, same staleness concern as
+  // duelRef above) — turnRef captures who just acted (read BEFORE the
+  // broadcast's own setTurn call overwrites it) and myColorRef lets that
+  // callback suppress "opponent cast a skill" toasts about the viewer's own
+  // moves once a real online identity is known.
+  const turnRef = useRef<Color>("BLACK");
+  const myColorRef = useRef<Color | null>(null);
 
   // Bug fix: online p1Name/p2Name used to be hardcoded placeholder strings.
   // Real nicknames + correct black/white mapping are resolved below once the
@@ -147,6 +169,16 @@ export default function GamePage() {
   useEffect(() => {
     duelRef.current = duel;
   }, [duel]);
+  useEffect(() => {
+    myColorRef.current = myColor;
+  }, [myColor]);
+  // Synced after every render (i.e. reflects the CURRENT turn by the time the
+  // next broadcast arrives) — applyDuelBroadcast reads turnRef.current at
+  // its very top, before its own setTurn(state.currentTurn) call, so it sees
+  // who acted in THIS settlement, not the new turn the broadcast just set.
+  useEffect(() => {
+    turnRef.current = turn;
+  }, [turn]);
 
   useEffect(() => {
     // reset on (re)mount: React StrictMode's dev unmount/remount keeps the
@@ -362,6 +394,22 @@ export default function GamePage() {
   }, []);
 
   /**
+   * UI fix（對手施放技能提示）: non-blocking banner announcing a skill cast,
+   * auto-dismissing after ~3s (toast()'s default ttl). Suppressed only when
+   * the viewer's own fixed color is known (real online identity) and
+   * matches the actor — i.e. don't tell a player "the opponent" used a
+   * skill they themselves just used. In local/hotseat play (myColorRef.
+   * current is always null there — no fixed per-client identity) this
+   * always fires, which is exactly the desired behavior: control has just
+   * passed to the other side of the shared screen, so announcing what the
+   * previous mover did is the correct "opponent's move" framing for them.
+   */
+  function announceSkillCast(actorColor: Color, skill: SkillType) {
+    if (myColorRef.current && myColorRef.current === actorColor) return;
+    toast(`⚡ 對方發動了 ${SKILL_INFO[skill].name}！`, "skill", 3000);
+  }
+
+  /**
    * Serious Duel STOMP broadcast handler (bug fix). GameStateResponse.stones
    * is the backend's authoritative occupied-cell snapshot — trust it
    * directly instead of client-side replaying skillEvents, because the
@@ -378,6 +426,10 @@ export default function GamePage() {
    */
   const applyDuelBroadcast = useCallback(
     (state: GameStateResponse) => {
+      // Capture who just acted BEFORE setTurn(state.currentTurn) below
+      // overwrites turnRef's next value (via its mirroring effect) — see
+      // turnRef's own doc comment.
+      const actorColor = turnRef.current;
       if (state.stones) {
         setStones(state.stones.map((s) => ({ r: s.row, c: s.col, color: lc(s.color) })));
       } else {
@@ -388,6 +440,17 @@ export default function GamePage() {
       if (state.lastMove) setLastMove([state.lastMove.row, state.lastMove.col]);
       setMoveCount(state.moveCount);
       if (state.currentTurn) setTurn(state.currentTurn);
+      // UI fix（對手施放技能提示）: this viewer has no local knowledge of
+      // which skill the remote actor pressed — best-effort inference from
+      // the settlement's own skillEvents (see inferSkillCast doc; known gap:
+      // SCATTER_SHOT has no event signature and won't be announced here).
+      if (state.skillEvents?.length) {
+        const inferred = inferSkillCast(
+          state.skillEvents,
+          state.lastMove ? { row: state.lastMove.row, col: state.lastMove.col } : null,
+        );
+        if (inferred) announceSkillCast(actorColor, inferred);
+      }
       if (state.revealedHiddenCells?.length) {
         setRevealed((prev) => {
           const seen = new Set(prev.map((rc) => cellKey(rc.row, rc.col)));
@@ -421,7 +484,7 @@ export default function GamePage() {
   const applyDuelState = useCallback(
     (
       state: GameStateResponse,
-      ctx: { placed: Cell[]; actor: Color; slashDir: SkillDirection | null },
+      ctx: { placed: Cell[]; actor: Color; slashDir: SkillDirection | null; skillType: SkillType | null },
     ) => {
       setStones((prev) => {
         const map: StoneMap = {};
@@ -448,6 +511,9 @@ export default function GamePage() {
       if (state.lastMove) setLastMove([state.lastMove.row, state.lastMove.col]);
       setMoveCount(state.moveCount);
       if (state.currentTurn) setTurn(state.currentTurn);
+      // UI fix（對手施放技能提示）: the direct-apply path already knows the
+      // exact skill (the caster's own UI selection) — no inference needed.
+      if (ctx.skillType) announceSkillCast(ctx.actor, ctx.skillType);
       // 隱藏格揭露累積（觸發時 + 終局全揭露，需求 #44；依 key 去重）
       if (state.revealedHiddenCells?.length) {
         setRevealed((prev) => {
@@ -533,7 +599,8 @@ export default function GamePage() {
       try {
         const state = await gameService.placeMove(gameId, req);
         // MSW 無 STOMP 廣播 → 直接套用回應；真後端 online 模式仍走廣播
-        if (mode !== "online" || USE_MOCKS) applyDuelState(state, { placed, actor, slashDir });
+        if (mode !== "online" || USE_MOCKS)
+          applyDuelState(state, { placed, actor, slashDir, skillType: activeSkill });
         if (activeSkill) {
           const s = activeSkill;
           setUsedSkills((prev) => ({ ...prev, [actor]: [...prev[actor], s] }));
@@ -563,9 +630,18 @@ export default function GamePage() {
     }
   }
 
+  // UI fix（對手回合不顯示對手技能）: which color's skill list the bar shows.
+  // An online player locks to their own fixed color (never swaps to show
+  // the opponent's skills, whichever color's turn it is); local/hotseat
+  // mode has no per-client identity, so it keeps the pre-fix behavior of
+  // following `turn` (both sides share this one client either way).
+  const visibleSkillColor: Color = myColor ?? turn;
+  const notMyTurn = mode === "online" && myColor !== null && turn !== myColor;
+
   /** 技能列點擊：切換選取；同技能再點一次取消（需求 #36）。 */
   function onSkillClick(skill: SkillType) {
-    if (usedSkills[turn].includes(skill)) return;
+    if (notMyTurn) return;
+    if (usedSkills[visibleSkillColor].includes(skill)) return;
     if (activeSkill === skill) {
       clearSkillUi();
       return;
@@ -666,24 +742,33 @@ export default function GamePage() {
             }
           />
           {/* 真劍勝負技能列：附掛技能與大絕（需求 #36 #42 #43）。
-              本地示範/MSW 下由當前行動方操作；觀戰者唯讀。 */}
+              本地示範/MSW 下由當前行動方操作；觀戰者唯讀。
+              UI fix（對手回合不顯示對手技能）: the bar always shows
+              visibleSkillColor's own skill names/options only — an online
+              player's own class never swaps to the opponent's during their
+              turn (only their class badge is public, revealed at kickoff);
+              it's disabled (not hidden, no layout jump) while notMyTurn. */}
           {duel && !isSpectator && !result && (
             <div className="card pad mt-8" data-testid="skill-bar">
               <div className="row" style={{ marginBottom: 8 }}>
                 <b style={{ fontSize: 14 }}>
-                  技能（{turn === "BLACK" ? "黑方" : "白方"} · {classLabel(turn === "BLACK" ? duel.blackClass : duel.whiteClass)}）
+                  技能（{visibleSkillColor === "BLACK" ? "黑方" : "白方"} · {classLabel(visibleSkillColor === "BLACK" ? duel.blackClass : duel.whiteClass)}）
                 </b>
                 <span className="grow" />
-                <span className="dim" style={{ fontSize: 12 }}>每個技能一場限用一次</span>
+                {notMyTurn ? (
+                  <span className="dim" style={{ fontSize: 12 }}>對方回合，暫時無法使用</span>
+                ) : (
+                  <span className="dim" style={{ fontSize: 12 }}>每個技能一場限用一次</span>
+                )}
               </div>
               <div className="skill-bar">
-                {CLASS_SKILLS_UI[turn === "BLACK" ? duel.blackClass : duel.whiteClass].map((s) => {
-                  const used = usedSkills[turn].includes(s);
+                {CLASS_SKILLS_UI[visibleSkillColor === "BLACK" ? duel.blackClass : duel.whiteClass].map((s) => {
+                  const used = usedSkills[visibleSkillColor].includes(s);
                   return (
                     <button
                       key={s}
                       className={`skill-btn${activeSkill === s ? " active" : ""}${used ? " used" : ""}`}
-                      disabled={used}
+                      disabled={used || notMyTurn}
                       onClick={() => onSkillClick(s)}
                     >
                       {SKILL_INFO[s].ico} {SKILL_INFO[s].name}

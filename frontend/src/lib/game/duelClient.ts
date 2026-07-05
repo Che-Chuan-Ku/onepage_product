@@ -8,6 +8,7 @@ import type {
   GameReplayResponse,
   SkillDirection,
   SkillEvent,
+  SkillType,
 } from "@/lib/types/schemas";
 
 /**
@@ -123,6 +124,40 @@ export function applyDuelEvents(
   return (Object.keys(groups) as FlashGroup["type"][])
     .filter((t) => groups[t].length > 0)
     .map((t) => ({ type: t, cells: groups[t] }));
+}
+
+/**
+ * Best-effort inference of which skill an opponent just cast, from the
+ * settlement's skillEvents alone (+ the acted-on move's own cell, needed to
+ * disambiguate slash direction) — used by the STOMP broadcast path
+ * (applyDuelBroadcast), where the viewer has no local knowledge of which
+ * skill button the remote actor pressed (unlike the direct-apply path,
+ * which already knows the exact SkillType from the caster's own UI state).
+ *
+ * Most event types map 1:1 onto a skill. The exception is STONE_PUSHED /
+ * STONE_REMOVED_OFF_BOARD, shared between HORIZONTAL_SLASH and
+ * VERTICAL_SLASH (disambiguated via push direction relative to the move
+ * cell) and the periodic beach wave surge (excluded via the WAVE_SURGED
+ * marker — anything at/after it is a natural field event, not a skill).
+ *
+ * Known limitation: SCATTER_SHOT has no event signature at all (it only
+ * places two plain stones) and cannot be inferred this way — returns null.
+ */
+export function inferSkillCast(events: AnyEvent[], lastMove: Cell | null): SkillType | null {
+  if (events.some((e) => e.eventType === "COLORS_SWAPPED")) return "HEAVEN_EARTH_REVERSAL";
+  if (events.some((e) => e.eventType === "STONES_CLEARED")) return "PIONEER_STAR";
+  if (events.some((e) => e.eventType === "STONE_REPLACED")) return "PRECISION_SNIPE";
+  const waveIdx = events.findIndex((e) => e.eventType === "WAVE_SURGED");
+  const preWave = waveIdx === -1 ? events : events.slice(0, waveIdx);
+  const push = preWave.find(
+    (e) => e.eventType === "STONE_PUSHED" || e.eventType === "STONE_REMOVED_OFF_BOARD",
+  );
+  if (push && lastMove && push.row != null && push.col != null) {
+    const dir = inferSlashDir(lastMove, { row: push.row, col: push.col });
+    if (dir === "UP" || dir === "DOWN") return "HORIZONTAL_SLASH";
+    if (dir === "LEFT" || dir === "RIGHT") return "VERTICAL_SLASH";
+  }
+  return null;
 }
 
 export const stonesFromMap = (map: StoneMap) =>
