@@ -546,7 +546,22 @@ public class SeriousDuelService {
                 game.getWhiteClass() == null ? null : game.getWhiteClass().name(),
                 buildFieldStateView(s.fieldCells, s.fieldState),
                 buildRevealedHiddenCells(s.fieldCells, result != null),
-                eventViews);
+                eventViews,
+                buildStoneSnapshot(s.board));
+    }
+
+    /** Authoritative occupied-cell snapshot (bug fix: see GameStateResponse.stones doc). */
+    private List<GameStateResponse.StoneView> buildStoneSnapshot(SeriousBoard board) {
+        List<GameStateResponse.StoneView> stones = new ArrayList<>();
+        for (int r = 0; r < board.size(); r++) {
+            for (int c = 0; c < board.size(); c++) {
+                StoneColor color = board.stoneAt(r, c);
+                if (color != null) {
+                    stones.add(new GameStateResponse.StoneView(r, c, color.name()));
+                }
+            }
+        }
+        return stones;
     }
 
     // ────────────────────────── read-side views ───────────────────────────────
@@ -558,6 +573,8 @@ public class SeriousDuelService {
         FieldState fieldState = requireFieldState(game.getId());
         List<Move> moves = moveRepository.findByGameIdOrderByMoveNumberAsc(game.getId());
         Move last = moves.isEmpty() ? null : moves.get(moves.size() - 1);
+        int size = FieldGeometry.boardSize(game.getFieldType());
+        SeriousBoard board = rebuildBoard(game, size, fieldCells);
 
         return new GameStateResponse(
                 game.getId(),
@@ -572,7 +589,8 @@ public class SeriousDuelService {
                 revealClasses(game) && game.getWhiteClass() != null ? game.getWhiteClass().name() : null,
                 buildFieldStateView(fieldCells, fieldState),
                 buildRevealedHiddenCells(fieldCells, game.getStatus() == GameStatus.FINISHED),
-                List.of());
+                List.of(),
+                buildStoneSnapshot(board));
     }
 
     /** Full skill-usage history for replay/reconnect (R2-3: restore used-skill state). */

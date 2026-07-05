@@ -1101,6 +1101,16 @@ components:
               row: { type: integer, nullable: true }
               col: { type: integer, nullable: true }
               effectTriggered: { type: boolean, example: true, description: '特效觸發旗標，動畫實作留待 UI 設計階段（R2-1）' }
+        stones:
+          type: array
+          nullable: true
+          description: '權威全盤快照：所有佔據格的棋子位置。客戶端應以此為準渲染盤面；skillEvents 僅供特效觸發（需求 #45）。真劍勝負限定；NORMAL 對局傳送 null'
+          items:
+            type: object
+            properties:
+              row: { type: integer }
+              col: { type: integer }
+              color: { type: string, enum: [BLACK, WHITE] }
 
     OpeningStoneCreateRequest:
       type: object

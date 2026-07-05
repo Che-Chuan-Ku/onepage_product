@@ -371,6 +371,19 @@ export const GameStateResponse = z.object({
   revealedHiddenCells: z.array(RevealedHiddenCell).nullable().optional(),
   // Skill/field events produced by this settlement (需求 #37 #38 #45).
   skillEvents: z.array(SkillEvent).nullable().optional(),
+  // Additive (bug fix): authoritative occupied-cell snapshot for Serious
+  // Duel. The client-side event replay (duelClient.ts applyDuelEvents) turned
+  // out to disagree with the real backend's per-event row/col semantics —
+  // STONES_BURNED's row/col is the ERUPTION trigger cell (not the burned
+  // neighbors), STONE_PUSHED's is the push destination (not the origin the
+  // client assumed) — so skill/field effects never rendered on the real
+  // board for any viewer (actor, opponent, or spectator). skillEvents stay
+  // for FX triggers only; this snapshot is now the source of truth for
+  // stone positions. Null for NORMAL games (lastMove append is exact there).
+  stones: z
+    .array(z.object({ row: z.number().int(), col: z.number().int(), color: Color }))
+    .nullable()
+    .optional(),
 });
 export type GameStateResponse = z.infer<typeof GameStateResponse>;
 

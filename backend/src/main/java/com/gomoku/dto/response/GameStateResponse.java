@@ -24,7 +24,18 @@ public record GameStateResponse(
         String whiteClass,
         FieldStateView fieldState,
         List<HiddenCellView> revealedHiddenCells,
-        List<SkillEventView> skillEvents
+        List<SkillEventView> skillEvents,
+        // Additive (bug fix, req #45 real-backend rollout): the client-side
+        // event replay (frontend duelClient.ts) turned out to disagree with
+        // the actual per-event row/col semantics above — STONES_BURNED's
+        // row/col is the ERUPTION trigger cell (not the burned neighbors),
+        // STONE_PUSHED's is the push destination (not the origin the client
+        // assumed) — so push/burn/swap effects never rendered correctly for
+        // any viewer. skillEvents stay for FX triggers (flash/reveal cues);
+        // this authoritative full-board snapshot is now the source of truth
+        // for stone positions, no event math required. Null for NORMAL games
+        // (frontend derives their board from lastMove append, which is exact).
+        List<StoneView> stones
 ) {
     public record LastMove(String color, int row, int col) {
     }
@@ -51,10 +62,14 @@ public record GameStateResponse(
     public record SkillEventView(String eventType, Integer row, Integer col, boolean effectTriggered) {
     }
 
+    /** Authoritative occupied-cell snapshot (bug fix, see `stones` doc above). */
+    public record StoneView(int row, int col, String color) {
+    }
+
     /** Normal-mode constructor preserved for existing call sites. */
     public GameStateResponse(String gameId, String status, String currentTurn, int moveCount,
                              LastMove lastMove, String result, List<Cell> winningLine) {
         this(gameId, status, currentTurn, moveCount, lastMove, result, winningLine,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
     }
 }

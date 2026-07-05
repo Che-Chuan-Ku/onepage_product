@@ -77,6 +77,11 @@ export const roomService = {
 export const gameService = {
   startLocal: (body: LocalGameCreateRequest) =>
     api.post("/games", GameDetailResponse, body),
+  /** GET /games/{gameId} — authoritative current state incl. `stones` full-board
+   * snapshot (bug fix: used to rebuild the Serious Duel board without relying
+   * on the client-side event replay, which disagrees with the backend's
+   * per-event row/col semantics — see GameStateResponse.stones doc). */
+  getState: (gameId: string) => api.get(`/games/${gameId}`, GameStateResponse),
   tossCoin: (gameId: string) =>
     api.post(`/games/${gameId}/actions/coin-toss`, CoinTossResponse),
   placeMove: (gameId: string, body: MoveCreateRequest) =>

@@ -120,6 +120,19 @@ export default function GamePage() {
   const mountedRef = useRef(true);
   // 是否曾經成功連線過一次 —— 用來分辨「初次連線」與「斷線後重連成功」。
   const hasBeenOnlineRef = useRef(false);
+  // bug fix (real-backend duel effects): the STOMP GameStateUpdated payload only
+  // carries a single lastMove point + skill/field events without enough delta
+  // info to replay client-side (scatter shot's 2nd stone, push direction for a
+  // remote/spectator viewer, actor color for an ultimate anchor move with 0
+  // placements). Reusing the already-battle-tested replay-based rebuild (same
+  // one used on initial load/reconnect) instead of the plain lastMove-only
+  // applyState is the low-risk fix — every viewer (actor/opponent/spectator)
+  // ends up re-deriving the authoritative full board from GET /replay whenever
+  // a duel game's broadcast arrives. `duel` itself can't be read directly
+  // inside the STOMP subscribe callback below (effect only runs once per
+  // gameId/mode, so the closure would see the stale null from first render) —
+  // mirror it into a ref that's always current.
+  const duelRef = useRef<{ fieldType: FieldType; blackClass: ClassType; whiteClass: ClassType } | null>(null);
 
   // Bug fix: online p1Name/p2Name used to be hardcoded placeholder strings.
   // Real nicknames + correct black/white mapping are resolved below once the
@@ -130,6 +143,10 @@ export default function GamePage() {
   useEffect(() => {
     setTouchConfirm(typeof window !== "undefined" && window.matchMedia("(max-width:640px)").matches);
   }, []);
+
+  useEffect(() => {
+    duelRef.current = duel;
+  }, [duel]);
 
   useEffect(() => {
     // reset on (re)mount: React StrictMode's dev unmount/remount keeps the
@@ -155,7 +172,21 @@ export default function GamePage() {
     const client = new StompClient();
     client.onState = setConn;
     client.connect();
-    client.subscribe<GameStateResponse>(channels.game(gameId), (state) => applyState(state));
+    client.subscribe<GameStateResponse>(channels.game(gameId), (state) => {
+      // Serious Duel: the broadcast's lastMove/skillEvents alone aren't enough
+      // to replay client-side for every viewer — see applyDuelBroadcast below
+      // for why (backend's event row/col semantics don't match what the
+      // client-side event replay assumed).
+      // Also check the payload's own duel-only fields (not just duelRef) —
+      // avoids a race on the very first hand where this broadcast could
+      // arrive before the mount-time loadReplay() has populated duelRef.
+      const isDuel = !!(duelRef.current || state.blackClass || state.whiteClass || state.fieldState);
+      if (isDuel) {
+        applyDuelBroadcast(state);
+        return;
+      }
+      applyState(state);
+    });
     stompRef.current = client;
     return () => client.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,6 +274,22 @@ export default function GamePage() {
           setTideTriggered(lastStep.tideTriggered);
           setMoveCount(replay.moveCount);
           if (lastStep.move) setLastMove([lastStep.move.r, lastStep.move.c]);
+          // bug fix: duelSnapshots (and its shared applyDuelEvents helper)
+          // replay skillEvents client-side, but the real backend's per-event
+          // row/col semantics don't match what that replay assumes (see
+          // applyDuelBroadcast doc below) — so lastStep.stones can be wrong
+          // for any duel that used a push/burn/swap effect. Overwrite with
+          // the backend's own authoritative snapshot when reachable; keep
+          // the replay-derived value as a fallback if this call fails (e.g.
+          // offline/MSW without a GET /games/{id} fixture).
+          try {
+            const authoritative = await gameService.getState(gameId);
+            if (mountedRef.current && authoritative.stones) {
+              setStones(authoritative.stones.map((s) => ({ r: s.row, c: s.col, color: lc(s.color) })));
+            }
+          } catch (err) {
+            if (!(err instanceof ApiError)) console.error("loadReplay: getState fallback failed", err);
+          }
           // bug fix: moveCount parity is unreliable here — an ultimate cast places
           // 0 stones and scatter-shot places 2 in one hand, so "odd/even stones
           // placed" does not track "whose turn" once either skill has been used.
@@ -314,6 +361,55 @@ export default function GamePage() {
     }
   }, []);
 
+  /**
+   * Serious Duel STOMP broadcast handler (bug fix). GameStateResponse.stones
+   * is the backend's authoritative occupied-cell snapshot — trust it
+   * directly instead of client-side replaying skillEvents, because the
+   * event replay (duelClient.ts applyDuelEvents) assumes row/col semantics
+   * that don't match the real backend: STONES_BURNED's row/col is the
+   * ERUPTION trigger cell (not the burned neighbors, which is why the
+   * neighbors never disappeared), STONE_PUSHED's is the push destination
+   * (not the origin the client assumed a delta should be applied from).
+   * skillEvents/revealedHiddenCells are still used for reveal bookkeeping
+   * (their row/col IS unambiguous — the trigger cell's own coordinates).
+   * No flash-cell FX here (best-effort trade-off for a remote viewer who
+   * has no local skill-cast context); the board itself renders correctly,
+   * which is what bugs A/B/C were actually about.
+   */
+  const applyDuelBroadcast = useCallback(
+    (state: GameStateResponse) => {
+      if (state.stones) {
+        setStones(state.stones.map((s) => ({ r: s.row, c: s.col, color: lc(s.color) })));
+      } else {
+        // Defensive fallback (old backend / unexpected payload without the
+        // new field) — full rebuild via replay, same as reconnect.
+        loadReplay();
+      }
+      if (state.lastMove) setLastMove([state.lastMove.row, state.lastMove.col]);
+      setMoveCount(state.moveCount);
+      if (state.currentTurn) setTurn(state.currentTurn);
+      if (state.revealedHiddenCells?.length) {
+        setRevealed((prev) => {
+          const seen = new Set(prev.map((rc) => cellKey(rc.row, rc.col)));
+          const added = state.revealedHiddenCells!
+            .filter((rc) => !seen.has(cellKey(rc.row, rc.col)))
+            .map((rc) => ({ row: rc.row, col: rc.col, kind: rc.cellKind }));
+          return added.length ? [...prev, ...added] : prev;
+        });
+      }
+      if (state.fieldState) {
+        setErodedRows(state.fieldState.erodedRows);
+        setTideTriggered(state.fieldState.tideTriggered);
+      }
+      if (state.status === "FINISHED") {
+        setResult(state.result);
+        if (state.winningLine) setHighlight(state.winningLine.map((c) => [c.row, c.col]));
+        setTimeout(() => setShowResult(true), 900);
+      }
+    },
+    [loadReplay],
+  );
+
   function clearSkillUi() {
     setActiveSkill(null);
     setSkillDir(null);
@@ -331,13 +427,23 @@ export default function GamePage() {
         const map: StoneMap = {};
         prev.forEach((s) => (map[cellKey(s.r, s.c)] = s.color));
         for (const cell of ctx.placed) map[cellKey(cell.row, cell.col)] = lc(ctx.actor);
+        // Flash-cell FX are still derived from the local event replay (best
+        // effort; the actor has the direction/actor context this needs).
         const flashes = applyDuelEvents(map, state.skillEvents ?? [], {
           slashDir: ctx.slashDir,
           waveDir: oceanSide ? wavePushDirection(oceanSide) : null,
           actor: lc(ctx.actor),
         });
         for (const f of flashes) boardRef.current?.flashCells(f.cells, f.type);
-        return stonesFromMap(map);
+        // bug fix: the resulting stone POSITIONS come from the backend's
+        // authoritative `stones` snapshot when present, not from the above
+        // replay — the event replay's row/col assumptions don't match the
+        // real backend for STONES_BURNED/STONE_PUSHED (see applyDuelBroadcast
+        // doc). Fall back to the replayed map for older payloads without it
+        // (e.g. MSW fixtures in duel.spec.ts).
+        return state.stones
+          ? state.stones.map((s) => ({ r: s.row, c: s.col, color: lc(s.color) }))
+          : stonesFromMap(map);
       });
       if (state.lastMove) setLastMove([state.lastMove.row, state.lastMove.col]);
       setMoveCount(state.moveCount);
