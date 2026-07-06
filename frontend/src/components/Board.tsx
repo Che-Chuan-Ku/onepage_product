@@ -8,6 +8,7 @@ import {
   type FlashType,
   type PlacedStone,
   type RevealedCell,
+  type ScatterGuide,
   type SkillAnim,
 } from "@/lib/game/GomokuBoard";
 
@@ -40,6 +41,8 @@ interface BoardProps {
   revealedCells?: RevealedCell[];
   /** Ultimate-skill 3x2 preview frame; null/omit clears it. */
   previewCells?: FieldCell[] | null;
+  /** SCATTER_SHOT placement guide (numbered previews + forbidden-zone hatch). */
+  scatterGuide?: ScatterGuide | null;
   /** Allow taps on occupied cells (PRECISION_SNIPE targets an enemy stone). */
   allowOccupied?: boolean;
   onPlace?: (r: number, c: number) => void;
@@ -71,6 +74,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
     beach = null,
     revealedCells,
     previewCells = null,
+    scatterGuide = null,
     allowOccupied = false,
     onPlace,
     onCursorChange,
@@ -123,6 +127,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
     if (beach) b.setBeach(beach.side, beach.erodedRows);
     if (revealedCells?.length) b.setRevealedCells(revealedCells);
     if (previewCells?.length) b.setPreviewCells(previewCells);
+    if (scatterGuide) b.setScatterGuide(scatterGuide);
     return () => b.destroy();
     // re-instantiate only when the board size changes; other options are
     // synced via the effects below without rebuilding the canvas board
@@ -159,6 +164,9 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
   useEffect(() => {
     boardRef.current?.setPreviewCells(previewCells ?? null);
   }, [previewCells]);
+  useEffect(() => {
+    boardRef.current?.setScatterGuide(scatterGuide ?? null);
+  }, [scatterGuide]);
 
   useImperativeHandle(
     ref,

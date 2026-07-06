@@ -145,6 +145,28 @@ a { color: var(--c-accent); text-decoration: none; }
 .dir-pad { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .dir-pad .btn { min-width: 64px; }
 
+/* 真劍勝負 — 技能說明：桌機 hover tooltip／行動版 ⓘ 點開（需求） */
+.skill-item { position: relative; flex: 1; min-width: 96px; display: flex; }
+.skill-item .skill-btn { flex: 1; width: 100%; }
+.skill-info-btn {
+  position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4); color: var(--c-text); font-size: 11px; line-height: 16px; text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.25); cursor: pointer; padding: 0; z-index: 2;
+}
+.skill-info-btn:hover { background: rgba(0, 0, 0, 0.6); }
+.skill-tooltip {
+  position: absolute; z-index: 30; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%);
+  width: 230px; max-width: 72vw; background: #14110d; border: 1px solid var(--c-border); border-radius: var(--r-sm);
+  padding: 10px 12px; font-size: 12px; line-height: 1.55; color: var(--c-text); box-shadow: var(--sh-card);
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.15s ease;
+}
+.skill-tooltip.open { opacity: 1; visibility: visible; }
+/* Desktop-only hover trigger — touch devices rely solely on the ⓘ tap toggle
+   (no real :hover there), so the tooltip never gets stuck open after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .skill-item:hover .skill-tooltip { opacity: 1; visibility: visible; }
+}
+
 /* 真劍勝負 — class reveal banner (開局揭曉, 需求 #35) */
 .duel-reveal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; gap: 18px; background: rgba(10, 10, 14, 0.72); z-index: 60; }
 .reveal-card { perspective: 700px; width: 150px; height: 110px; }

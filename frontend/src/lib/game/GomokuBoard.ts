@@ -32,25 +32,53 @@ export interface RevealedCell extends FieldCell {
 /** One-shot flash effect flavor (skill feedback). */
 export type FlashType = "burn" | "tide" | "wave" | "slash";
 
+/** A pushed stone's slide (橫劈/縱劈 impact): origin → destination + its color,
+ * so the blade-sweep anim can tween the stone across the board instead of it
+ * teleporting to the destination the instant server state lands. */
+export interface SlideMove {
+  from: FieldCell;
+  to: FieldCell;
+  color: StoneColor;
+}
+
 /**
- * 真劍勝負技能施放動畫（機能性，辨識度優先於華麗）— distinct from the
- * simpler radial `flashCells` above (which stays for the plain per-cell
- * burn/tide/wave/slash glow). One `SkillAnim` = one skill cast; auto-clears
- * after `duration` ms (0.5–1s per spec) and never touches pointer/keyboard
- * handling — it is a purely additive, temporary draw pass appended at the
- * end of `draw()`.
- *  - slash: direction-aware sweeping blade across the pushed cells (橫劈/縱劈).
- *  - reversal: 3×2 box highlight + per-cell coin-flip disc (天地反轉).
- *  - pioneer: 3×2 box highlight + per-cell disperse burst (開拓之星).
+ * 真劍勝負技能施放動畫（機能性＋高辨識度）— distinct from the simpler radial
+ * `flashCells` above (which stays for the plain per-cell burn/tide/wave/slash
+ * glow). One `SkillAnim` = one skill cast; auto-clears after `duration` ms
+ * (0.5–1s for slash/snipe/scatter, up to 1.5s for the two "大絕" ultimates)
+ * and never touches pointer/keyboard handling — it is a purely additive,
+ * temporary draw pass appended at the end of `draw()`.
+ *  - slash: a blade sweeps along the push axis through the pushed cells,
+ *    trailing motion-blur afterimages; if `moves` is supplied the pushed
+ *    stones themselves are drawn tweening from origin to destination (with a
+ *    brief post-impact shake) instead of the normal stone layer, which is
+ *    suppressed for those destination cells while the anim is live (橫劈/縱劈).
+ *  - reversal: full-board dim-out except the 3×2 box, a rotating yin-yang
+ *    glow, box pulse + per-cell coin-flip disc (天地反轉，大絕).
+ *  - pioneer: full-board dim-out except the 3×2 box, gold pulse → converging
+ *    starlight streaks → starburst flash → disperse particles (開拓之星，大絕).
  *  - snipe/scatter: arrow(s) flying in from outside the board + impact flash
  *    (精準狙擊／散射).
  */
 export type SkillAnim =
-  | { kind: "slash"; axis: "row" | "col"; origin: FieldCell; cells: FieldCell[] }
+  | { kind: "slash"; axis: "row" | "col"; origin: FieldCell; cells: FieldCell[]; moves?: SlideMove[] }
   | { kind: "reversal"; box: FieldCell[]; flipCells: FieldCell[] }
   | { kind: "pioneer"; box: FieldCell[]; clearCells: FieldCell[] }
   | { kind: "snipe"; target: FieldCell }
   | { kind: "scatter"; targets: FieldCell[] };
+
+/** One 散射 (SCATTER_SHOT) preview point — the numbered "1"/"2" ghost stone
+ * shown while the caster is picking their two landing cells. */
+export interface ScatterPreviewPoint extends FieldCell {
+  n: 1 | 2;
+}
+/** 散射 placement guide: numbered previews for the picked point(s) + the
+ * forbidden (Chebyshev < 2) zone around the first pick, rendered as a red
+ * diagonal-hatch mask. Both arrays are empty/omitted once the flow resets. */
+export interface ScatterGuide {
+  points: ScatterPreviewPoint[];
+  forbidden: FieldCell[];
+}
 
 export interface BoardOptions {
   interactive?: boolean;
@@ -121,6 +149,7 @@ export class GomokuBoard {
   private beach: BeachState | null = null;
   private revealed: RevealedCell[] = [];
   private previewCells: FieldCell[] = [];
+  private scatterGuide: ScatterGuide | null = null;
   private fx: { r: number; c: number; type: FlashType; until: number }[] = [];
   private fxLoopRunning = false;
   private lastHover: [number, number] | null = null;
@@ -345,6 +374,13 @@ export class GomokuBoard {
     this.draw();
   }
 
+  /** 散射 (SCATTER_SHOT) placement guide — numbered previews + forbidden-zone
+   * hatch mask (see `ScatterGuide` doc); null/empty clears it. */
+  setScatterGuide(guide: ScatterGuide | null) {
+    this.scatterGuide = guide && (guide.points.length || guide.forbidden.length) ? guide : null;
+    this.draw();
+  }
+
   /**
    * One-shot flash on the given cells; auto-clears after ~750ms and redraws.
    * burn=orange-red, tide=blue, wave=teal, slash=white/silver.
@@ -409,6 +445,95 @@ export class GomokuBoard {
   }
   private xy(r: number, c: number): [number, number] {
     return [this.pad + c * this.gap, this.pad + r * this.gap];
+  }
+  /** Single-axis grid-unit → px (both `xy`'s row and col legs use this same
+   * linear scale — handy for skill-anim math that mixes row/col by axis). */
+  private toPx(v: number): number {
+    return this.pad + v * this.gap;
+  }
+  /** One stone disc (shared by the normal stone layer and the slash-anim
+   * mid-slide tween below — same visuals, single source of truth). */
+  private drawStoneAt(x: number, y: number, color: StoneColor, rad: number) {
+    const ctx = this.ctx;
+    const grad = ctx.createRadialGradient(x - rad * 0.35, y - rad * 0.4, rad * 0.1, x, y, rad);
+    if (color === "black") {
+      grad.addColorStop(0, "#5a5a62");
+      grad.addColorStop(1, "#0d0d10");
+    } else {
+      grad.addColorStop(0, "#ffffff");
+      grad.addColorStop(1, "#cfc8ba");
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, rad, 0, 7);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.35)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  /** Destination cell keys ("r,c") of any live slash anim's `moves` — these
+   * are drawn mid-slide by drawSlashAnim instead of at rest here. */
+  private slideSuppressedCells(): Set<string> {
+    const out = new Set<string>();
+    for (const a of this.skillAnims) {
+      if (a.kind === "slash" && a.moves?.length) {
+        for (const m of a.moves) out.add(`${m.to.row},${m.to.col}`);
+      }
+    }
+    return out;
+  }
+  /** 散射 (SCATTER_SHOT) placement guide rendering (see `ScatterGuide` doc). */
+  private drawScatterGuide(guide: ScatterGuide) {
+    const ctx = this.ctx;
+    const g = this.gap;
+    const half = g / 2 - 2;
+    if (guide.forbidden.length) {
+      ctx.save();
+      guide.forbidden.forEach(({ row, col }) => {
+        const [x, y] = this.xy(row, col);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x - half, y - half, half * 2, half * 2);
+        ctx.clip();
+        ctx.fillStyle = "rgba(224,60,50,.22)";
+        ctx.fillRect(x - half, y - half, half * 2, half * 2);
+        ctx.strokeStyle = "rgba(224,60,50,.85)";
+        ctx.lineWidth = 2;
+        const size = half * 2;
+        for (let o = -size; o <= size; o += 6) {
+          ctx.beginPath();
+          ctx.moveTo(x - half + o, y - half);
+          ctx.lineTo(x - half + o + size, y + half);
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+      ctx.restore();
+    }
+    const rad = g * 0.42;
+    guide.points.forEach(({ row, col, n }) => {
+      const [x, y] = this.xy(row, col);
+      ctx.save();
+      ctx.globalAlpha = 0.78;
+      const grad = ctx.createRadialGradient(x - rad * 0.35, y - rad * 0.4, rad * 0.1, x, y, rad);
+      grad.addColorStop(0, "#ffe9b8");
+      grad.addColorStop(1, "#e0a458");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, rad, 0, 7);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,.55)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = "#2a1d0c";
+      ctx.font = `bold ${Math.round(g * 0.42)}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(n), x, y + 1);
+      ctx.restore();
+    });
   }
   private hit(e: PointerEvent): [number, number] | null {
     const rect = this.cv.getBoundingClientRect();
@@ -576,27 +701,20 @@ export class GomokuBoard {
       });
       ctx.restore();
     }
-    // stones
+    // 散射 (SCATTER_SHOT) placement guide — forbidden-zone red hatch + numbered
+    // "1"/"2" ghost-stone previews for the caster's picked cells.
+    if (this.scatterGuide) this.drawScatterGuide(this.scatterGuide);
+    // stones — cells currently mid-slide (橫劈/縱劈 impact tween, see
+    // drawSlashAnim) are suppressed here and drawn by drawSkillAnims instead,
+    // so the pushed stone doesn't appear at rest at its destination before
+    // the blade actually arrives.
     const rad = g * 0.42;
+    const slideSuppressed = this.slideSuppressedCells();
     for (const k in this.stones) {
+      if (slideSuppressed.has(k)) continue;
       const [r, c] = k.split(",").map(Number);
       const [x, y] = this.xy(r, c);
-      const col = this.stones[k];
-      const grad = ctx.createRadialGradient(x - rad * 0.35, y - rad * 0.4, rad * 0.1, x, y, rad);
-      if (col === "black") {
-        grad.addColorStop(0, "#5a5a62");
-        grad.addColorStop(1, "#0d0d10");
-      } else {
-        grad.addColorStop(0, "#ffffff");
-        grad.addColorStop(1, "#cfc8ba");
-      }
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(x, y, rad, 0, 7);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(0,0,0,.35)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      this.drawStoneAt(x, y, this.stones[k], rad);
       if (this.opening.has(k)) {
         ctx.strokeStyle = "rgba(224,164,88,.9)";
         ctx.lineWidth = 2;
@@ -693,8 +811,11 @@ export class GomokuBoard {
     }
   }
 
-  /** 橫劈/縱劈：a horizontal (or vertical) light blade sweeps along the push
-   * axis through the pushed cells, plus a brief burst as it passes each one. */
+  /** 橫劈/縱劈：a blade-shaped bar (bright white core, dark outline, pointed
+   * leading edge) sweeps along the push axis, trailing motion-blur afterimage
+   * bands; if `moves` is present the pushed stones tween from origin to
+   * destination as the blade reaches them (with a brief post-impact shake)
+   * instead of appearing already-arrived (see `slideSuppressedCells`). */
   private drawSlashAnim(
     a: Extract<SkillAnim, { kind: "slash" }>,
     progress: number,
@@ -703,35 +824,97 @@ export class GomokuBoard {
     const ctx = this.ctx;
     const g = this.gap;
     const originVal = a.axis === "row" ? a.origin.row : a.origin.col;
-    const perpVal = a.axis === "row" ? a.origin.col : a.origin.row;
+    const originPerp = a.axis === "row" ? a.origin.col : a.origin.row;
+    const perpVals = a.cells.length ? a.cells.map((c) => (a.axis === "row" ? c.col : c.row)) : [originPerp];
+    const perpMin = Math.min(originPerp, ...perpVals);
+    const perpMax = Math.max(originPerp, ...perpVals);
     const travelVals = a.cells.map((c) => (a.axis === "row" ? c.row : c.col));
     const farVal = travelVals.length ? travelVals[travelVals.length - 1] : originVal;
     const dirSign = Math.sign(farVal - originVal) || 1;
     const endVal = farVal + dirSign * 0.5; // slight follow-through past the last cell
     const span = endVal - originVal || 1;
     const curVal = originVal + span * eased;
-    const toXY = (v: number): [number, number] =>
-      a.axis === "row" ? this.xy(v, perpVal) : this.xy(perpVal, v);
 
-    // fading trail behind the blade head
-    const steps = 5;
+    const perpA = this.toPx(perpMin - 0.5);
+    const perpB = this.toPx(perpMax + 0.5);
+    const thick = g * 0.46;
+
+    // blade band: a rectangle across the pushed width + a pointed tip at the
+    // leading (travel-direction) edge — reads as a cleaver/blade silhouette.
+    const drawBand = (travelPx: number, alpha: number, tipLen: number) => {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const front = travelPx + (thick / 2) * dirSign;
+      const back = travelPx - (thick / 2) * dirSign;
+      const midPerp = (perpA + perpB) / 2;
+      const tip = front + tipLen * dirSign;
+      ctx.beginPath();
+      if (a.axis === "row") {
+        ctx.moveTo(perpA, back);
+        ctx.lineTo(perpB, back);
+        ctx.lineTo(perpB, front);
+        ctx.lineTo(midPerp, tip);
+        ctx.lineTo(perpA, front);
+      } else {
+        ctx.moveTo(back, perpA);
+        ctx.lineTo(back, perpB);
+        ctx.lineTo(front, perpB);
+        ctx.lineTo(tip, midPerp);
+        ctx.lineTo(front, perpA);
+      }
+      ctx.closePath();
+      const grad =
+        a.axis === "row" ? ctx.createLinearGradient(0, back, 0, tip) : ctx.createLinearGradient(back, 0, tip, 0);
+      grad.addColorStop(0, "rgba(255,255,255,.1)");
+      grad.addColorStop(0.55, "rgba(250,250,255,.95)");
+      grad.addColorStop(1, "rgba(255,255,255,1)");
+      ctx.fillStyle = grad;
+      ctx.shadowColor = "rgba(255,255,255,.95)";
+      ctx.shadowBlur = 13;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(10,10,14,.88)"; // dark outline — contrast per spec
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    // fading motion-blur afterimage bands trailing the blade head
+    const steps = 4;
     for (let i = steps; i >= 1; i--) {
-      const v = curVal - dirSign * (i / steps) * g * 0.9;
-      const [x, y] = toXY(v);
-      const alpha = (1 - i / steps) * 0.45;
-      ctx.fillStyle = `rgba(235,235,245,${alpha})`;
-      if (a.axis === "row") ctx.fillRect(x - g * 0.6, y - g * 0.05, g * 1.2, g * 0.1);
-      else ctx.fillRect(x - g * 0.05, y - g * 0.6, g * 0.1, g * 1.2);
+      const v = curVal - dirSign * (i / steps) * g * 0.85;
+      drawBand(this.toPx(v), (1 - i / steps) * 0.4, 0);
     }
-    // bright blade head
-    const [hx, hy] = toXY(curVal);
-    ctx.save();
-    ctx.shadowColor = "rgba(255,255,255,.9)";
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = "rgba(245,245,255,.95)";
-    if (a.axis === "row") ctx.fillRect(hx - g * 0.68, hy - g * 0.09, g * 1.36, g * 0.18);
-    else ctx.fillRect(hx - g * 0.09, hy - g * 0.68, g * 0.18, g * 1.36);
-    ctx.restore();
+    // bright blade head with pointed tip
+    drawBand(this.toPx(curVal), 0.97, g * 0.42);
+
+    // pushed-stone slide tween + impact shake (only when moves data present)
+    const rad = g * 0.42;
+    a.moves?.forEach((m) => {
+      const destTravel = a.axis === "row" ? m.to.row : m.to.col;
+      const threshold = (destTravel - originVal) / span;
+      const transitWin = 0.22;
+      const local = progress - threshold;
+      let travelPos: number;
+      let shake = 0;
+      if (local < 0) {
+        travelPos = a.axis === "row" ? m.from.row : m.from.col;
+      } else if (local < transitWin) {
+        const t = local / transitWin;
+        const et = 1 - Math.pow(1 - t, 2); // ease-out slide
+        const fromV = a.axis === "row" ? m.from.row : m.from.col;
+        travelPos = fromV + (destTravel - fromV) * et;
+      } else {
+        travelPos = destTravel;
+        const shakeT = Math.min(1, (local - transitWin) / 0.28);
+        shake = Math.sin(shakeT * Math.PI * 3) * (1 - shakeT) * g * 0.09; // decaying wobble
+      }
+      const perpV = a.axis === "row" ? m.from.col : m.from.row;
+      const [bx, by] = a.axis === "row" ? this.xy(travelPos, perpV) : this.xy(perpV, travelPos);
+      const [sx, sy] = a.axis === "row" ? [bx, by + shake] : [bx + shake, by];
+      this.drawStoneAt(sx, sy, m.color, rad);
+    });
+
     // burst on each pushed cell as the blade passes it
     a.cells.forEach((cell) => {
       const cv = a.axis === "row" ? cell.row : cell.col;
@@ -772,12 +955,96 @@ export class GomokuBoard {
     ctx.restore();
   }
 
-  /** 天地反轉：3×2 box pulse + per-cell coin-flip disc (black⇄white shimmer). */
+  /** Pixel bounding box of a 3×2 anim box (shared by the dim-overlay punch-out
+   * and the yin-yang glow below — both need the same rect). */
+  private animBoxPxRect(cells: FieldCell[]): { x0: number; y0: number; w: number; h: number; cx: number; cy: number } {
+    const g = this.gap;
+    const rows = cells.map((c) => c.row);
+    const cols = cells.map((c) => c.col);
+    const r0 = Math.min(...rows);
+    const r1 = Math.max(...rows);
+    const c0 = Math.min(...cols);
+    const c1 = Math.max(...cols);
+    const [x0, y0] = this.xy(r0, c0);
+    const [x1, y1] = this.xy(r1, c1);
+    const bx = x0 - g / 2 + 2;
+    const by = y0 - g / 2 + 2;
+    const bw = x1 - x0 + g - 4;
+    const bh = y1 - y0 + g - 4;
+    return { x0: bx, y0: by, w: bw, h: bh, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
+  }
+
+  /** Fade envelope for the ultimate "大絕" full-board dim: ramps up over
+   * `inD`, holds at `peak`, ramps back down over the last `outD`. */
+  private dimEnvelope(p: number, inD = 0.15, outD = 0.2, peak = 0.68): number {
+    const c = Math.max(0, Math.min(1, p));
+    if (c < inD) return peak * (c / inD);
+    if (c > 1 - outD) return peak * ((1 - c) / outD);
+    return peak;
+  }
+
+  /** Full-board dark overlay with a rectangular hole over `box` (evenodd
+   * clip trick) — the "全棋盤短暫變暗、範圍高亮突出" backdrop shared by both
+   * ultimates (天地反轉／開拓之星). */
+  private drawDimOverlayExceptBox(cells: FieldCell[], alpha: number) {
+    if (alpha <= 0 || !cells.length || !this.px) return;
+    const ctx = this.ctx;
+    const { x0, y0, w, h } = this.animBoxPxRect(cells);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, this.px, this.px);
+    ctx.rect(x0, y0, w, h);
+    ctx.clip("evenodd");
+    ctx.fillStyle = `rgba(4,4,8,${alpha})`;
+    ctx.fillRect(0, 0, this.px, this.px);
+    ctx.restore();
+  }
+
+  /** Rotating two-tone (yin-yang) ambient glow centred on the box — the
+   * "陰陽/太極旋轉光效" called for by 天地反轉. */
+  private drawYinYangGlow(cells: FieldCell[], progress: number) {
+    const ctx = this.ctx;
+    const g = this.gap;
+    const { w, h, cx, cy } = this.animBoxPxRect(cells);
+    const R = Math.max(w, h) / 2 + g * 0.9;
+    const angle = progress * Math.PI * 4; // ~2 full turns over the anim
+    const alpha = 0.4 * Math.sin(Math.min(progress, 1) * Math.PI);
+    if (alpha <= 0) return;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.globalAlpha = alpha;
+    const white = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    white.addColorStop(0, "rgba(255,255,255,.9)");
+    white.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = white;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, R, -Math.PI / 2, Math.PI / 2);
+    ctx.closePath();
+    ctx.fill();
+    const black = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    black.addColorStop(0, "rgba(15,15,20,.9)");
+    black.addColorStop(1, "rgba(15,15,20,0)");
+    ctx.fillStyle = black;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, R, Math.PI / 2, Math.PI * 1.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /** 天地反轉（大絕）：full-board dim-out except the 3×2 box, a rotating
+   * yin-yang glow, box pulse + per-cell coin-flip disc (black⇄white shimmer).
+   * Up to 1.5s — deliberately more "大絕感" than the 0.5–1s skills. */
   private drawBoxFlipAnim(a: Extract<SkillAnim, { kind: "reversal" }>, progress: number) {
     const ctx = this.ctx;
     const g = this.gap;
+    this.drawDimOverlayExceptBox(a.box, this.dimEnvelope(progress));
     const pulse = Math.sin(Math.min(progress, 1) * Math.PI);
-    this.drawAnimBox(a.box, `rgba(255,211,77,${0.35 + 0.5 * pulse})`);
+    this.drawAnimBox(a.box, `rgba(255,211,77,${0.4 + 0.55 * pulse})`);
+    this.drawYinYangGlow(a.box, progress);
     const flipScale = Math.max(0.06, Math.abs(Math.cos(Math.min(progress, 1) * Math.PI)));
     const rad = g * 0.42;
     a.flipCells.forEach((cell) => {
@@ -797,7 +1064,9 @@ export class GomokuBoard {
     });
   }
 
-  /** 開拓之星：3×2 box pulse (dashed, teal) + per-cell disperse burst. */
+  /** 開拓之星（大絕）：full-board dim-out except the 3×2 box, gold box pulse,
+   * per-cell converging starlight streaks → starburst flash → disperse
+   * particles as the cells clear. Up to 1.5s. */
   private drawBoxDisperseAnim(
     a: Extract<SkillAnim, { kind: "pioneer" }>,
     progress: number,
@@ -805,27 +1074,61 @@ export class GomokuBoard {
   ) {
     const ctx = this.ctx;
     const g = this.gap;
+    this.drawDimOverlayExceptBox(a.box, this.dimEnvelope(progress, 0.12, 0.25, 0.6));
     const pulse = Math.sin(Math.min(progress, 1) * Math.PI);
-    this.drawAnimBox(a.box, `rgba(120,220,190,${0.4 + 0.4 * pulse})`, [6, 4]);
-    const alpha = Math.max(0, 1 - progress * 1.1);
+    this.drawAnimBox(a.box, `rgba(255,211,77,${0.5 + 0.45 * pulse})`, [6, 4]);
+    const converge = Math.min(1, progress / 0.32); // phase A: starlight converges in
+    const burst = Math.max(0, Math.min(1, (progress - 0.28) / 0.35)); // phase B: bright flash
+    const fade = Math.max(0, (progress - 0.65) / 0.35); // phase C: disperse + clear
     a.clearCells.forEach((cell) => {
       const [x, y] = this.xy(cell.row, cell.col);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = "rgba(150,240,210,.9)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, y, g * 0.42 * (1 + eased * 0.6), 0, 7);
-      ctx.stroke();
-      for (let k = 0; k < 4; k++) {
-        const ang = (Math.PI / 2) * k + Math.PI / 4;
-        const dist = g * 0.6 * eased;
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(150,240,210,.9)";
-        ctx.arc(x + Math.cos(ang) * dist, y + Math.sin(ang) * dist, g * 0.06, 0, 7);
-        ctx.fill();
+      if (converge < 1) {
+        const dist = g * 0.95 * (1 - converge);
+        for (let k = 0; k < 4; k++) {
+          const ang = (Math.PI / 2) * k + Math.PI / 4;
+          const sx = x + Math.cos(ang) * dist;
+          const sy = y + Math.sin(ang) * dist;
+          const ex = x + Math.cos(ang) * dist * 0.35;
+          const ey = y + Math.sin(ang) * dist * 0.35;
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.strokeStyle = "rgba(255,225,140,.95)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
-      ctx.restore();
+      if (burst > 0 && fade < 1) {
+        const glowA = Math.sin(Math.min(burst, 1) * Math.PI);
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, g * 0.78);
+        glow.addColorStop(0, `rgba(255,240,180,${0.92 * glowA})`);
+        glow.addColorStop(1, "rgba(255,200,80,0)");
+        ctx.save();
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(x, y, g * 0.78, 0, 7);
+        ctx.fill();
+        ctx.restore();
+      }
+      if (fade > 0) {
+        const alpha = Math.max(0, 1 - fade * 1.15);
+        const spread = g * (0.6 + 0.6 * fade) * eased;
+        for (let k = 0; k < 8; k++) {
+          const ang = (Math.PI / 4) * k;
+          const px = x + Math.cos(ang) * spread;
+          const py = y + Math.sin(ang) * spread;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = "rgba(255,225,140,.95)";
+          ctx.beginPath();
+          ctx.arc(px, py, g * 0.05, 0, 7);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
     });
   }
 

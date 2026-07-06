@@ -20,7 +20,15 @@ import type {
   SkillEvent,
   SkillType,
 } from "@/lib/types/schemas";
-import type { FieldCell, PlacedStone, RevealedCell, SkillAnim, StoneColor } from "@/lib/game/GomokuBoard";
+import type {
+  FieldCell,
+  PlacedStone,
+  RevealedCell,
+  ScatterGuide,
+  SkillAnim,
+  SlideMove,
+  StoneColor,
+} from "@/lib/game/GomokuBoard";
 import { DIR_DELTA, isUltimate, ultimateRect, wavePushDirection, type OceanSide } from "@/lib/game/duel";
 import {
   applyDuelEvents,
@@ -42,13 +50,40 @@ const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 // ── 真劍勝負 skill metadata (需求 #36 #42 #43, Q10) ──────────────
-const SKILL_INFO: Record<SkillType, { name: string; ico: string }> = {
-  HORIZONTAL_SLASH: { name: "橫劈", ico: "⚔️" },
-  VERTICAL_SLASH: { name: "縱劈", ico: "🗡️" },
-  HEAVEN_EARTH_REVERSAL: { name: "天地反轉（大絕）", ico: "🌗" },
-  PRECISION_SNIPE: { name: "精準狙擊", ico: "🎯" },
-  SCATTER_SHOT: { name: "散射", ico: "🏹" },
-  PIONEER_STAR: { name: "開拓之星（大絕）", ico: "💫" },
+// `desc` is the definitive rules text (技能說明需求) — shown verbatim via the
+// desktop hover tooltip / mobile ⓘ popover on each skill button; do not
+// paraphrase, this copy is the agreed-upon spec wording.
+const SKILL_INFO: Record<SkillType, { name: string; ico: string; desc: string }> = {
+  HORIZONTAL_SLASH: {
+    name: "橫劈",
+    ico: "⚔️",
+    desc: "落子時發動。選擇上或下，將緊鄰該方向的橫排3格棋子往該方向推1格（連鎖推擠、出界移除、遇障礙擋停）。一場限一次。",
+  },
+  VERTICAL_SLASH: {
+    name: "縱劈",
+    ico: "🗡️",
+    desc: "落子時發動。選擇左或右，將緊鄰該方向的縱列3格棋子往該方向推1格。一場限一次。",
+  },
+  HEAVEN_EARTH_REVERSAL: {
+    name: "天地反轉（大絕）",
+    ico: "🌗",
+    desc: "取代本回合落子。選擇空格錨點與方向，3寬×2深共6格內雙方棋子顏色互換。一場限一次。",
+  },
+  PRECISION_SNIPE: {
+    name: "精準狙擊",
+    ico: "🎯",
+    desc: "本手改為替換場上任一顆敵方棋子為己方顏色。一場限一次。",
+  },
+  SCATTER_SHOT: {
+    name: "散射",
+    ico: "🏹",
+    desc: "本手同時下2子於空格，兩子不得在彼此九宮格範圍內。一場限一次。",
+  },
+  PIONEER_STAR: {
+    name: "開拓之星（大絕）",
+    ico: "💫",
+    desc: "取代本回合落子。選擇空格錨點與方向，3寬×2深共6格內所有棋子消除。一場限一次。",
+  },
 };
 const CLASS_SKILLS_UI: Record<ClassType, SkillType[]> = {
   WARRIOR: ["HORIZONTAL_SLASH", "VERTICAL_SLASH", "HEAVEN_EARTH_REVERSAL"],
@@ -83,6 +118,10 @@ function buildCasterSkillAnim(
     ultimateDir: SkillDirection | null;
     snipeTarget: Cell | null;
     N: number;
+    /** Pushed-stone slide tween data (劈砍撞擊緩動) — origin/destination/color
+     * per stone, computed by the caller from the pre-move board snapshot
+     * (see place()'s submitMove). Only populated for the two slash skills. */
+    slideMoves?: SlideMove[];
   },
 ): SkillAnim | null {
   switch (skillType) {
@@ -104,6 +143,7 @@ function buildCasterSkillAnim(
         axis: skillType === "HORIZONTAL_SLASH" ? "row" : "col",
         origin: { row: ctx.placed[0].row, col: ctx.placed[0].col },
         cells,
+        moves: ctx.slideMoves?.length ? ctx.slideMoves : undefined,
       };
     }
     case "HEAVEN_EARTH_REVERSAL": {
@@ -259,7 +299,12 @@ export default function GamePage() {
   const [activeSkill, setActiveSkill] = useState<SkillType | null>(null);
   const [skillDir, setSkillDir] = useState<SkillDirection | null>(null);
   const [scatterFirst, setScatterFirst] = useState<Cell | null>(null);
+  // 散射 (SCATTER_SHOT) placement guide 需求：第 2 子選定後不立刻送出，
+  // 停在「確認送出」這一步（見下方 confirmScatterSubmit）。
+  const [scatterSecond, setScatterSecond] = useState<Cell | null>(null);
   const [previewCells, setPreviewCells] = useState<FieldCell[] | null>(null);
+  // 技能說明 tooltip（桌機 hover + 行動版 ⓘ 點開共用同一顆狀態）。
+  const [tooltipSkill, setTooltipSkill] = useState<SkillType | null>(null);
   const [showReveal, setShowReveal] = useState(false);
   const [revealFlipped, setRevealFlipped] = useState(false);
   const revealShownRef = useRef(false);
@@ -585,7 +630,10 @@ export default function GamePage() {
           announceSkillCast(actorColor, inferred);
           // 機能性技能動畫（新增）：best-effort — see buildBroadcastSkillAnim doc.
           const anim = buildBroadcastSkillAnim(inferred, state.skillEvents, lastMoveCell);
-          if (anim) boardRef.current?.playSkillAnim(anim);
+          if (anim) {
+            const duration = anim.kind === "reversal" || anim.kind === "pioneer" ? 1500 : 700;
+            boardRef.current?.playSkillAnim(anim, duration);
+          }
         }
       }
       // 場地事件警示（新增，需求 #2）：海浪來襲/漲潮/侵蝕 — 每位觀眾（含觀戰者）都看得到。
@@ -616,6 +664,7 @@ export default function GamePage() {
     setActiveSkill(null);
     setSkillDir(null);
     setScatterFirst(null);
+    setScatterSecond(null);
     setPreviewCells(null);
   }
 
@@ -634,6 +683,10 @@ export default function GamePage() {
         ultimateDir: SkillDirection | null;
         snipeTarget: Cell | null;
         boardSize: number;
+        // 劈砍撞擊緩動（新增）：pushed-stone origin/destination/color, computed
+        // by the caller (submitMove) from the pre-move board — only slash
+        // skills populate this; see buildCasterSkillAnim's doc.
+        slideMoves?: SlideMove[];
       },
     ) => {
       setStones((prev) => {
@@ -676,8 +729,13 @@ export default function GamePage() {
           ultimateDir: ctx.ultimateDir,
           snipeTarget: ctx.snipeTarget,
           N: ctx.boardSize,
+          slideMoves: ctx.slideMoves,
         });
-        if (anim) boardRef.current?.playSkillAnim(anim);
+        // 大絕（天地反轉／開拓之星）拉長到 1.5s 求「大絕感」；其餘技能維持 0.7s。
+        if (anim) {
+          const duration = anim.kind === "reversal" || anim.kind === "pioneer" ? 1500 : 700;
+          boardRef.current?.playSkillAnim(anim, duration);
+        }
       }
       // 場地事件警示（新增，需求 #2）：海浪來襲/漲潮/侵蝕。
       announceFieldEvents(state.skillEvents);
@@ -704,6 +762,90 @@ export default function GamePage() {
     [oceanSide],
   );
 
+  /**
+   * Shared duel-move submission tail (extracted so 散射's explicit "確認送出"
+   * step — which must NOT submit on the 2nd board click, see place() below —
+   * can reuse the exact same request/apply/catch logic as every other skill).
+   */
+  async function submitMove(
+    req: MoveCreateRequest,
+    ctx: {
+      placed: Cell[];
+      actor: Color;
+      slashDir: SkillDirection | null;
+      skillType: SkillType | null;
+      anchor: Cell | null;
+      ultimateDir: SkillDirection | null;
+      snipeTarget: Cell | null;
+    },
+  ) {
+    try {
+      const state = await gameService.placeMove(gameId, req);
+      // MSW 無 STOMP 廣播 → 直接套用回應；真後端 online 模式仍走廣播
+      if (mode !== "online" || USE_MOCKS) {
+        // 劈砍撞擊緩動（新增）：算出被推棋子的「推前」座標與顏色 —— 用
+        // submitMove 呼叫當下（await 之前）的 `stones`（此渲染週期的閉包值，
+        // 即本手落子前的盤面），搭配這次結算的 skillEvents 還原每顆被推棋子
+        // 的位移，交給 GomokuBoard 做滑動補間（見 buildCasterSkillAnim 文件）。
+        let slideMoves: SlideMove[] | undefined;
+        if (ctx.slashDir && (ctx.skillType === "HORIZONTAL_SLASH" || ctx.skillType === "VERTICAL_SLASH")) {
+          const delta = DIR_DELTA[ctx.slashDir];
+          const events = state.skillEvents ?? [];
+          const waveIdx = events.findIndex((e) => e.eventType === "WAVE_SURGED");
+          const preWave = waveIdx === -1 ? events : events.slice(0, waveIdx);
+          slideMoves = preWave
+            .filter((e) => e.eventType === "STONE_PUSHED" && e.row != null && e.col != null)
+            .map((e) => {
+              const from = { row: e.row!, col: e.col! };
+              const color = stones.find((s) => s.r === from.row && s.c === from.col)?.color;
+              return color ? { from, to: { row: from.row + delta.dr, col: from.col + delta.dc }, color } : null;
+            })
+            .filter((m): m is SlideMove => m !== null);
+        }
+        applyDuelState(state, {
+          placed: ctx.placed,
+          actor: ctx.actor,
+          slashDir: ctx.slashDir,
+          skillType: ctx.skillType,
+          anchor: ctx.anchor,
+          ultimateDir: ctx.ultimateDir,
+          snipeTarget: ctx.snipeTarget,
+          boardSize: N,
+          slideMoves,
+        });
+      }
+      if (ctx.skillType) {
+        const s = ctx.skillType;
+        setUsedSkills((prev) => ({ ...prev, [ctx.actor]: [...prev[ctx.actor], s] }));
+      }
+      clearSkillUi();
+    } catch (err) {
+      // non-ApiError（如回應 schema 不合的 ZodError）不應被 "落子不合法" toast
+      // 蓋掉——那會讓 schema mismatch（伺服器其實已接受落子）誤判成業務錯誤。
+      if (!(err instanceof ApiError)) console.error("placeMove (duel) failed", err);
+      const msg = err instanceof ApiError ? err.message : "落子不合法";
+      toast(msg, "error");
+    }
+  }
+
+  /** 散射「確認送出」— 兩子都已選定後才真正呼叫後端（需求：散射放置流程明確化）。 */
+  async function confirmScatterSubmit() {
+    if (!scatterFirst || !scatterSecond) return;
+    const actor = turn;
+    await submitMove(
+      { row: scatterFirst.row, col: scatterFirst.col, skill: { skillType: "SCATTER_SHOT", secondStone: scatterSecond } },
+      {
+        placed: [scatterFirst, scatterSecond],
+        actor,
+        slashDir: null,
+        skillType: "SCATTER_SHOT",
+        anchor: null,
+        ultimateDir: null,
+        snipeTarget: null,
+      },
+    );
+  }
+
   async function place(r: number, c: number) {
     if (isSpectator) {
       toast("觀戰中，無法落子", "error");
@@ -712,90 +854,79 @@ export default function GamePage() {
     // ── 真劍勝負：依當前選取的技能組出 MoveCreateRequest（需求 #36）──
     if (duel) {
       const actor = turn;
-      let req: MoveCreateRequest;
-      const placed: Cell[] = [];
-      let slashDir: SkillDirection | null = null;
-      // 機能性技能動畫（新增）用的額外脈絡，只有對應技能會填值。
-      let anchor: Cell | null = null;
-      let ultimateDir: SkillDirection | null = null;
-      let snipeTarget: Cell | null = null;
       if (activeSkill && isUltimate(activeSkill)) {
         // 大絕：取代本回合落子；點擊格 = 錨點（必須空格，Q4 補充）
         if (!skillDir) {
           toast("請先選擇大絕方向", "error");
           return;
         }
-        anchor = { row: r, col: c };
-        ultimateDir = skillDir;
-        req = {
-          skill: {
-            skillType: activeSkill as "HEAVEN_EARTH_REVERSAL" | "PIONEER_STAR",
-            direction: skillDir,
-            anchor: { row: r, col: c },
+        const anchor = { row: r, col: c };
+        await submitMove(
+          {
+            skill: {
+              skillType: activeSkill as "HEAVEN_EARTH_REVERSAL" | "PIONEER_STAR",
+              direction: skillDir,
+              anchor,
+            },
           },
-        };
-      } else if (activeSkill === "PRECISION_SNIPE") {
+          { placed: [], actor, slashDir: null, skillType: activeSkill, anchor, ultimateDir: skillDir, snipeTarget: null },
+        );
+        return;
+      }
+      if (activeSkill === "PRECISION_SNIPE") {
         const clicked = stones.find((s) => s.r === r && s.c === c)?.color;
         if (clicked !== lc(actor === "BLACK" ? "WHITE" : "BLACK")) {
           toast("精準狙擊須點擊一顆現存的敵方棋子", "error");
           return;
         }
-        snipeTarget = { row: r, col: c };
-        req = { row: r, col: c, skill: { skillType: "PRECISION_SNIPE", target: { row: r, col: c } } };
-      } else if (activeSkill === "SCATTER_SHOT") {
+        const snipeTarget = { row: r, col: c };
+        await submitMove(
+          { row: r, col: c, skill: { skillType: "PRECISION_SNIPE", target: snipeTarget } },
+          { placed: [], actor, slashDir: null, skillType: "PRECISION_SNIPE", anchor: null, ultimateDir: null, snipeTarget },
+        );
+        return;
+      }
+      if (activeSkill === "SCATTER_SHOT") {
+        // 散射放置流程明確化：兩次點擊只設定預覽點，不送出——第 2 子選定後
+        // 停在「確認送出」按鈕，board 上顯示 1/2 標記 + 第 1 子九宮格禁區
+        // （見下方 scatterGuide / isBlocked，需求：散射桌機放置流程明確化）。
         if (!scatterFirst) {
           setScatterFirst({ row: r, col: c });
-          toast("已選第 1 子，請點第 2 個空格（間隔 ≥ 2）");
           return;
         }
-        if (Math.max(Math.abs(scatterFirst.row - r), Math.abs(scatterFirst.col - c)) < 2) {
-          toast("散射兩子不得在彼此九宮格內（Chebyshev ≥ 2）", "error");
+        if (!scatterSecond) {
+          if (Math.max(Math.abs(scatterFirst.row - r), Math.abs(scatterFirst.col - c)) < 2) {
+            toast("散射兩子不得在彼此九宮格內（Chebyshev ≥ 2）", "error");
+            return;
+          }
+          setScatterSecond({ row: r, col: c });
           return;
         }
-        req = {
-          row: scatterFirst.row,
-          col: scatterFirst.col,
-          skill: { skillType: "SCATTER_SHOT", secondStone: { row: r, col: c } },
-        };
-        placed.push(scatterFirst, { row: r, col: c });
-      } else if (activeSkill === "HORIZONTAL_SLASH" || activeSkill === "VERTICAL_SLASH") {
+        return; // 兩子皆已選定，等待「確認送出」／「取消」
+      }
+      if (activeSkill === "HORIZONTAL_SLASH" || activeSkill === "VERTICAL_SLASH") {
         if (!skillDir) {
           toast("請先選擇劈砍方向", "error");
           return;
         }
-        slashDir = skillDir;
-        req = { row: r, col: c, skill: { skillType: activeSkill, direction: skillDir } };
-        placed.push({ row: r, col: c });
-      } else {
-        req = { row: r, col: c };
-        placed.push({ row: r, col: c });
-      }
-      try {
-        const state = await gameService.placeMove(gameId, req);
-        // MSW 無 STOMP 廣播 → 直接套用回應；真後端 online 模式仍走廣播
-        if (mode !== "online" || USE_MOCKS)
-          applyDuelState(state, {
-            placed,
+        await submitMove(
+          { row: r, col: c, skill: { skillType: activeSkill, direction: skillDir } },
+          {
+            placed: [{ row: r, col: c }],
             actor,
-            slashDir,
+            slashDir: skillDir,
             skillType: activeSkill,
-            anchor,
-            ultimateDir,
-            snipeTarget,
-            boardSize: N,
-          });
-        if (activeSkill) {
-          const s = activeSkill;
-          setUsedSkills((prev) => ({ ...prev, [actor]: [...prev[actor], s] }));
-        }
-        clearSkillUi();
-      } catch (err) {
-        // non-ApiError（如回應 schema 不合的 ZodError）不應被 "落子不合法" toast
-        // 蓋掉——那會讓 schema mismatch（伺服器其實已接受落子）誤判成業務錯誤。
-        if (!(err instanceof ApiError)) console.error("placeMove (duel) failed", err);
-        const msg = err instanceof ApiError ? err.message : "落子不合法";
-        toast(msg, "error");
+            anchor: null,
+            ultimateDir: null,
+            snipeTarget: null,
+          },
+        );
+        return;
       }
+      await submitMove(
+        { row: r, col: c },
+        { placed: [{ row: r, col: c }], actor, slashDir: null, skillType: null, anchor: null, ultimateDir: null, snipeTarget: null },
+      );
       return;
     }
     try {
@@ -832,8 +963,20 @@ export default function GamePage() {
     clearSkillUi();
     setActiveSkill(skill);
     if (skill === "PRECISION_SNIPE") toast("點擊一顆敵方棋子以替換成己方顏色");
-    if (skill === "SCATTER_SHOT") toast("點擊兩個空格（Chebyshev 距離 ≥ 2）");
+    // 散射的引導文字改由下方常駐提示列（scatter-guide）顯示，不用一次性 toast。
   }
+
+  // 任一技能選取中，Esc 可隨時退出（需求：散射流程「可按 Esc 或取消鈕退出」；
+  // 對其他技能同樣適用，行為一致）。
+  useEffect(() => {
+    if (!activeSkill) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") clearSkillUi();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSkill]);
 
   function pickDir(dir: SkillDirection) {
     setSkillDir(dir);
@@ -849,6 +992,39 @@ export default function GamePage() {
       setPreviewCells(ultimateRect({ row: r, col: c }, skillDir, N));
     }
   }
+
+  /** 散射放置流程明確化：picked-point 數字預覽 + 第 1 子九宮格禁區（僅在
+   * 尚未選第 2 子時顯示，兩子皆選定後禁區解除、等待「確認送出」）。 */
+  const scatterGuide: ScatterGuide | null =
+    activeSkill === "SCATTER_SHOT" && (scatterFirst || scatterSecond)
+      ? {
+          points: [
+            ...(scatterFirst ? [{ ...scatterFirst, n: 1 as const }] : []),
+            ...(scatterSecond ? [{ ...scatterSecond, n: 2 as const }] : []),
+          ],
+          forbidden:
+            scatterFirst && !scatterSecond
+              ? (() => {
+                  const cells: FieldCell[] = [];
+                  for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                      const rr = scatterFirst.row + dr;
+                      const cc = scatterFirst.col + dc;
+                      if (rr >= 0 && rr < N && cc >= 0 && cc < N) cells.push({ row: rr, col: cc });
+                    }
+                  }
+                  return cells;
+                })()
+              : [],
+        }
+      : null;
+  /** 散射禁區點擊拒絕（board 端 isBlocked/onBlocked 既有機制重用，需求：
+   * 「點禁區有拒絕回饋」）。 */
+  const isScatterForbidden = (r: number, c: number) =>
+    activeSkill === "SCATTER_SHOT" &&
+    !!scatterFirst &&
+    !scatterSecond &&
+    Math.max(Math.abs(scatterFirst.row - r), Math.abs(scatterFirst.col - c)) < 2;
 
   function leave() {
     router.push("/");
@@ -913,16 +1089,22 @@ export default function GamePage() {
             beach={duel?.fieldType === "BEACH" && oceanSide ? { side: beachSideFor(oceanSide), erodedRows } : null}
             revealedCells={revealed}
             previewCells={previewCells}
+            scatterGuide={scatterGuide}
             allowOccupied={!!duel && activeSkill === "PRECISION_SNIPE"}
+            isBlocked={isScatterForbidden}
             onPlace={place}
             onCursorChange={setHasCursor}
             onHover={handleHover}
-            onBlocked={() =>
+            onBlocked={(r, c) => {
+              if (isScatterForbidden(r, c)) {
+                toast("散射兩子不得在彼此九宮格內（Chebyshev ≥ 2）", "error");
+                return;
+              }
               toast(
                 activeSkill && isUltimate(activeSkill) ? "大絕錨點必須是空格" : "該格為障礙物，禁止落子",
                 "error",
-              )
-            }
+              );
+            }}
           />
           {/* 真劍勝負技能列：附掛技能與大絕（需求 #36 #42 #43）。
               本地示範/MSW 下由當前行動方操作；觀戰者唯讀。
@@ -948,15 +1130,40 @@ export default function GamePage() {
                 {CLASS_SKILLS_UI[visibleSkillColor === "BLACK" ? duel.blackClass : duel.whiteClass].map((s) => {
                   const used = usedSkills[visibleSkillColor].includes(s);
                   return (
-                    <button
-                      key={s}
-                      className={`skill-btn${activeSkill === s ? " active" : ""}${used ? " used" : ""}`}
-                      disabled={used || notMyTurn}
-                      onClick={() => onSkillClick(s)}
-                    >
-                      {SKILL_INFO[s].ico} {SKILL_INFO[s].name}
-                      {used ? "（已用）" : ""}
-                    </button>
+                    <div className="skill-item" key={s}>
+                      <button
+                        className={`skill-btn${activeSkill === s ? " active" : ""}${used ? " used" : ""}`}
+                        disabled={used || notMyTurn}
+                        onClick={() => onSkillClick(s)}
+                      >
+                        {SKILL_INFO[s].ico} {SKILL_INFO[s].name}
+                        {used ? "（已用）" : ""}
+                      </button>
+                      {/* 技能說明（需求）：桌機 hover 顯示、行動版點 ⓘ 開合，
+                          兩者共用同一顆 tooltipSkill 狀態 + CSS hover 規則。 */}
+                      <button
+                        type="button"
+                        className="skill-info-btn"
+                        // aria-label 刻意不含技能名稱（如「橫劈」/「散射」）——避免
+                        // 與既有 e2e 用 getByRole("button",{name:/橫劈/}) 選取技能
+                        // 按鈕本身的正規表示式互相撞名；改用 data-testid 供測試選取。
+                        aria-label="顯示技能說明"
+                        data-testid={`skill-info-${s}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTooltipSkill((prev) => (prev === s ? null : s));
+                        }}
+                      >
+                        ⓘ
+                      </button>
+                      <span
+                        className={`skill-tooltip${tooltipSkill === s ? " open" : ""}`}
+                        role="tooltip"
+                        data-testid={`skill-tooltip-${s}`}
+                      >
+                        {SKILL_INFO[s].desc}
+                      </span>
+                    </div>
                   );
                 })}
               </div>
@@ -980,6 +1187,35 @@ export default function GamePage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+              {/* 散射放置流程明確化（需求）：提示列隨步驟切換文字；第 2 子選
+                  定後停在「確認送出」而非自動送出；Esc／取消鈕可隨時退出。 */}
+              {activeSkill === "SCATTER_SHOT" && (
+                <div className="mt-8" data-testid="scatter-guide">
+                  <p className="dim" style={{ fontSize: 13, marginBottom: 6, textAlign: "center" }}>
+                    {!scatterFirst
+                      ? "選擇第 1 個落點"
+                      : !scatterSecond
+                        ? "選擇第 2 個落點（紅色斜線區為禁區，需間隔 ≥ 2）"
+                        : "確認送出這兩子？"}
+                  </p>
+                  {scatterFirst && scatterSecond ? (
+                    <div className="row gap-8" style={{ justifyContent: "center" }}>
+                      <button className="btn btn-primary" onClick={confirmScatterSubmit}>
+                        確認送出
+                      </button>
+                      <button className="btn btn-ghost" onClick={clearSkillUi}>
+                        取消
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="row" style={{ justifyContent: "center" }}>
+                      <button className="btn btn-ghost" onClick={clearSkillUi}>
+                        取消散射
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

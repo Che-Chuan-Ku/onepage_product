@@ -92,6 +92,13 @@ test.describe("真劍勝負：火山場地與技能（需求 #36 #39 #42 #43）"
   test("D4 大絕流程：選技能 → 選方向 → 3×2 預覽 → 錨點施放（取代落子，Q4）", async ({ page }) => {
     await page.goto("/game/duel-volcano-demo?mode=local");
     await expect(page.getByTestId("skill-bar")).toBeVisible();
+    // 技能說明 tooltip（需求）：點擊 ⓘ 顯示該技能定案文案，再點一次收合。
+    await page.getByTestId("skill-info-HEAVEN_EARTH_REVERSAL").click();
+    await expect(page.getByTestId("skill-tooltip-HEAVEN_EARTH_REVERSAL")).toContainText(
+      "取代本回合落子。選擇空格錨點與方向，3寬×2深共6格內雙方棋子顏色互換。一場限一次。",
+    );
+    await page.getByTestId("skill-info-HEAVEN_EARTH_REVERSAL").click();
+    await expect(page.getByTestId("skill-tooltip-HEAVEN_EARTH_REVERSAL")).not.toHaveClass(/open/);
     // 黑方 = 劍士：大絕「天地反轉」
     await page.getByRole("button", { name: /天地反轉/ }).click();
     await expect(page.getByText("選擇大絕方向")).toBeVisible();
@@ -123,16 +130,27 @@ test.describe("真劍勝負：火山場地與技能（需求 #36 #39 #42 #43）"
 });
 
 test.describe("真劍勝負：沙灘場地（需求 #40 #41，Q6 Q7）", () => {
-  test("D6 沙灘 demo：16×16、海浪倒數、散射兩子（Chebyshev ≥ 2）", async ({ page }) => {
+  test("D6 沙灘 demo：16×16、海浪倒數、散射兩子（Chebyshev ≥ 2，流程明確化：選點→選點→確認送出）", async ({ page }) => {
     await page.goto("/game/duel-beach-demo?mode=local");
     await expect(page.getByRole("grid", { name: "16 乘 16 五子棋盤" })).toBeVisible();
     await expect(page.getByText("下次海浪")).toBeVisible();
     await expect(page.getByText("未觸發")).toBeVisible();
     // 黑方 = 弓箭手：散射（該手同時下 2 子）
     await page.getByRole("button", { name: /散射/ }).click();
+    await expect(page.getByTestId("scatter-guide")).toContainText("選擇第 1 個落點");
     await clickBoard(page, 10, 3, 16);
-    await expect(page.getByText("已選第 1 子，請點第 2 個空格（間隔 ≥ 2）")).toBeVisible();
+    await expect(page.getByTestId("scatter-guide")).toContainText("選擇第 2 個落點");
+    // 散射放置流程明確化（新增斷言）：第 1 子九宮格內（禁區）點擊被拒，
+    // 手數不變、仍停在「選擇第 2 個落點」步驟（不會誤選成第 2 子）。
+    await clickBoard(page, 10, 4, 16); // Chebyshev(10,3)→(10,4) = 1 < 2
+    await expect(page.getByText("散射兩子不得在彼此九宮格內（Chebyshev ≥ 2）")).toBeVisible();
+    await expect(page.getByTestId("scatter-guide")).toContainText("選擇第 2 個落點");
+    await expect(page.getByText("第 0 手")).toBeVisible();
+    // 合法的第 2 子：停在「確認送出」，尚未真正送出到伺服器
     await clickBoard(page, 10, 6, 16);
+    await expect(page.getByTestId("scatter-guide")).toContainText("確認送出這兩子？");
+    await expect(page.getByText("第 0 手")).toBeVisible();
+    await page.getByRole("button", { name: "確認送出" }).click();
     // 機能性技能動畫（新增）：散射兩箭同時飛向兩個落點的 canvas VFX 已觸發
     await expect(page.getByTestId("skill-anim")).toHaveAttribute("data-active", "true");
     await expect(page.getByText("第 1 手")).toBeVisible();
