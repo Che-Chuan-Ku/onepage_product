@@ -84,3 +84,23 @@
 | `FieldFxFlash` | 噴發/海浪/漲潮特效占位（CSS keyframe） | type(burn/wave/tide) | game |
 | `DuelReplayInfo` | 回放：場地類型 + 雙方職業 | field, classes[] | replay |
 | `SkillFieldEventRow` | 回放：本手技能/場地事件文字提示 | event | replay |
+
+## PVE 挑戰模式（P3 增量，documents/PVE-挑戰模式-增量需求.md）
+| 元件 | 用途 | Props/狀態（意圖） | 出現頁 |
+|------|------|------------------|--------|
+| `PveModeCard` | 首頁第三張模式入口卡（🐲） | onClick(guard identity) | home |
+| `PveGuestGate` | 訪客/未登入阻擋彈窗（無訪客入口，僅登入/註冊） | — | home（PVE 卡點擊時） |
+| `PveClassCard` | 職業選擇卡（劍士/弓箭手，重用 `.class-card`） | classId, starterSkill, skills[], selected | pve-class |
+| `PveInfoBanner` | 建關前資訊列（手數/BossHP/棋盤/場地） | — | pve-class |
+| `BossHpBar` | Boss HP 進度條（含低血量警示動畫） | hp, hpMax | pve-game |
+| `MoveBudgetBar` | 手數預算進度條 | used, budget | pve-game |
+| `MutationBanner` | Boss 突變提示橫幅（獨眼/震怒/深淵） | mutation | pve-game |
+| `DamageFloatNumber` | 連線/技能傷害浮動數字＋倍率breakdown | dmg, breakdown, anchorCells[] | pve-game（Board 疊層） |
+| `PveSkillActionBar` | PVE 技能列（持有數量徽章，消耗型/獨立行動） | skills[], activeSkillId, intervalLocked | pve-game（桌面＋行動抽屜） |
+| `PveBoard` | 11×11 單方落子棋盤（重用 `Board`，PVE 專用星位） | stones[], obstacles[], field | pve-game |
+| `ShopOfferCard` | 商店展示卡（遺物×2/技能×1，含已購買/已達上限狀態） | kind, price, bought, maxed | pve-shop |
+| `RerollButton` | 重抽（5金幣，三位全重抽） | disabled(goldInsufficient) | pve-shop |
+| `HeldInventoryList` | 持有遺物/技能清單（含技能持有數量） | relics[], skills[] | pve-shop, pve-game, pve-result |
+| `CoinDisplay` | 金幣顯示 | gold | pve-shop, pve-game |
+| `EncounterRecapPanel` | 關卡結算（單關失敗：總傷害/剩餘手數/已用技能） | stats | pve-result |
+| `RunRecapPanel` | Run 結算（完成/失敗/已放棄 三態 banner + 到達關數/總傷害/金幣/持有清單） | type(won/lost/abandoned), stats | pve-result |

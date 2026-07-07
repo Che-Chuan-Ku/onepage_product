@@ -36,6 +36,26 @@ import {
   replayGame,
   duelReplayGame,
 } from "../data/fixtures";
+import {
+  PveRunCreateRequest,
+  PveMoveCreateRequest,
+  PveSkillUseRequest,
+  PveShopPurchaseRequest,
+} from "@/lib/types/schemas";
+import { PVE_ERROR } from "../data/pveFixtures";
+import {
+  createPveRun,
+  getCurrentPveRun,
+  abandonPveRun,
+  getPveRunResult,
+  getPveEncounter,
+  placePveMove,
+  usePveSkill,
+  getPveShop,
+  purchasePveShopOffer,
+  rerollPveShop,
+  skipPveShop,
+} from "./pveEngine";
 
 /** Standard success envelope (ManageResponse + data). */
 const ok = (data: unknown, code = "200000", message = "OK") =>
@@ -191,6 +211,14 @@ function mockRoomDetail(room: MockRoom) {
 }
 
 const p = (path: string) => `${API_BASE}${path}`;
+
+/** PVE endpoints all declare a 401 response; the mock treats a missing
+ * Authorization header as "not logged in" (guest tokens aren't set by the
+ * /auth/guest mock handler above, so guests naturally hit this branch). */
+function requirePveAuth(request: Request, message: string = PVE_ERROR.UNAUTHORIZED) {
+  if (!request.headers.get("Authorization")) return fail(401, "401001", message);
+  return null;
+}
 
 export const handlers = [
   // ── auth ───────────────────────────────────────────────────
@@ -526,5 +554,103 @@ export const handlers = [
     if (gameId === duelReplayGame.gameId) return ok(duelReplayGame);
     // unknown id: keep the demo fixture (smoke test navigates to /replay/g1)
     return ok({ ...replayGame, gameId });
+  }),
+
+  // ── pve 挑戰模式 (tags:[pve], api.yml:747-1073) ──────────────
+  // Solo REST-only mode (no STOMP channel exists for pve — pve-api-spec.md
+  // §0.4). Logic lives in ./pveEngine; these handlers only do auth/body
+  // validation + envelope wrapping, same split as the rooms/games section.
+  http.post(p("/pve/runs"), async ({ request }) => {
+    const unauthorized = requirePveAuth(request, PVE_ERROR.GUEST_FORBIDDEN);
+    if (unauthorized) return unauthorized;
+    const body = PveRunCreateRequest.safeParse(await request.json());
+    if (!body.success) return fail(422, "422000", "職業選擇不合法");
+    const res = createPveRun(body.data.classType);
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return created(res.data, "Run已建立");
+  }),
+
+  http.get(p("/pve/runs/current"), ({ request }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const res = getCurrentPveRun();
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return ok(res.data);
+  }),
+
+  http.post(p("/pve/runs/:runId/actions/abandon"), ({ params }) => {
+    const res = abandonPveRun(String(params.runId));
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return ok(res.data, "200000", "已放棄");
+  }),
+
+  http.get(p("/pve/runs/:runId/result"), ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const res = getPveRunResult(String(params.runId));
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return ok(res.data);
+  }),
+
+  http.get(p("/pve/encounters/:encounterId"), ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const res = getPveEncounter(String(params.encounterId));
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return ok(res.data);
+  }),
+
+  http.post(p("/pve/encounters/:encounterId/moves"), async ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const body = PveMoveCreateRequest.safeParse(await request.json());
+    if (!body.success) return fail(422, "422000", "落子位置超出棋盤");
+    const res = placePveMove(String(params.encounterId), body.data.row, body.data.col);
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return created(res.data, "落子成功");
+  }),
+
+  http.post(p("/pve/encounters/:encounterId/actions/use-skill"), async ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const body = PveSkillUseRequest.safeParse(await request.json());
+    if (!body.success) return fail(422, "422000", "技能使用資料不合法");
+    const res = usePveSkill(String(params.encounterId), body.data);
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return created(res.data, "技能已使用");
+  }),
+
+  http.get(p("/pve/runs/:runId/shop"), ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const res = getPveShop(String(params.runId));
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return ok(res.data);
+  }),
+
+  http.post(p("/pve/runs/:runId/shop/actions/purchase"), async ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const body = PveShopPurchaseRequest.safeParse(await request.json());
+    if (!body.success) return fail(422, "422000", "購買資料不合法");
+    const res = purchasePveShopOffer(String(params.runId), body.data.slotIndex);
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return ok(res.data, "200000", "購買成功");
+  }),
+
+  http.post(p("/pve/runs/:runId/shop/actions/reroll"), ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const res = rerollPveShop(String(params.runId));
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return ok(res.data, "200000", "重抽成功");
+  }),
+
+  http.post(p("/pve/runs/:runId/shop/actions/skip"), ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const res = skipPveShop(String(params.runId));
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return ok(res.data, "200000", "已跳過商店");
   }),
 ];

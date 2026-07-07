@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — PVE 關卡</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<main class="page">
+  <div class="info-bar" style="margin-bottom:14px">
+    <button class="btn btn-danger" style="min-height:38px;padding:0 14px" onclick="confirmAbandon()">放棄挑戰</button>
+    <span class="stage-badge" id="stageBadge">第 1 / 8 關</span>
+    <span class="badge badge-normal" id="fieldBadge">PLAIN</span>
+    <span class="grow"></span>
+    <span class="dim num" id="encounterIdLabel"></span>
+  </div>
+
+  <div id="mutationBanner" class="mutation-banner mt-8" style="display:none;margin-bottom:14px"></div>
+
+  <div class="layout">
+    <section>
+      <div class="row gap-16 wrap" style="margin-bottom:12px">
+        <div class="boss-hp" id="bossHpWrap">
+          <div class="label"><span>👹 Boss HP</span><span class="num" id="bossHpText">100 / 100</span></div>
+          <div class="bar"><div class="fill" id="bossHpFill" style="width:100%"></div></div>
+        </div>
+        <div class="move-budget" id="moveBudgetWrap">
+          <div class="label"><span>手數預算</span><span class="num" id="moveText">30 / 30</span></div>
+          <div class="bar"><div class="fill" id="moveFill" style="width:100%"></div></div>
+        </div>
+      </div>
+
+      <div class="board-wrap" id="bw"><canvas class="board" id="board"></canvas></div>
+      <p class="dim center mt-8" style="font-size:13px" id="hintLine" aria-live="polite">點擊棋盤空格落子</p>
+      <div class="row gap-8 center mt-8" id="touchConfirmBar" style="display:none">
+        <span class="dim" style="font-size:12px">行動版：點選棋盤預覽位置後，按下方確認鈕</span>
+        <button class="btn btn-primary" id="confirmPlaceBtn" disabled onclick="board.confirm()">確認落子</button>
+        <button class="btn btn-ghost" onclick="board.clearCursor()">取消</button>
+      </div>
+      <div class="field-legend center mt-8" id="fieldLegend" style="display:none"></div>
+
+      <div class="card pad mt-16 skill-bar-desktop" id="skillCardDesktop">
+        <div class="row" style="margin-bottom:10px">
+          <h3>技能（獨立行動，不落子、不消耗手數）</h3><span class="grow"></span>
+          <span class="dim" style="font-size:12px" id="intervalHint">本間隔尚可使用技能</span>
+        </div>
+        <div class="skill-bar" id="skillBar"></div>
+        <div class="skill-hint mt-8" id="skillHint" style="display:none"></div>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="card pad">
+        <h3 style="margin-bottom:10px">Run 資訊</h3>
+        <div class="row" style="justify-content:space-between"><span class="dim">職業</span><span id="classLabel">—</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">本關造成傷害</span><span class="num" id="stageDamage">0</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">Run 累計傷害</span><span class="num" id="totalDamageLabel">0</span></div>
+        <div class="row mt-8" style="justify-content:space-between"><span class="dim">金幣</span><span class="num" id="goldLabel">0</span></div>
+      </div>
+
+      <div class="card pad">
+        <h3 style="margin-bottom:10px">持有遺物</h3>
+        <div class="held-list" id="relicList"><span class="dim">尚無</span></div>
+      </div>
+
+      <div class="card pad">
+        <h3 style="margin-bottom:10px">示範控制</h3>
+        <button class="btn btn-ghost btn-block" onclick="demoBurstDamage()">模擬本關結束（測試用）</button>
+        <div id="fieldDemoControls" class="mt-8"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="skill-drawer" id="skillDrawer">
+    <div class="row" style="margin-bottom:8px"><h3 style="font-size:14px">技能</h3><span class="grow"></span>
+      <button class="btn btn-ghost collapse-toggle" style="min-height:30px;padding:0 10px;display:inline-flex" onclick="toggleDrawer(this)">收合</button></div>
+    <div class="skill-bar" id="skillBarMobile"></div>
+    <div class="skill-hint mt-8" id="skillHintMobile" style="display:none"></div>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script src="../assets/board.js"></script>
+<script>
+/* ═══ PVE 挑戰模式：關卡引擎（原型示範，規則詳見 documents/PVE-挑戰模式-增量需求.md 增量B/C） ═══
+   本頁只示範「連線傷害結算」核心手感（小丑牌設計指引點名之驗證風險項）與技能操作流 UX；
+   技能的確切效果數值由後續 domain/engine 模組定案，此處效果為原型占位（見底部註記）。 */
+
+const P=new URLSearchParams(location.search);
+
+/* ── Run 狀態（sessionStorage 模擬後端 Run/Encounter 持久化，FR-B6 續玩 / FR-C8 單一進行中 Run） ── */
+function loadRun(){ try{return JSON.parse(sessionStorage.getItem('pveRun')||'null');}catch(e){return null;} }
+function saveRun(r){ sessionStorage.setItem('pveRun', JSON.stringify(r)); }
+
+let run=loadRun();
+if(!run){
+  // 直接開啟本頁（無 Run）：建立示範用 Run，維持頁面可獨立檢視（沿用既有原型慣例，如 game/index.html 的預設 mode=local）
+  run={class:'warrior',stage:1,gold:0,totalDamage:0,spentGold:0,
+    relics:[],skills:[{id:'horizontal',name:'橫劈',count:1}],levelField:{},encounter:null,encounterId:'ENC-DEMO'};
+  saveRun(run);
+}
+
+const LEVELS=[
+  {stage:1, hp:100,  field:'plain'},
+  {stage:2, hp:160,  field:'random'},
+  {stage:3, hp:260,  field:'plain',  mutation:'eyepatch'},
+  {stage:4, hp:420,  field:'plain'},
+  {stage:5, hp:670,  field:'random'},
+  {stage:6, hp:1070, field:'plain',  mutation:'fury'},
+  {stage:7, hp:1710, field:'random'},
+  {stage:8, hp:2740, field:'plain',  mutation:'abyss'}
+];
+const MOVE_BUDGET=30;
+const lvl=LEVELS[run.stage-1];
+
+/* 場地排程：第2/5/7關由 seed 各自 50% 機率決定 VOLCANO/BEACH，決定後持久化（FR-C2） */
+let fieldType=lvl.field;
+if(fieldType==='random'){
+  run.levelField=run.levelField||{};
+  if(!run.levelField[run.stage]) run.levelField[run.stage]=Math.random()<0.5?'volcano':'beach';
+  fieldType=run.levelField[run.stage];
+  saveRun(run);
+}
+
+/* 關卡內狀態（棋盤快照/BossHP/手數等，支援 FR-B6 續玩） */
+if(!run.encounter || run.encounter.stage!==run.stage){
+  run.encounter={
+    stage:run.stage, bossHpMax:lvl.hp, bossHp:lvl.hp, movesUsed:0, moveBudget:MOVE_BUDGET,
+    stones:{}, obstacles:[], stageDamage:0, intervalSkillUsed:false,
+    furyTriggerCount:0, waveTriggerCount:0, erosion:0, usedSkills:[]
+  };
+  // 場地開局：VOLCANO 可見障礙格 3–5 個（FR-C2）
+  if(fieldType==='volcano'){
+    const obstacles=[]; const count=3+Math.floor(Math.random()*3); // 3..5
+    const taken=new Set();
+    while(obstacles.length<count){
+      const r=Math.floor(Math.random()*11), c=Math.floor(Math.random()*11);
+      if(Math.abs(r-5)<=1 && Math.abs(c-5)<=1) continue; // 保留中央可玩
+      const k=r+','+c; if(taken.has(k)) continue; taken.add(k); obstacles.push([r,c]);
+    }
+    run.encounter.obstacles=obstacles;
+  }
+  saveRun(run);
+} else if(P.get('resume')==='1'){
+  toast('已從第 '+run.encounter.movesUsed+' 手續玩（GET /pve/encounters/{encounterId}）','success');
+}
+const enc=run.encounter;
+enc.erosion=enc.erosion||0; enc.usedSkills=enc.usedSkills||[]; // 續玩相容既有快照（可能缺此二欄位）
+
+/* ── 職業/技能定義（PVE：全部技能為消耗型、獨立行動，FR-A2 FR-B5；效果為原型占位） ── */
+const SKILL_DEFS={
+  horizontal:{name:'橫劈',ico:'↔️',mode:'line',axis:'row'},
+  vertical:{name:'縱劈',ico:'↕️',mode:'line',axis:'col'},
+  ultimate_w:{name:'天地反轉',ico:'🌀',mode:'ultimate'},
+  snipe:{name:'精準狙擊',ico:'🎯',mode:'snipe'},
+  scatter:{name:'散射',ico:'💥',mode:'scatter'},
+  ultimate_a:{name:'開拓之星',ico:'✨',mode:'ultimate'}
+};
+document.getElementById('classLabel').textContent=run.class==='warrior'?'⚔️ 劍士':'🏹 弓箭手';
+
+/* ── 棋盤（11×11，單方落子，PVE 專用幾何規格，FR-B1 / FR-C2） ── */
+function isMobile(){return matchMedia('(max-width:640px)').matches;}
+const board=new GomokuBoard(document.getElementById('board'),{
+  size:11, interactive:true, requireConfirm:isMobile(), onPlace:place,
+  onBlocked:(rc,reason)=>{
+    if(reason==='obstacle'){
+      // 精準狙擊：目標為障礙棋子（board.js 對障礙格一律先觸發 onBlocked，於此攔截並改派技能效果）
+      if(activeSkillId==='snipe'){ applySnipe(rc[0],rc[1]); return; }
+      toast('該格為障礙棋子/地形，無法落子','error'); return;
+    }
+    toast('該格已有棋子','error');
+  }
+});
+// 已有棋子的格子一律先經 onStoneClick 攔截（橫劈/縱劈選列/欄的目標指定；非技能模式時提示已佔用）
+board.onStoneClick=handleStoneClick;
+board.field = fieldType==='volcano'?'volcano':(fieldType==='beach'?'beach':'none');
+if(fieldType==='volcano') board.setObstacles(enc.obstacles);
+if(fieldType==='beach') board.setBeach('top',enc.erosion);
+// 續玩：還原棋盤快照
+Object.keys(enc.stones).forEach(k=>{ const [r,c]=k.split(',').map(Number); board.add(r,c,enc.stones[k]); });
+function handleStoneClick(stone){
+  if(activeSkillId && SKILL_DEFS[activeSkillId].mode==='line'){
+    applyLineSkill(stone.r, stone.c, SKILL_DEFS[activeSkillId]);
+    return;
+  }
+  if(activeSkillId==='snipe'){ toast('精準狙擊僅能指定障礙棋子，請點選障礙格','error'); return; }
+  toast('該格已有棋子','error');
+}
+
+/* 行動版觸控確認落子（board.js requireConfirm=true 時，點空格只設定 cursor 預覽，
+   不會自動落子，需顯式呼叫 board.confirm()；比照 opening/index.html 既有「確認此子」慣例，
+   否則觸控使用者將完全無法在空格落子/選取散射兩點/選取大絕錨點，見 specs/ui/PVE棋盤關卡頁.md:33 RWD） */
+if(isMobile()){
+  document.getElementById('touchConfirmBar').style.display='flex';
+  const _drawPveGameConfirm=GomokuBoard.prototype.draw;
+  GomokuBoard.prototype.draw=function(){
+    _drawPveGameConfirm.call(this);
+    const b=document.getElementById('confirmPlaceBtn');
+    if(b) b.disabled=!this.cursor;
+  };
+}
+
+document.getElementById('encounterIdLabel').textContent=run.encounterId;
+document.getElementById('stageBadge').textContent='第 '+run.stage+' / 8 關';
+const fb=document.getElementById('fieldBadge');
+fb.textContent = fieldType==='volcano'?'🌋 火山':fieldType==='beach'?'🏖️ 沙灘（11×11）':'PLAIN';
+if(fieldType==='volcano'){
+  document.getElementById('fieldLegend').style.display='flex';
+  document.getElementById('fieldLegend').innerHTML=`<span class="sw sw-volcano"><i></i>障礙物（雙方可見）</span><span class="sw sw-hidden"><i></i>噴發格（隱藏,觸發後揭露）</span>`;
+  document.getElementById('fieldDemoControls').innerHTML=`<button class="btn btn-ghost btn-block" onclick="demoTriggerHidden('eruption')">示範：觸發隱藏噴發格</button>`;
+} else if(fieldType==='beach'){
+  document.getElementById('fieldLegend').style.display='flex';
+  document.getElementById('fieldLegend').innerHTML=`<span class="sw sw-ocean"><i></i>海洋（可正常落子）</span><span class="sw sw-sand"><i></i>沙灘</span><span class="sw sw-hidden"><i></i>漲潮格（隱藏,觸發後揭露）</span>`;
+  document.getElementById('fieldDemoControls').innerHTML=`<button class="btn btn-ghost btn-block" onclick="demoTriggerHidden('tide')">示範：觸發隱藏漲潮格</button>`;
+}
+
+/* Boss 突變標示（第3/6/8關固定,FR-C6） */
+const MUTATIONS={
+  eyepatch:{ico:'👁️',label:'獨眼',desc:'本關 Boss 突變：橫向連線不結算（不造成傷害、棋子不移除）'},
+  fury:{ico:'😡',label:'震怒',desc:'本關 Boss 突變：每落 5 手，隨機一格自動噴發，清除周圍 8 格棋子（不計傷害）'},
+  abyss:{ico:'🕳️',label:'深淵',desc:'本關 Boss 突變：每次連線結算完成後，隨機一個空格生成 1 顆障礙棋子'}
+};
+if(lvl.mutation){
+  const m=MUTATIONS[lvl.mutation];
+  document.getElementById('mutationBanner').style.display='flex';
+  document.getElementById('mutationBanner').innerHTML=`<span class="ico">${m.ico}</span><span><b>Boss 突變：${m.label}</b> — ${m.desc}</span>`;
+}
+
+/* ── 面板同步 ── */
+function syncPanels(){
+  document.getElementById('bossHpText').textContent=enc.bossHp+' / '+enc.bossHpMax;
+  const hpPct=Math.max(0,enc.bossHp/enc.bossHpMax*100);
+  document.getElementById('bossHpFill').style.width=hpPct+'%';
+  document.getElementById('bossHpWrap').classList.toggle('low',hpPct<25);
+  document.getElementById('moveText').textContent=(enc.moveBudget-enc.movesUsed)+' / '+enc.moveBudget;
+  const mvPct=Math.max(0,(enc.moveBudget-enc.movesUsed)/enc.moveBudget*100);
+  document.getElementById('moveFill').style.width=mvPct+'%';
+  document.getElementById('moveBudgetWrap').classList.toggle('low',mvPct<20);
+  document.getElementById('stageDamage').textContent=enc.stageDamage;
+  document.getElementById('totalDamageLabel').textContent=run.totalDamage+enc.stageDamage;
+  document.getElementById('goldLabel').textContent=run.gold;
+  document.getElementById('relicList').innerHTML = run.relics.length
+    ? run.relics.map(r=>`<span class="held-chip" title="${r.effect}">${r.name}</span>`).join('')
+    : '<span class="dim">尚無</span>';
+  document.getElementById('intervalHint').textContent = enc.intervalSkillUsed ? '本間隔已使用技能' : '本間隔尚可使用技能';
+}
+syncPanels();
+
+/* ── 技能列渲染 ── */
+let activeSkillId=null, scatterPicks=[], ultimateStage=null, ultimateDir=null;
+function renderSkillBar(){
+  const html=run.skills.filter(s=>s.count>0).map(s=>{
+    const def=SKILL_DEFS[s.id];
+    const disabled = enc.intervalSkillUsed || enc.bossHp<=0 || enc.movesUsed>=enc.moveBudget;
+    const active=activeSkillId===s.id;
+    return `<button class="skill-btn ${def.mode==='ultimate'?'ultimate':''} ${active?'active':''}" ${disabled?'disabled':''} onclick="onSkillClick('${s.id}')">
+      <span class="ico">${def.ico}</span><span>${def.name}</span><span class="qty">${s.count}</span></button>`;
+  }).join('') || '<span class="dim" style="font-size:13px">尚無持有技能</span>';
+  document.getElementById('skillBar').innerHTML=html;
+  document.getElementById('skillBarMobile').innerHTML=html;
+}
+renderSkillBar();
+
+function showHint(html){
+  ['skillHint','skillHintMobile'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!html){el.style.display='none';el.innerHTML='';}
+    else{el.style.display='flex';el.innerHTML=html;}
+  });
+}
+function toggleDrawer(btn){
+  const d=document.getElementById('skillDrawer');
+  d.classList.toggle('collapsed');
+  btn.textContent=d.classList.contains('collapsed')?'展開':'收合';
+}
+
+function onSkillClick(id){
+  if(enc.intervalSkillUsed){ toast('本兩手之間已使用過技能，請先落子（每間隔至多1個，FR-B5）','error'); return; }
+  if(activeSkillId===id){ cancelSkillMode(); return; }
+  cancelSkillMode();
+  activeSkillId=id;
+  const def=SKILL_DEFS[id];
+  if(def.mode==='line'){
+    showHint(`已選擇 <b>${def.name}</b>：請點選棋盤上任一列${def.axis==='row'?'（列 row）':'（欄 column）'}中的一顆己方棋子，將清除該${def.axis==='row'?'整列':'整欄'}棋子並計算傷害。`);
+  } else if(def.mode==='snipe'){
+    showHint(`已選擇 <b>${def.name}</b>：請點選棋盤上的<b>障礙棋子</b>（第8關「深淵」生成物）將其移除；若當前無可用目標，技能將保留不消耗。`);
+  } else if(def.mode==='scatter'){
+    scatterPicks=[];
+    showHint(`已選擇 <b>${def.name}</b>：請點選兩個<b>空格</b>（需相距 ≥2 格）同時落下己方棋子。已選 0/2。`);
+  } else if(def.mode==='ultimate'){
+    ultimateStage='direction';
+    showHint(`${def.name}：請先選擇方向，再於棋盤點選<b>空格</b>作為錨點（3寬×2深範圍內己方棋子將被清除並計傷）。
+      <div class="dir-pad">
+        <span></span><button class="btn btn-ghost" onclick="pickUltimateDir('up')">↑</button><span></span>
+        <button class="btn btn-ghost" onclick="pickUltimateDir('left')">←</button><span class="mid"></span><button class="btn btn-ghost" onclick="pickUltimateDir('right')">→</button>
+        <span></span><button class="btn btn-ghost" onclick="pickUltimateDir('down')">↓</button><span></span>
+      </div>`);
+  }
+  renderSkillBar();
+}
+function cancelSkillMode(){
+  activeSkillId=null; scatterPicks=[]; ultimateStage=null; ultimateDir=null;
+  board.onHover=null; board.clearPreviews();
+  showHint(null); renderSkillBar();
+}
+
+/* 散射：兩個空格的選點（由 place() 於技能模式時轉派，空格/障礙判斷已由 board.js 內建攔截） */
+function boardClickForScatter(r,c){
+  for(const [pr,pc] of scatterPicks){ if(Math.max(Math.abs(pr-r),Math.abs(pc-c))<2){ toast('兩子距離過近（需 Chebyshev ≥2）','error'); return; } }
+  scatterPicks.push([r,c]);
+  showHint(`散射：已選 ${scatterPicks.length}/2。`);
+  if(scatterPicks.length===2) applyScatter();
+}
+
+function pickUltimateDir(dir){
+  ultimateDir=dir; ultimateStage='anchor';
+  showHint(`已選方向：<b>${({up:'上',down:'下',left:'左',right:'右'})[dir]}</b>。請在棋盤上將滑鼠移到空格預覽範圍，點擊確認錨點。`);
+  board.onHover=(rc)=>{ if(!rc)return; board.setPreviewRect(rectFor(rc,ultimateDir)); };
+}
+function rectFor([r,c],dir){
+  const along = (dir==='up'||dir==='down')? [-1,0,1].map(dc=>[0,dc]) : [-1,0,1].map(dr=>[dr,0]);
+  const step = {up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]}[dir];
+  const cells=[];
+  along.forEach(([dr,dc])=>{
+    const br=r+dr, bc=c+dc;
+    cells.push([br,bc]); cells.push([br+step[0],bc+step[1]]);
+  });
+  return cells.filter(([rr,cc])=>rr>=0&&rr<board.N&&cc>=0&&cc<board.N);
+}
+
+/* ── 傷害浮動數字（PVE 核心手感） ── */
+function showDamageFloat(cells,dmg,breakdown){
+  const wrap=document.getElementById('bw');
+  const pts=cells.map(([r,c])=>board._xy(r,c));
+  const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length, cy=pts.reduce((a,p)=>a+p[1],0)/pts.length;
+  const anchor=document.createElement('div');
+  anchor.className='dmg-anchor'; anchor.style.left=cx+'px'; anchor.style.top=cy+'px';
+  anchor.innerHTML=`<div class="dmg-float">-${dmg}<div class="dmg-breakdown">${breakdown}</div></div>`;
+  wrap.appendChild(anchor);
+  setTimeout(()=>anchor.remove(),1200);
+}
+
+/* ── 連線偵測（五連以上，含 6+ 合併，FR-B2 FR-B3；不拆多條五連） ── */
+const DIRS=[{dr:0,dc:1,axis:'h'},{dr:1,dc:0,axis:'v'},{dr:1,dc:1,axis:'d1'},{dr:1,dc:-1,axis:'d2'}];
+function inBounds(r,c){ return r>=0&&r<board.N&&c>=0&&c<board.N; }
+function findLinesThrough(r,c,color){
+  const lines=[];
+  DIRS.forEach(({dr,dc,axis})=>{
+    let cells=[[r,c]];
+    let rr=r+dr, cc=c+dc;
+    while(inBounds(rr,cc)&&board.stones[rr+','+cc]===color){ cells.push([rr,cc]); rr+=dr; cc+=dc; }
+    rr=r-dr; cc=c-dc;
+    while(inBounds(rr,cc)&&board.stones[rr+','+cc]===color){ cells.unshift([rr,cc]); rr-=dr; cc-=dc; }
+    if(cells.length>=5) lines.push({axis,cells});
+  });
+  return lines;
+}
+function baseScore(len){ return 50 + (len-5)*20; }
+
+function resolveLinesAt(r,c){
+  let lines=findLinesThrough(r,c,board.stones[r+','+c]);
+  // Boss 突變「獨眼」（第3關）：橫向連線不結算
+  if(lvl.mutation==='eyepatch') lines=lines.filter(l=>l.axis!=='h');
+  if(!lines.length) return false;
+  const seen=new Set(); let totalDmg=0; const breakdownParts=[];
+  lines.forEach(l=>{
+    const dmg=baseScore(l.cells.length);
+    totalDmg+=dmg;
+    breakdownParts.push(l.cells.length+'連×'+dmg);
+    l.cells.forEach(([rr,cc])=>seen.add(rr+','+cc));
+  });
+  seen.forEach(k=>{ const [rr,cc]=k.split(',').map(Number); board.remove(rr,cc); delete enc.stones[k]; });
+  enc.bossHp=Math.max(0,enc.bossHp-totalDmg);
+  enc.stageDamage+=totalDmg;
+  showDamageFloat(lines[0].cells,totalDmg,breakdownParts.join('，'));
+  toast('連線結算：造成 '+totalDmg+' 傷害（'+breakdownParts.join('，')+'）','success');
+  // Boss 突變「深淵」（第8關）：每次連線結算完成後，隨機一空格生成1顆障礙棋子
+  if(lvl.mutation==='abyss') spawnAbyssObstacle();
+  return true;
+}
+function spawnAbyssObstacle(){
+  const empties=[];
+  for(let r=0;r<board.N;r++)for(let c=0;c<board.N;c++){
+    const k=r+','+c; if(!board.stones[k] && !board.isObstacle(r,c)) empties.push([r,c]);
+  }
+  if(!empties.length) return;
+  const [r,c]=empties[Math.floor(Math.random()*empties.length)];
+  enc.obstacles=[...enc.obstacles,[r,c]];
+  board.setObstacles(enc.obstacles);
+  toast('深淵：一顆障礙棋子生成於棋盤','error');
+}
+
+/* ── 落子（唯一消耗手數的行動，FR-B5）；board.js 對空格一律呼叫 onPlace，
+   技能選取模式中的空格點擊（散射兩點／大絕錨點）在此轉派，不消耗手數、不視為落子 ── */
+function place(r,c){
+  if(activeSkillId==='scatter'){ boardClickForScatter(r,c); return; }
+  if(activeSkillId){
+    const def=SKILL_DEFS[activeSkillId];
+    if(def.mode==='ultimate' && ultimateStage==='anchor'){ applyUltimate(r,c); return; }
+    if(def.mode==='ultimate'){ toast('請先選擇方向','error'); return; }
+    if(def.mode==='line'){ toast('請點選一顆己方棋子以指定'+(def.axis==='row'?'列':'欄'),'error'); return; }
+    if(def.mode==='snipe'){ toast('請點選棋盤上的障礙棋子（若無可用目標請取消技能）','error'); return; }
+  }
+  if(enc.movesUsed>=enc.moveBudget || enc.bossHp<=0) return;
+  board.add(r,c,'black');
+  enc.stones[r+','+c]='black';
+  enc.movesUsed++;
+  enc.intervalSkillUsed=false; // 新的落子開啟新的技能使用間隔
+  resolveLinesAt(r,c);
+  // 場地自動事件：第6關「震怒」每滿5手；BEACH 每10手海浪（FR-C2 FR-C6）
+  if(lvl.mutation==='fury' && enc.movesUsed % 5 === 0) triggerFury();
+  if(fieldType==='beach' && enc.movesUsed % 10 === 0) triggerWave();
+  saveRun(run);
+  syncPanels(); renderSkillBar();
+  checkOutcome();
+}
+function triggerFury(){
+  const occupied=Object.keys(board.stones);
+  if(!occupied.length) return;
+  const [r,c]=occupied[Math.floor(Math.random()*occupied.length)].split(',').map(Number);
+  board.revealHidden(r,c,'eruption');
+  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+    if(dr===0&&dc===0) continue;
+    const rr=r+dr, cc=c+dc; if(!inBounds(rr,cc)) continue;
+    const k=rr+','+cc; if(board.stones[k]){ board.remove(rr,cc); delete enc.stones[k]; }
+  }
+  document.getElementById('bw').classList.add('fx-burn');
+  toast('震怒：Boss 隨機噴發，周圍 8 格棋子已清除（不計傷害）','error');
+  setTimeout(()=>document.getElementById('bw').classList.remove('fx-burn'),1000);
+}
+function triggerWave(){
+  const moved=[];
+  Object.keys(board.stones).forEach(k=>{
+    const [r,c]=k.split(',').map(Number);
+    if(board.isOcean(r,c) && !board.stones[(r+1)+','+c] && r+1<board.N){ moved.push([r,c,r+1]); }
+  });
+  moved.forEach(([r,c,tr])=>{ const color=board.stones[r+','+c]; board.remove(r,c); board.add(tr,c,color);
+    delete enc.stones[r+','+c]; enc.stones[tr+','+c]=color; });
+  document.getElementById('bw').classList.add('fx-wave');
+  toast('海浪來襲，海洋格棋子往沙灘推進一格（每10手觸發，FR-C2）','success');
+  setTimeout(()=>document.getElementById('bw').classList.remove('fx-wave'),1200);
+  /* 漲潮侵蝕：每次觸發後侵蝕排數累加，海洋邊界逐步推進（漸進動畫，非單次 flash），
+     見 specs/ui/PVE棋盤關卡頁.md:29「漲潮觸發後逐步顯示沙灘被侵蝕為海洋的漸進動畫」 */
+  enc.erosion=(enc.erosion||0)+1;
+  board.setBeach('top', enc.erosion);
+  saveRun(run);
+  setTimeout(()=>{
+    document.getElementById('bw').classList.add('fx-tide');
+    toast('漲潮：沙灘持續被侵蝕，海洋範圍已推進第 '+enc.erosion+' 排','success');
+    setTimeout(()=>document.getElementById('bw').classList.remove('fx-tide'),1400);
+  },1300);
+}
+function demoTriggerHidden(kind){
+  let r=Math.floor(Math.random()*11), c=Math.floor(Math.random()*11), guard=0;
+  while(board.isObstacle(r,c) && guard++<40){ r=Math.floor(Math.random()*11); c=Math.floor(Math.random()*11); }
+  board.revealHidden(r,c,kind);
+  toast((kind==='eruption'?'隱藏噴發格已揭露並觸發':'隱藏漲潮格已揭露並觸發')+'（示範觸發，實際觸發時機由引擎決定）','success');
+}
+
+/* ── 技能效果（原型占位，詳見頁尾註記） ── */
+function consumeSkill(id){
+  const s=run.skills.find(s=>s.id===id);
+  const name = s ? s.name : (SKILL_DEFS[id]?SKILL_DEFS[id].name:id);
+  // 記錄本關「實際使用」的技能（非持有庫存快照）：技能為消耗型，用後可能從 run.skills 移除，
+  // 若事後才讀 run.skills 反推使用紀錄會漏記，見 specs/ui/PVE結算畫面.md:12
+  if(!enc.usedSkills.includes(name)) enc.usedSkills.push(name);
+  s.count--; if(s.count<=0) run.skills=run.skills.filter(x=>x.id!==id);
+  enc.intervalSkillUsed=true;
+}
+function applyLineSkill(r,c,def){
+  const cells=[];
+  if(def.axis==='row'){ for(let cc=0;cc<board.N;cc++){ if(board.stones[r+','+cc]) cells.push([r,cc]); } }
+  else { for(let rr=0;rr<board.N;rr++){ if(board.stones[rr+','+c]) cells.push([rr,c]); } }
+  cells.forEach(([rr,cc])=>{ board.remove(rr,cc); delete enc.stones[rr+','+cc]; });
+  const dmg = cells.length ? 15+(cells.length-1)*10 : 0;
+  if(dmg){ enc.bossHp=Math.max(0,enc.bossHp-dmg); enc.stageDamage+=dmg; showDamageFloat(cells,dmg,'技能清除×'+cells.length+'（占位公式）'); }
+  consumeSkill(activeSkillId);
+  toast(def.name+' 已施放，清除 '+cells.length+' 顆棋子'+(dmg?'，造成 '+dmg+' 傷害':''),'success');
+  finishSkillAction();
+}
+function applySnipe(r,c){
+  enc.obstacles=enc.obstacles.filter(([rr,cc])=>!(rr===r&&cc===c));
+  board.setObstacles(enc.obstacles);
+  consumeSkill('snipe');
+  toast('精準狙擊命中，障礙棋子已移除','success');
+  finishSkillAction();
+}
+function applyScatter(){
+  scatterPicks.forEach(([r,c])=>{ board.add(r,c,'black'); enc.stones[r+','+c]='black'; });
+  consumeSkill('scatter');
+  toast('散射完成，已同時落下兩子','success');
+  // 散射落子後照 FR-B2 正常結算連線
+  scatterPicks.forEach(([r,c])=>resolveLinesAt(r,c));
+  finishSkillAction();
+}
+function applyUltimate(r,c){
+  const rect=rectFor([r,c],ultimateDir);
+  const cleared=[];
+  rect.forEach(([rr,cc])=>{ const k=rr+','+cc; if(board.stones[k]){ cleared.push([rr,cc]); board.remove(rr,cc); delete enc.stones[k]; } });
+  board.clearPreviews(); board.onHover=null;
+  const dmg = cleared.length ? 15+(cleared.length-1)*10 : 0;
+  if(dmg){ enc.bossHp=Math.max(0,enc.bossHp-dmg); enc.stageDamage+=dmg; showDamageFloat(cleared,dmg,'大絕範圍清除×'+cleared.length+'（占位公式）'); }
+  consumeSkill(activeSkillId);
+  toast((activeSkillId==='ultimate_w'?'天地反轉':'開拓之星')+' 已施放，清除範圍內 '+cleared.length+' 顆棋子','success');
+  finishSkillAction();
+}
+function finishSkillAction(){
+  activeSkillId=null; ultimateStage=null; ultimateDir=null; scatterPicks=[];
+  showHint(null);
+  saveRun(run);
+  syncPanels(); renderSkillBar();
+  checkOutcome();
+}
+
+/* ── 勝敗判定（FR-B4）＋關卡/Run 轉場 ── */
+function checkOutcome(){
+  if(enc.bossHp<=0){
+    setTimeout(()=>onLevelClear(),700);
+  } else if(enc.movesUsed>=enc.moveBudget){
+    setTimeout(()=>onLevelFail(),500);
+  }
+}
+function onLevelClear(){
+  document.getElementById('hintLine').textContent='關卡通過！';
+  board.interactive=false;
+  toast('👏 關卡通過！Boss HP 已歸零','success',4000);
+  run.totalDamage += enc.stageDamage;
+  const goldGain = 10 + (enc.moveBudget - enc.movesUsed);
+  run.gold += goldGain;
+  if(run.stage>=8){
+    const result={type:'won',stage:8,totalDamage:run.totalDamage,gold:run.gold,spentGold:run.spentGold,
+      relics:run.relics,skills:run.skills};
+    sessionStorage.removeItem('pveRun');
+    sessionStorage.setItem('pveResult', JSON.stringify(result));
+    setTimeout(()=>location.href='../pve-result/index.html?type=won',1400);
+  } else {
+    saveRun(run);
+    setTimeout(()=>location.href='../pve-shop/index.html?justCleared='+goldGain,1400);
+  }
+}
+function onLevelFail(){
+  document.getElementById('hintLine').textContent='關卡失敗（手數用盡）';
+  board.interactive=false;
+  toast('💀 手數用盡，關卡失敗','error',4000);
+  const result={type:'lost',stage:run.stage,encounterDamage:enc.stageDamage,encounterMoves:enc.movesUsed,
+    usedSkillsSnapshot: (enc.usedSkills||[]).slice(),
+    totalDamage:run.totalDamage+enc.stageDamage,gold:run.gold,spentGold:run.spentGold,
+    relics:run.relics,skills:run.skills};
+  sessionStorage.removeItem('pveRun');
+  sessionStorage.setItem('pveResult', JSON.stringify(result));
+  setTimeout(()=>location.href='../pve-result/index.html?type=lost',1600);
+}
+function confirmAbandon(){
+  showModal(`<h2 style="margin-bottom:10px">放棄挑戰？</h2>
+    <p class="dim" style="margin-bottom:16px">放棄視同本輪 Run 失敗，將無法復原（FR-C7）。</p>
+    <div class="col gap-8">
+      <button class="btn btn-danger btn-block" onclick="doAbandon()">確定放棄</button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal(this)">繼續挑戰</button>
+    </div>`);
+}
+function doAbandon(){
+  const result={type:'abandoned',stage:run.stage,totalDamage:run.totalDamage+enc.stageDamage,
+    gold:run.gold,spentGold:run.spentGold,relics:run.relics,skills:run.skills};
+  sessionStorage.removeItem('pveRun');
+  sessionStorage.setItem('pveResult', JSON.stringify(result));
+  location.href='../pve-result/index.html?type=abandoned';
+}
+
+/* 示範捷徑：直接演示本關結束（供審閱時快速看到結算轉場，不影響真實落子邏輯） */
+function demoBurstDamage(){
+  enc.bossHp=0; enc.stageDamage+=enc.bossHpMax;
+  syncPanels();
+  checkOutcome();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — PVE 職業選擇</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page page-narrow">
+  <div class="center col" style="text-align:center;margin:20px 0 24px">
+    <span class="badge badge-duel">PVE 挑戰模式</span>
+    <h1 style="font-size:28px;margin-top:10px">選擇你的職業</h1>
+    <p class="dim mt-8">單人流程，無需等待對手；選定職業後立即建立 Run，直接進入第 1 關</p>
+  </div>
+
+  <div class="pve-info-banner mt-8" style="margin-bottom:22px">
+    <span>手數預算 <b class="num">30</b></span>
+    <span>Boss HP <b class="num">100</b>（第 1 關）</span>
+    <span>棋盤 <b>11×11</b></span>
+    <span>場地 <b>PLAIN</b>（無場地效果）</span>
+  </div>
+
+  <div class="class-grid" id="classGrid"></div>
+
+  <button class="btn btn-primary btn-lg btn-block mt-24" id="startBtn" disabled onclick="startRun()">開始挑戰</button>
+  <p class="dim center mt-8" style="font-size:12px">建立 Run 後，同一帳號同時僅能有 1 個進行中的挑戰（FR-C8）</p>
+
+  <p class="dim center mt-16" style="font-size:12px">
+    示範：<a href="#" onclick="simulateConflict();return false">模擬已有進行中 Run（建立時 422）</a>
+  </p>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script>
+document.getElementById('hdr').innerHTML=renderHeader({identity:'registered',nickname:'KuPlayer'});
+
+/* 若已有進行中 Run：不顯示本頁，直接導向續玩該關卡（模式選擇首頁互動行為 / specs/ui/PVE職業選擇頁.md） */
+(function guardExistingRun(){
+  const existing=loadRun();
+  if(existing && existing.stage){
+    toast('偵測到進行中的 Run（第 '+existing.stage+' 關），導向續玩…','success');
+    setTimeout(()=>location.href='../pve-game/index.html?resume=1',650);
+  }
+})();
+
+function loadRun(){ try{return JSON.parse(sessionStorage.getItem('pveRun')||'null');}catch(e){return null;} }
+function saveRun(r){ sessionStorage.setItem('pveRun', JSON.stringify(r)); }
+
+/* 兩職業：劍士(附贈橫劈)／弓箭手(附贈精準狙擊)，技能組說明依 specs/ui/PVE職業選擇頁.md */
+const CLASSES=[
+  {id:'warrior',name:'劍士',ico:'⚔️',starterId:'horizontal',starterName:'橫劈',
+    skills:['橫劈 HORIZONTAL_SLASH（附贈）','縱劈 VERTICAL_SLASH','大絕：天地反轉 HEAVEN_EARTH_REVERSAL']},
+  {id:'archer',name:'弓箭手',ico:'🏹',starterId:'snipe',starterName:'精準狙擊',
+    skills:['精準狙擊 PRECISION_SNIPE（附贈）','散射 SCATTER_SHOT','大絕：開拓之星 PIONEER_STAR']}
+];
+let picked=null;
+
+function renderGrid(){
+  document.getElementById('classGrid').innerHTML=CLASSES.map(c=>`
+    <div class="class-card ${picked===c.id?'selected':''}" onclick="pick('${c.id}')" tabindex="0"
+         role="button" aria-pressed="${picked===c.id}" onkeydown="if(event.key==='Enter'||event.key===' ')pick('${c.id}')">
+      <div class="ico">${c.ico}</div><h4>${c.name}</h4>
+      <div class="skills">${c.skills.join('<br>')}</div>
+    </div>`).join('');
+}
+function pick(id){ picked=id; renderGrid(); document.getElementById('startBtn').disabled=false; }
+renderGrid();
+
+function startRun(){
+  if(!picked) return;
+  const cls=CLASSES.find(c=>c.id===picked);
+  const run={
+    class:picked,
+    stage:1,
+    gold:0,
+    totalDamage:0,
+    spentGold:0,
+    relics:[],
+    skills:[{id:cls.starterId,name:cls.starterName,count:1}],
+    levelField:{},
+    encounter:null,
+    encounterId:'ENC-'+Date.now()
+  };
+  saveRun(run);
+  toast('已建立 PVE Run（'+cls.name+'），進入第 1 關…','success');
+  setTimeout(()=>location.href='../pve-game/index.html',700);
+}
+
+function simulateConflict(){
+  toast('建立失敗：已存在進行中的 Run（422，FR-C8 一帳號僅 1 個進行中 Run）','error');
+  setTimeout(()=>{
+    if(!loadRun()){
+      saveRun({class:'warrior',stage:3,gold:12,totalDamage:540,spentGold:8,
+        relics:[{id:'blade',name:'銳刃',effect:'連線基礎分 +20'}],
+        skills:[{id:'horizontal',name:'橫劈',count:1}],levelField:{},encounter:null,encounterId:'ENC-DEMO'});
+    }
+    location.href='../pve-game/index.html?resume=1';
+  },900);
+}
+</script>
+</body>
+</html>

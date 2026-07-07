@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — PVE 結算</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page page-narrow">
+
+  <!-- 關卡結算（單關失敗,FR-B7）：僅 type=lost 時顯示，接續自動顯示 Run 結算 -->
+  <div class="card pad encounter-recap" id="encounterRecap" style="display:none">
+    <div class="result-banner lost" style="font-size:22px">挑戰失敗</div>
+    <div class="pve-stat-grid" style="grid-template-columns:repeat(3,1fr);margin:14px 0 4px">
+      <div class="stat"><div class="v num" id="encDamage">0</div><div class="k">本關造成總傷害</div></div>
+      <div class="stat"><div class="v num">0</div><div class="k">剩餘手數</div></div>
+      <div class="stat"><div class="v" id="encSkillsUsedCount">0</div><div class="k">已使用技能種類</div></div>
+    </div>
+    <p class="dim center" style="font-size:12px">正在結算本輪 Run…</p>
+  </div>
+
+  <!-- Run 結算（FR-C7） -->
+  <div class="card pad run-recap" id="runRecap" style="opacity:0">
+    <div class="center col" style="text-align:center">
+      <span class="badge badge-duel">PVE 挑戰模式 · Run 結算</span>
+      <div class="result-banner mt-8" id="runBanner">Run 完成</div>
+    </div>
+    <div class="pve-stat-grid">
+      <div class="stat"><div class="v num" id="stageReached">8/8</div><div class="k">到達關數</div></div>
+      <div class="stat"><div class="v num" id="runTotalDamage">0</div><div class="k">全 Run 總傷害</div></div>
+      <div class="stat"><div class="v num" id="goldGained">0</div><div class="k">獲得金幣</div></div>
+      <div class="stat"><div class="v num" id="goldSpent">0</div><div class="k">花費金幣</div></div>
+    </div>
+    <div class="card pad" style="background:var(--c-surface);margin-top:6px">
+      <p class="dim" style="font-size:12px;margin-bottom:8px">最終持有遺物</p>
+      <div class="held-list" id="finalRelics" style="margin-bottom:14px"><span class="dim">無</span></div>
+      <p class="dim" style="font-size:12px;margin-bottom:8px">最終持有技能</p>
+      <div class="held-list" id="finalSkills"><span class="dim">無</span></div>
+    </div>
+    <a class="btn btn-primary btn-block btn-lg mt-16" href="../home/index.html">返回首頁</a>
+    <p class="dim center mt-8" style="font-size:12px">返回首頁後可重新選擇職業，建立新的 Run（FR-C8）</p>
+  </div>
+
+  <div class="card pad mt-16">
+    <p class="dim" style="font-size:12px;margin-bottom:8px">示範：切換情境（供設計檢視用，不影響實際流程）</p>
+    <div class="row gap-8 wrap">
+      <button class="btn btn-ghost" onclick="scene('won')">Run 完成（8關全通）</button>
+      <button class="btn btn-ghost" onclick="scene('lost')">Run 失敗（關卡失敗）</button>
+      <button class="btn btn-ghost" onclick="scene('abandoned')">已放棄</button>
+    </div>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script>
+document.getElementById('hdr').innerHTML=renderHeader({identity:'registered',nickname:'KuPlayer'});
+const P=new URLSearchParams(location.search);
+
+function loadResult(){ try{return JSON.parse(sessionStorage.getItem('pveResult')||'null');}catch(e){return null;} }
+
+const DEMO_RESULTS={
+  won:{type:'won',stage:8,totalDamage:9820,gold:212,spentGold:186,
+    relics:[{id:'blade',name:'銳刃',effect:'連線基礎分 +20'},{id:'gemini',name:'雙子星',effect:'一手同時完成≥2條線傷害×2'}],
+    skills:[{id:'horizontal',name:'橫劈',count:2},{id:'ultimate_w',name:'大絕：天地反轉',count:1}]},
+  lost:{type:'lost',stage:4,encounterDamage:180,encounterMoves:30,usedSkillsSnapshot:['橫劈'],
+    totalDamage:1240,gold:46,spentGold:38,
+    relics:[{id:'blade',name:'銳刃',effect:'連線基礎分 +20'}],
+    skills:[{id:'horizontal',name:'橫劈',count:1}]},
+  abandoned:{type:'abandoned',stage:2,totalDamage:210,gold:20,spentGold:0,relics:[],
+    skills:[{id:'snipe',name:'精準狙擊',count:1}]}
+};
+
+function render(result){
+  const isLost = result.type==='lost';
+  document.getElementById('encounterRecap').style.display = isLost ? 'block' : 'none';
+  if(isLost){
+    document.getElementById('encDamage').textContent=result.encounterDamage||0;
+    document.getElementById('encSkillsUsedCount').textContent=(result.usedSkillsSnapshot||[]).length ? (result.usedSkillsSnapshot||[]).join('、') : '無';
+  }
+
+  const banner=document.getElementById('runBanner');
+  banner.className='result-banner mt-8 '+result.type;
+  banner.textContent = result.type==='won' ? 'Run 完成' : result.type==='lost' ? 'Run 失敗（第 '+result.stage+' 關）' : '已放棄';
+
+  document.getElementById('stageReached').textContent = result.stage+'/8';
+  document.getElementById('runTotalDamage').textContent = result.totalDamage||0;
+  document.getElementById('goldGained').textContent = result.gold||0;
+  document.getElementById('goldSpent').textContent = result.spentGold||0;
+  document.getElementById('finalRelics').innerHTML = (result.relics||[]).length
+    ? result.relics.map(r=>`<span class="held-chip" title="${r.effect||''}">${r.name}</span>`).join('')
+    : '<span class="dim">無</span>';
+  document.getElementById('finalSkills').innerHTML = (result.skills||[]).length
+    ? result.skills.map(s=>`<span class="held-chip">${s.name} ×${s.count}</span>`).join('')
+    : '<span class="dim">無</span>';
+
+  const runRecap=document.getElementById('runRecap');
+  if(isLost){
+    // 收到關卡失敗（ENCOUNTER_FAILED）→ 先顯示關卡結算，接著自動顯示 Run 結算（LOST）
+    runRecap.style.opacity='0';
+    setTimeout(()=>{ runRecap.style.transition='opacity .5s ease'; runRecap.style.opacity='1'; },1600);
+  } else {
+    runRecap.style.opacity='1';
+  }
+}
+
+function scene(kind){
+  const r=DEMO_RESULTS[kind];
+  render(r);
+}
+
+// 優先讀取實際流程留下的結算資料（sessionStorage）；否則以 query type 或預設 lost 情境展示（供本頁獨立檢視）
+const stored=loadResult();
+if(stored){ render(stored); }
+else { scene(P.get('type')||'lost'); }
+</script>
+</body>
+</html>

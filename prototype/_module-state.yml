@@ -2,9 +2,64 @@ version: "2.0"
 mode: "P3"                        # 最終視覺交付
 workflow_mode: "hybrid"          # 預設 hybrid：8 phase 全跑，新文件自動生成
 current_phase: "done"
-phase_detail: "全 phase 完成，prototype 交付前端；2026-07-04 完成真劍勝負模式（需求 #34–48）CHANGE 增量，見 change_log"
+phase_detail: "全 phase 完成，prototype 交付前端；2026-07-07 完成 PVE 挑戰模式 CHANGE 增量並依審核回饋修正高×1中×4問題（見 change_log），2026-07-04 完成真劍勝負模式（需求 #34–48）CHANGE 增量"
 
 change_log:
+  - date: "2026-07-07"
+    type: "FIX"
+    summary: "修正 PVE 挑戰模式審核回饋（高×1中×4）：(1) pve-game 行動版無觸控確認落子鈕，比照 opening 既有慣例補「確認落子」鈕，行動版落子需先點空格預覽再按確認；(2) 8關全通關無 console error 之 smoke test 聲明落地為可重跑腳本 prototype/_tests/pve-smoke.mjs（涵蓋觸控無鍵盤落子路徑），實跑通過；(3) BEACH 漲潮原本只播一次 flash，改為每次觸發侵蝕排數累加（enc.erosion）並重新呼叫 board.setBeach 推進海洋邊界，啟用既有但未使用的 .fx-tide 視覺標記；(4) 關卡失敗結算「已使用技能」原讀持有庫存快照（消耗型技能用罄會從庫存移除，導致誤判為未使用），改為 enc.usedSkills 於 consumeSkill() 當下即時記錄實際使用；(5) pve-shop 商店頁行動版金幣/操作按鈕列改為 .shop-actionbar，theme.css 新增 media query 使其於 ≤640px 固定底部，桌面版維持原流式版面，純新增 class 不影響既有 PVP 頁面。"
+    modified_outputs:
+      - "prototype/pve-game/index.html"
+      - "prototype/pve-shop/index.html"
+      - "prototype/assets/theme.css"
+      - "prototype/_tests/pve-smoke.mjs"
+    features_touched: ["pve-game","pve-shop"]
+    conflicts_found: 0
+    verification: >-
+      node prototype/_tests/pve-smoke.mjs（Playwright chromium，本機臨時 http 伺服器獨立於共用 MCP
+      瀏覽器實例，借用 frontend/node_modules/playwright 但未修改 frontend 任何檔案）：連續執行兩次皆
+      5/5 全數通過 —— A) 8關全通關且第1關以真實觸控（無鍵盤）路徑落子：確認鈕初始 disabled，
+      點擊空格後轉為可按，按下後 movesUsed 正確 +1，全程 console 無 error；B1) 強制第2關為 BEACH
+      後兩次呼叫 triggerWave()，enc.erosion/board.erosion 由 0→1→2 逐次累加（非單次 flash），
+      .fx-tide 視覺標記確實觸發；B2) 觸控施放橫劈技能後 run.skills 庫存清空但 enc.usedSkills
+      仍正確記錄「橫劈」，關卡失敗結算 pveResult.usedSkillsSnapshot 與結算頁 DOM 皆正確顯示「橫劈」
+      （而非因庫存已空而誤判「無」）；B3) pve-shop 於 ≤640px viewport 下 .shop-actionbar
+      computed position 為 fixed，桌面 1280px viewport 下非 fixed；B4) theme.css 新增純屬新 class，
+      home/game（PVP 頁面）於桌面 viewport 載入無 console error。終端輸出末行：
+      "5/5 passed"（2026-07-07 執行）。
+  - date: "2026-07-07"
+    type: "CHANGE"
+    summary: "PVE 挑戰模式（documents/PVE-挑戰模式-增量需求.md）：模式選擇首頁新增第三入口、職業選擇頁、11×11棋盤關卡頁（含真實連線傷害結算與Boss突變邏輯）、商店頁、關卡/Run結算畫面"
+    upstream_specs:
+      - "specs/activities/PVE挑戰模式.mmd"
+      - "specs/ui/模式選擇首頁.md（更新）"
+      - "specs/ui/PVE職業選擇頁.md"
+      - "specs/ui/PVE棋盤關卡頁.md"
+      - "specs/ui/PVE商店頁.md"
+      - "specs/ui/PVE結算畫面.md"
+      - "specs/actors/註冊玩家.md（更新）"
+      - "specs/actors/訪客玩家.md（更新）"
+      - "documents/PVE-挑戰模式-增量需求.md"
+      - "documents/PVE-小丑牌模式-設計指引.md"
+    modified_outputs:
+      - "prototype/assets/theme.css"
+      - "prototype/assets/board.js"
+      - "prototype/home/index.html"
+      - "prototype/pve-class/index.html"
+      - "prototype/pve-game/index.html"
+      - "prototype/pve-shop/index.html"
+      - "prototype/pve-result/index.html"
+      - "prototype/_feature-manifest.md"
+      - "prototype/_component-inventory.md"
+      - "prototype/_ux-copy-guidelines.md"
+    features_touched: ["home","pve-class","pve-game","pve-shop","pve-result"]
+    conflicts_found: 0
+    verification: >-
+      browser smoke test（playwright,本機臨時伺服器，獨立於共用 MCP 瀏覽器實例以避免資源鎖定衝突）：
+      首頁三卡入口與訪客/未登入阻擋彈窗、職業選擇建立Run、關卡內真實連線偵測與傷害結算（含技能施放/
+      本間隔限用1個）、商店購買/重抽/跳過、放棄挑戰、以及完整8關Run通關（Boss HP曲線100/160/260/
+      420/670/1070/1710/2740、突變固定於第3/6/8關、隨機場地volcano/beach）全程以實際函式呼叫與DOM
+      點擊驅動，console 全程無 error，數值結果（傷害/金幣/持有清單）與程式邏輯計算值逐一比對相符。
   - date: "2026-07-04"
     type: "CHANGE"
     summary: "真劍勝負模式（需求 #34–48）：場地選擇(火山/沙灘)、職業選擇與揭曉、技能操作流、16x16沙灘棋盤、隱藏格、特效占位"
@@ -71,7 +126,7 @@ design_strategy:
 
 prototyping:
   status: "done"
-  completed_count: 9
+  completed_count: 13
   conflict_count: 0
   error_count: 0
 
@@ -82,7 +137,7 @@ ux_review:
 features:
   - name: "home"
     activity_file: "specs/activities/本地雙人對戰.mmd"
-    ui_file: "specs/ui/模式選擇首頁.md"
+    ui_file: "specs/ui/模式選擇首頁.md（更新，新增PVE第三入口）"
     ui_derived: false
     ui_confidence: "high"
     p1_status: "done"
@@ -176,6 +231,50 @@ features:
     p1_status: "done"
     p3_status: "done"
     output: "prototype/replay/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "pve-class"
+    activity_file: "specs/activities/PVE挑戰模式.mmd"
+    ui_file: "specs/ui/PVE職業選擇頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/pve-class/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "pve-game"
+    activity_file: "specs/activities/PVE挑戰模式.mmd"
+    ui_file: "specs/ui/PVE棋盤關卡頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/pve-game/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "pve-shop"
+    activity_file: "specs/activities/PVE挑戰模式.mmd"
+    ui_file: "specs/ui/PVE商店頁.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/pve-shop/index.html"
+    output_version: "P3"
+    conflicts: []
+    error: ""
+  - name: "pve-result"
+    activity_file: "specs/activities/PVE挑戰模式.mmd"
+    ui_file: "specs/ui/PVE結算畫面.md"
+    ui_derived: false
+    ui_confidence: "high"
+    p1_status: "done"
+    p3_status: "done"
+    output: "prototype/pve-result/index.html"
     output_version: "P3"
     conflicts: []
     error: ""

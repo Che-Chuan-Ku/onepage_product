@@ -2,7 +2,7 @@
 module: demand_analysis
 project_root: /Users/chechuanku/Documents/aiproject/onepage_product
 mode: CHANGE                              # 既有 specs/ → Reconciler 增量更新
-last_run: "2026-07-04"
+last_run: "2026-07-07"
 
 discovery_steps:
   step1_composition: completed
@@ -69,12 +69,12 @@ round_2026_07_04:
          "棋盤對局頁.md(擴充)", "對局結束畫面.md(擴充)", "回放頁.md(擴充)"]
 
 artifacts_summary:
-  activities: 5
+  activities: 6      # +1 PVE挑戰模式.mmd（2026-07-07）
   actors: 2
-  features: 30
-  ui_pages: 12
-  erm: 1
-  api: 1
+  features: 41       # +11 specs/features/pve/*（2026-07-07）
+  ui_pages: 17       # +5 PVE系列頁面（2026-07-07）
+  erm: 1             # 單檔累加 PVE 增量表/enum
+  api: 1             # 單檔累加 PVE 增量 tag/paths/schemas
   infrastructure: 1
   arguments: 1
 
@@ -101,4 +101,106 @@ next_action: >
   2026-07-04 審核修正輪已完成全部 9 項發現的修正（高風險2/中風險5/低風險2），
   範圍限定於審核發現，未變動已通過內容。四視圖與 ui/actors 交叉引用一致，Quality Gate 通過。
   回傳 Hub interrupt(status=completed)，等待人工複審。
+rollback_count: 0
+
+# ── 2026-07-07 CHANGE 輪：PVE 挑戰模式（增量 A/B/C）─────────────
+round_2026_07_07_pve:
+  scope: >
+    documents/PVE-挑戰模式-增量需求.md（v1.1）+ documents/PVE-小丑牌模式-設計指引.md（設計脈絡，非規格來源）。
+    新增單人 PVE 挑戰模式：增量A效果系統資料驅動化（PVP行為不變）、增量B單關挑戰、
+    增量C Run循環/商店/遺物/Boss突變。輸入文件已標註「經一輪fresh-agent明確性審查」，
+    §8已代決策的預設值清單降低了本輪澄清需求；本輪未觸發需人工介入的interrupt。
+  discovery_steps:
+    step1_composition_change: completed   # PVE為全新Strategic範圍(新Actor行為，非新Actor)，非既有場景延伸
+    step2_impact_analysis: completed      # 影響 activities/features/erm/api/actors/ui 六類，PVP契約零修改
+    step5a_bfs_delta: completed           # 無新增Actor；註冊玩家 追加PVE可執行行為；訪客玩家 明確排除PVE
+    step5b_dfs_delta: completed           # 建立Run->逐關落子/技能->結算判定->商店->下一關->Run結算 路徑完整性對齊需求文件FR-A1~FR-C8
+    step7_quality_gate: passed            # 四視圖(activity/feature/erm/api)+ui/actors交叉引用一致；PVE與既有PVP完全獨立無交會
+  resolved_decisions_source: "documents/PVE-挑戰模式-增量需求.md §8（已代決策的預設值，12項）"
+  affected_artifacts:
+    erm: ["新增enum battle_context/effect_action_type/effect_usage_limit_type/pve_run_status/",
+          "pve_encounter_status/pve_field_type/pve_mutation_type/pve_relic_type/pve_shop_offer_kind/",
+          "pve_shop_visit_status/pve_encounter_event_type",
+          "新表 effect_definitions/pve_runs/pve_encounters/pve_encounter_moves/pve_field_cells/",
+          "pve_field_states/pve_encounter_events/pve_run_skills/pve_run_relics/pve_shop_visits/pve_shop_offer_slots",
+          "既有 class_type/skill_type/field_cell_kind/board_side enum 重用，未修改既有表"]
+    api: ["新增tag pve；新增10個端點 /pve/runs(current)/actions/abandon、/pve/encounters/{id}(/moves,/actions/use-skill)、",
+          "/pve/runs/{id}/shop(/actions/purchase,/reroll,/skip)",
+          "新增schemas：PveRunCreateRequest/PveRunStateResponse/PveEncounterStateResponse/PveMoveCreateRequest/",
+          "PveSkillUseRequest/PveShopStateResponse/PveShopOfferItem/PveShopPurchaseRequest/PveRunResultResponse",
+          "既有PVP路徑與schema零修改；PVE不使用x-stomp-channels（單人HTTP-only）"]
+    features: ["pve/效果系統資料驅動化(新,FR-A1-A3)", "pve/建立挑戰與職業選擇(新,FR-B1 FR-C8)",
+               "pve/連線傷害結算(新,FR-B2 FR-B3)", "pve/關卡勝敗判定(新,FR-B4)", "pve/技能使用(新,FR-A2 FR-B5)",
+               "pve/關卡持久化與續玩(新,FR-B6)", "pve/Run循環與場地排程(新,FR-C1 FR-C2)",
+               "pve/金幣與商店(新,FR-C3 FR-C4)", "pve/遺物效果(新,FR-C5)", "pve/Boss突變(新,FR-C6)",
+               "pve/Run終止與結算(新,FR-C7)"]
+    actors: ["註冊玩家(追加PVE可執行行為)", "訪客玩家(明確排除:不可遊玩PVE)"]
+    activities: ["活動圖 PVE挑戰模式.mmd(新)；與既有 真劍勝負模式.mmd/線上連線對戰.mmd 無交會點，未修改既有活動圖"]
+    ui: ["模式選擇首頁.md(擴充:新增PVE入口)", "PVE職業選擇頁.md(新)", "PVE棋盤關卡頁.md(新)",
+         "PVE商店頁.md(新)", "PVE結算畫面.md(新)"]
+  scope_discipline: "僅新增PVE相關spec；既有PVP的activities/features/erm/api/ui內容一律未修改（NFR-3不變式）"
+  next_action: >
+    PVE增量規格已完整產出（Strategic+Tactical層），四視圖與ui/actors交叉引用一致，
+    Quality Gate通過。回傳 Hub interrupt(status=completed)，等待人工複審。
+rollback_count: 0
+
+# ── 2026-07-07 CHANGE 輪：PVE 增量規格缺口補件（小幅增補，非重做）───
+round_2026_07_07_pve_gap_fix:
+  trigger: >
+    PVE增量規格通過審核後，後端(193 tests全綠)/前端(build+PVE e2e全綠)已據此實作完成；
+    實作過程暴露4項規格缺口（前端模組回報3項＋首輪審核已列問題同源合併1項），
+    人裁決「現在補規格」。已實作的7 endpoint/9 schema/11 feature既有語意不變，
+    只新增與澄清，不重跑完整discovery pipeline。
+  backend_ground_truth_verified: >
+    派research subagent查證 PveChallengeService.java/PveController.java/
+    PveRun.java/PveBoardReplayer.java 實際行為，規格向已實作行為對齊：
+    buildRunResult()已存在但未接natural WON/LOST路由、usedSkills欄位已存在於
+    PveEncounterStateResponse.java但api.yml未同步、PRECISION_SNIPE.target在PVE
+    指深淵突變生成的WHITE障礙棋子、SCATTER_SHOT在PVE以anchor承載第一顆棋子座標、
+    422錯誤訊息("該位置已有棋子"/"座標超出棋盤範圍"/"該格為障礙物，禁止落子")逐字核對。
+  gaps_fixed:
+    gap1_run_natural_settlement: >
+      api.yml 新增 GET /pve/runs/{runId}/result（getPveRunResult），回傳
+      PveRunResultResponse，僅限已結束Run可查、進行中回422。取代前端sessionStorage
+      合成結算（goldEarned/goldSpent記0的缺口）。features/pve/Run終止與結算.feature
+      新增Rule「Run自然結束後可查詢權威結算資料」，3個Example（WON/LOST/進行中拒絕）。
+    gap2_encounter_settlement_fields: >
+      api.yml PveEncounterStateResponse 新增 usedSkills（string enum陣列，對齊
+      PveEncounterStateResponse.java已有欄位，先前僅實作端有、規格端缺）。
+      總傷害/剩餘手數由既有bossHpMax/bossHpCurrent/moveBudget/movesUsed推算，
+      不需新增欄位。features/pve/關卡勝敗判定.feature 新增Rule「關卡結算顯示
+      勝敗/總傷害/剩餘手數/已使用技能清單」，2個Example（通過/失敗）。
+    gap3_pve_skill_semantics: >
+      api.yml SkillActionRequest description 由「真劍勝負模式限定」改寫為跨模式
+      共用（PVP/PVE行動型態差異改依FR-A2資料定義描述），direction/anchor/target/
+      secondStone 四欄位各自補上PVP與PVE情境的具體語意差異（PVE因技能獨立行動、
+      無伴隨落子座標，anchor在橫劈縱劈/散射中承載原本由row/col提供的座標角色；
+      target在PVE指深淵突變生成的WHITE障礙棋子）。PveSkillUseRequest description
+      同步更新指向SkillActionRequest各欄位說明，不再是空泛的「語意沿用」。
+    gap4_negative_scenarios: >
+      features/pve/連線傷害結算.feature 新增Rule「落子座標不合法時拒絕」，
+      3個Example對應api.yml placePveMove 422的三種既有情境（位置已佔/超出11x11
+      範圍/障礙格禁止落子），錯誤文案與後端實際訊息逐字一致。
+    gap5_run_create_seed: >
+      後端審核Gate 5追加發現：PveRunCreateRequest.java:11-14 已實作optional seed
+      （FR-A3決定性測試注入），api.yml PveRunCreateRequest schema先前只有classType。
+      新增 seed（string，nullable，maxLength 64），description說明其用途與省略時
+      伺服器自動產生亂數seed。FR-A3 seed決定性已有既有Scenario覆蓋
+      （features/pve/效果系統資料驅動化.feature:44-50），未新增scenario，僅補schema宣告。
+  scope_discipline: >
+    僅新增5項缺口對應的schema欄位/endpoint/description/scenario；未刪除或修改任何
+    既有endpoint/schema/scenario語意；backend/frontend/specs/workflow-state.yml
+    完全未觸碰；改動前已備份 specs/api.yml.bak-20260707。
+  affected_artifacts:
+    api: ["新增 GET /pve/runs/{runId}/result + PveRunResultResponse 400系列",
+          "PveEncounterStateResponse 新增 usedSkills",
+          "SkillActionRequest description 重寫為跨模式；PveSkillUseRequest description 更新",
+          "PveRunCreateRequest 新增 optional seed"]
+    features: ["pve/Run終止與結算.feature(+1 Rule/3 Example)",
+               "pve/關卡勝敗判定.feature(+1 Rule/2 Example)",
+               "pve/連線傷害結算.feature(+1 Rule/3 Example)"]
+  next_action: >
+    5項缺口已全數補齊（4項原缺口＋後端審核Gate 5追加的seed欄位），僅新增與澄清、
+    既有7 endpoint/9 schema/11 feature語意不變。
+    回傳 Hub interrupt(status=completed)，等待人工複審。
 rollback_count: 0

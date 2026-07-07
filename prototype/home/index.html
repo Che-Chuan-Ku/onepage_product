@@ -30,6 +30,14 @@
       <p class="dim">與其他玩家即時對戰、開房、快速配對與觀戰。</p>
       <div class="badge badge-normal" style="margin-top:16px">需登入或以訪客身份</div>
     </button>
+
+    <!-- PVE 挑戰模式（documents/PVE-挑戰模式-增量需求.md）：單人闖關,僅限已登入玩家 -->
+    <button class="mode-card pve" onclick="goPve()">
+      <div class="ico">🐲</div>
+      <h2>PVE 挑戰模式</h2>
+      <p class="dim">單人闖關 8 關 Boss，以連線造成傷害，商店構築你的連段。</p>
+      <div class="badge badge-duel" style="margin-top:16px">需註冊登入 · 單人</div>
+    </button>
   </div>
 
   <p class="dim center" style="margin-top:28px;font-size:13px">
@@ -37,6 +45,10 @@
     <a href="#" onclick="setId('none');return false">未登入</a> ·
     <a href="#" onclick="setId('guest');return false">訪客</a> ·
     <a href="#" onclick="setId('registered');return false">註冊玩家</a>
+  </p>
+  <p class="dim center mt-8" style="font-size:12px">
+    PVE 示範：
+    <a href="#" onclick="clearPveRun();return false">清除進行中 Run</a>
   </p>
 </main>
 
@@ -63,6 +75,28 @@ function goOnline(){
       </div>`);
   } else {
     location.href='../lobby/index.html';
+  }
+}
+
+/* ═══ PVE 挑戰模式：訪客不提供入口，僅限已登入玩家（documents/PVE-挑戰模式-增量需求.md §4.2） ═══ */
+function loadPveRun(){ try{return JSON.parse(sessionStorage.getItem('pveRun')||'null');}catch(e){return null;} }
+function clearPveRun(){ sessionStorage.removeItem('pveRun'); sessionStorage.removeItem('pveResult'); toast('已清除 PVE 進行中 Run（示範用）','success'); }
+function goPve(){
+  if(identity!=='registered'){
+    showModal(`<h2 style="margin-bottom:8px">PVE 挑戰模式需要註冊帳號</h2>
+      <p class="dim" style="margin-bottom:18px">PVE 僅限已登入玩家遊玩，訪客／未登入無法建立挑戰，請先註冊或登入。</p>
+      <div class="col gap-8">
+        <a class="btn btn-accent btn-block" href="../user/index.html">註冊 / 登入</a>
+        <button class="btn btn-ghost btn-block" onclick="closeModal(this)">取消</button>
+      </div>`);
+    return;
+  }
+  const run=loadPveRun();
+  if(run && run.stage){
+    toast('偵測到進行中的 Run（第 '+run.stage+' 關），為你繼續挑戰…','success');
+    setTimeout(()=>location.href='../pve-game/index.html?resume=1',600);
+  } else {
+    location.href='../pve-class/index.html';
   }
 }
 </script>

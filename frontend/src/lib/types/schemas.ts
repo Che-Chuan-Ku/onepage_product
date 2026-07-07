@@ -470,3 +470,254 @@ export const GameReplayResponse = z.object({
   whitePlayerId: z.string().nullable().optional(),
 });
 export type GameReplayResponse = z.infer<typeof GameReplayResponse>;
+
+// ══════════════════════════════════════════════════════════════
+// ── PVE 挑戰模式 Schemas (api.yml:1547-1723, documents/PVE-挑戰模式-增量需求.md) ──
+// PVE is a solo player-vs-Boss mode: single request/response, no STOMP, no
+// opponent stones (PveEncounterStateResponse.stones has no `color` field —
+// see api.yml:1605-1608 and pve-api-spec.md §2.3 疑義). Distinct enums below
+// (PveFieldType/PveMutationType/PveEventType/...) even where PVP already has
+// an enum of the same *name* concept, because api.yml declares different
+// value sets for PVE (e.g. PveFieldType adds "PLAIN"; PVP FieldType doesn't).
+// ClassType and SkillType ARE reused as-is: PVE's classType/skillType enums
+// in api.yml are value-for-value identical to the existing PVP ones.
+// ══════════════════════════════════════════════════════════════
+
+export const PveFieldType = z.enum(["PLAIN", "VOLCANO", "BEACH"]);
+export type PveFieldType = z.infer<typeof PveFieldType>;
+
+// 固定綁定第3/6/8關（FR-C6）：ONE_EYE(獨眼)/RAGE(震怒)/ABYSS(深淵)。
+export const PveMutationType = z.enum(["NONE", "ONE_EYE", "RAGE", "ABYSS"]);
+export type PveMutationType = z.infer<typeof PveMutationType>;
+
+export const PveRunStatus = z.enum(["IN_PROGRESS", "WON", "LOST", "ABANDONED"]);
+export type PveRunStatus = z.infer<typeof PveRunStatus>;
+
+// PveRunResultResponse.status is a separate inline enum in api.yml with only
+// 3 values (post-settlement; no IN_PROGRESS) — kept as its own Zod const
+// rather than reusing PveRunStatus (pve-api-spec.md §2.9 注意).
+export const PveRunResultStatus = z.enum(["WON", "LOST", "ABANDONED"]);
+export type PveRunResultStatus = z.infer<typeof PveRunResultStatus>;
+
+export const PveEncounterStatus = z.enum(["IN_PROGRESS", "CLEARED", "FAILED"]);
+export type PveEncounterStatus = z.infer<typeof PveEncounterStatus>;
+
+// 初始遺物池8個（遺物效果.feature），持有上限5，不可重複。
+export const RelicType = z.enum([
+  "SHARP_BLADE",
+  "CHAIN_CORE",
+  "DIAGONAL_WALKER",
+  "VOLCANO_HEART",
+  "TIDE_BREAKWATER",
+  "METRONOME",
+  "RECYCLER",
+  "GEMINI_STAR",
+]);
+export type RelicType = z.infer<typeof RelicType>;
+
+export const PveEventType = z.enum([
+  "LINE_RESOLVED",
+  "SKILL_USED",
+  "STONES_PUSHED",
+  "STONE_REMOVED_OFF_BOARD",
+  "VOLCANO_ERUPTED",
+  "WAVE_SURGED",
+  "TIDE_TRIGGERED",
+  "BOSS_MUTATION_TRIGGERED",
+  "ENCOUNTER_CLEARED",
+  "ENCOUNTER_FAILED",
+]);
+export type PveEventType = z.infer<typeof PveEventType>;
+
+export const PveLineDirection = z.enum([
+  "HORIZONTAL",
+  "VERTICAL",
+  "DIAGONAL",
+  "ANTI_DIAGONAL",
+]);
+export type PveLineDirection = z.infer<typeof PveLineDirection>;
+
+export const PveShopOfferKind = z.enum(["RELIC", "SKILL"]);
+export type PveShopOfferKind = z.infer<typeof PveShopOfferKind>;
+
+export const PveShopStatus = z.enum(["OPEN", "CLOSED"]);
+export type PveShopStatus = z.infer<typeof PveShopStatus>;
+
+// ── 2.1 PveRunCreateRequest (api.yml:1621-1650) ──
+export const PveRunCreateRequest = z.object({
+  // FR-B1：建關依職業附贈1個技能
+  // （WARRIOR附HORIZONTAL_SLASH／ARCHER附PRECISION_SNIPE，FR-B5）
+  classType: ClassType,
+  // 選填，供決定性測試/問題重現注入固定 seed（FR-A3）。省略或空白時由伺服器
+  // 自動產生亂數 seed，一般玩家建立 Run 不需提供（api.yml:1626-1638）。
+  seed: z.string().max(64).nullable().optional(),
+});
+export type PveRunCreateRequest = z.infer<typeof PveRunCreateRequest>;
+
+export const PveHeldSkillItem = z.object({
+  skillType: SkillType,
+  quantity: z.number().int(),
+});
+export type PveHeldSkillItem = z.infer<typeof PveHeldSkillItem>;
+
+export const PveHeldRelicItem = z.object({
+  relicType: RelicType,
+});
+export type PveHeldRelicItem = z.infer<typeof PveHeldRelicItem>;
+
+// api.yml stones[].items only declares row/col (no color) — every stone on
+// a PVE board belongs to the player (the Boss never places stones).
+export const PveStoneCell = z.object({ row: z.number().int(), col: z.number().int() });
+export type PveStoneCell = z.infer<typeof PveStoneCell>;
+
+export const PveLineResolution = z.object({
+  // 線長，5以上；六連70/七連90（見連線傷害結算.feature）
+  length: z.number().int(),
+  baseScore: z.number().int(),
+  multiplier: z.number(),
+  direction: PveLineDirection,
+});
+export type PveLineResolution = z.infer<typeof PveLineResolution>;
+
+export const PveLastResolution = z.object({
+  damageDealt: z.number().int(),
+  linesResolved: z.array(PveLineResolution),
+});
+export type PveLastResolution = z.infer<typeof PveLastResolution>;
+
+export const PveEncounterEvent = z.object({
+  eventType: PveEventType,
+  row: z.number().int().nullable(),
+  col: z.number().int().nullable(),
+});
+export type PveEncounterEvent = z.infer<typeof PveEncounterEvent>;
+
+// ── 2.3 PveEncounterStateResponse (api.yml:1585-1645) ──
+export const PveEncounterStateResponse = z.object({
+  encounterId: z.string(),
+  runId: z.string(),
+  sequence: z.number().int().min(1).max(8),
+  // PVE專用11x11幾何規格，與真劍勝負場地不共用尺寸（FR-C2）
+  fieldType: PveFieldType,
+  mutationType: PveMutationType,
+  boardRows: z.number().int(),
+  boardCols: z.number().int(),
+  bossHpMax: z.number().int(),
+  bossHpCurrent: z.number().int(),
+  moveBudget: z.number().int(),
+  movesUsed: z.number().int(),
+  status: PveEncounterStatus,
+  stones: z.array(PveStoneCell),
+  // VOLCANO可見障礙格3–5個；ABYSS突變動態生成的障礙棋子亦列於此（FR-C2 FR-C6）
+  obstacles: z.array(PveStoneCell),
+  skillUsableThisInterval: z.boolean(),
+  // 本關已使用技能清單（依使用順序，可含重複；FR-B7 關卡結算畫面顯示用，斷線
+  // 續玩查詢時同步回傳，api.yml:1697-1705）。
+  usedSkills: z.array(SkillType),
+  lastResolution: PveLastResolution.nullable(),
+  events: z.array(PveEncounterEvent),
+});
+export type PveEncounterStateResponse = z.infer<typeof PveEncounterStateResponse>;
+
+// ── 2.2 PveRunStateResponse (api.yml:1554-1583) ──
+export const PveRunStateResponse = z.object({
+  runId: z.string(),
+  classType: ClassType,
+  status: PveRunStatus,
+  // Run內貨幣，不跨Run累積（FR-C3）；起始0。
+  gold: z.number().int(),
+  currentEncounterSequence: z.number().int().min(1).max(8),
+  reachedEncounterSequence: z.number().int(),
+  totalDamageDealt: z.number().int(),
+  // Additive convenience (not a separate api.yml field name change): embeds
+  // the in-progress encounter so the run page avoids a 2nd round trip.
+  // nullable/optional: no current encounter once the run has ended.
+  currentEncounter: PveEncounterStateResponse.nullable().optional(),
+  // 持有上限3（含重複），FR-C4
+  heldSkills: z.array(PveHeldSkillItem),
+  // 持有上限5，不可重複（FR-C4）
+  heldRelics: z.array(PveHeldRelicItem),
+});
+export type PveRunStateResponse = z.infer<typeof PveRunStateResponse>;
+
+// ── 2.4 PveMoveCreateRequest (api.yml:1647-1653) ──
+// 純落子；PVE技能一律獨立行動，不附掛於本請求（見 PveSkillUseRequest，FR-A2 FR-B5）
+export const PveMoveCreateRequest = z.object({
+  row: z.number().int().min(0).max(10),
+  col: z.number().int().min(0).max(10),
+});
+export type PveMoveCreateRequest = z.infer<typeof PveMoveCreateRequest>;
+
+// ── 2.5 PveSkillUseRequest (api.yml:1655-1660) ──
+// api.yml 用 allOf 引用既有 SkillActionRequest，但該 schema 的 description 是
+// PVP-only 語意（「大絕取代本回合落子」）。PVE 沒有「附掛落子」概念（技能與落子
+// 是分開兩個 endpoint），故此處建一個欄位形狀相同、語意獨立的 schema，不耦合
+// PVP-only 的描述文字（pve-api-spec.md §3.2 建議）。
+export const PveSkillUseRequest = z.object({
+  skillType: SkillType,
+  // 橫劈用 UP/DOWN；縱劈用 LEFT/RIGHT；大絕四方向皆可
+  direction: SkillDirection.nullable().optional(),
+  // 大絕錨點，必須為空格
+  anchor: Cell.nullable().optional(),
+  // 精準狙擊指定的現存敵方（Boss佔用）棋子座標
+  target: Cell.nullable().optional(),
+  // 散射第二顆棋子座標，與 row/col 的 Chebyshev 距離須 >= 2
+  secondStone: Cell.nullable().optional(),
+});
+export type PveSkillUseRequest = z.infer<typeof PveSkillUseRequest>;
+
+// ── 2.7 PveShopOfferItem (api.yml:1677-1691) ──
+// relicType/skillType 皆 nullable 且互斥：offerKind=RELIC 時只有 relicType 有值。
+export const PveShopOfferItem = z.object({
+  slotIndex: z.number().int(),
+  offerKind: PveShopOfferKind,
+  relicType: RelicType.nullable(),
+  skillType: SkillType.nullable(),
+  price: z.number().int(),
+  purchased: z.boolean(),
+});
+export type PveShopOfferItem = z.infer<typeof PveShopOfferItem>;
+
+// ── 2.6 PveShopStateResponse (api.yml:1662-1675) ──
+export const PveShopStateResponse = z.object({
+  shopVisitId: z.string(),
+  runId: z.string(),
+  afterEncounterSequence: z.number().int(),
+  status: PveShopStatus,
+  rerollCount: z.number().int(),
+  gold: z.number().int(),
+  // 固定3位：遺物x2＋技能x1（FR-C4）
+  offers: z.array(PveShopOfferItem),
+});
+export type PveShopStateResponse = z.infer<typeof PveShopStateResponse>;
+
+// ── 2.8 PveShopPurchaseRequest (api.yml:1693-1697) ──
+export const PveShopPurchaseRequest = z.object({
+  // 0,1=遺物位；2=技能位（FR-C4）
+  slotIndex: z.number().int(),
+});
+export type PveShopPurchaseRequest = z.infer<typeof PveShopPurchaseRequest>;
+
+// ── 2.9 PveRunResultResponse (api.yml:1699-1723) ──
+// Run結算：通關/失敗/放棄皆回傳此結構（FR-C7）
+export const PveRunResultResponse = z.object({
+  runId: z.string(),
+  status: PveRunResultStatus,
+  reachedEncounterSequence: z.number().int(),
+  totalDamageDealt: z.number().int(),
+  goldEarned: z.number().int(),
+  goldSpent: z.number().int(),
+  finalHeldSkills: z.array(PveHeldSkillItem),
+  finalHeldRelics: z.array(PveHeldRelicItem),
+});
+export type PveRunResultResponse = z.infer<typeof PveRunResultResponse>;
+
+// skipPveShop 的 200 回應 shape 依情境變化（api.yml 用 {type:object} 泛型宣告，
+// 未用 oneOf 明確建模，見 pve-api-spec.md §1.10）：下一關存在時為
+// PveEncounterStateResponse；剛通過第8關（無下一關）時為 PveRunResultResponse。
+// 下游可用 "encounterId" in data 判斷 discriminate。
+export const PveShopSkipResponse = z.union([
+  PveEncounterStateResponse,
+  PveRunResultResponse,
+]);
+export type PveShopSkipResponse = z.infer<typeof PveShopSkipResponse>;

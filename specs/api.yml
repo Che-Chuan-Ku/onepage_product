@@ -830,6 +830,49 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
 
+  /pve/runs/{runId}/result:
+    get:
+      tags: [pve]
+      operationId: getPveRunResult
+      summary: 查詢已結束 Run 的權威結算
+      description: >
+        Run 因通過第8關（WON）或任一關手數用盡失敗（LOST）而自然結束時，前端無法像
+        abandon／shop 通關後skip（第8關）那樣直接從觸發動作的當下回應取得
+        PveRunResultResponse——本端點供事後查詢該次結算，回傳權威 goldEarned/
+        goldSpent/totalDamageDealt，取代前端自行以 sessionStorage 推算（FR-C7）。
+        僅限已結束（WON/LOST/ABANDONED）的 Run 可查；Run 仍進行中則回 422，
+        請待通關/失敗/放棄後再查詢。
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveRunResultResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Run 仍進行中，尚未結束，無法查詢結算
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+
   /pve/encounters/{encounterId}:
     get:
       tags: [pve]
@@ -1328,10 +1371,17 @@ components:
       type: object
       required: [skillType]
       description: >
-        真劍勝負模式限定（需求 #36 #42 #43）。一般技能（HORIZONTAL_SLASH /
-        VERTICAL_SLASH / PRECISION_SNIPE / SCATTER_SHOT）附掛於本手落子同時提出；
-        大絕（HEAVEN_EARTH_REVERSAL / PIONEER_STAR）取代本回合落子，此時外層
-        MoveCreateRequest.row/col 應省略。每個技能一場僅能使用一次。
+        技能發動的共用欄位結構，跨模式共用（真劍勝負 PVP：需求 #36 #42 #43；PVE 挑戰
+        模式：FR-A2 FR-B5）。欄位定義兩模式相同，但「行動型態」（附掛於落子／取代落子／
+        獨立行動）與「使用限制」（每場一次／消耗型）由 FR-A2 資料定義依模式切換，不
+        寫死於本 schema：PVP 一般技能（HORIZONTAL_SLASH/VERTICAL_SLASH/PRECISION_SNIPE/
+        SCATTER_SHOT）附掛於本手落子（MoveCreateRequestNormal.row/col 即該手落子座標）
+        同時提出，大絕（HEAVEN_EARTH_REVERSAL/PIONEER_STAR）取代本回合落子
+        （MoveCreateRequestUltimate，此時省略 row/col），每個技能一場僅能使用一次；
+        PVE 全部技能皆為獨立行動、消耗型，透過 PveSkillUseRequest 單獨送出、不附掛
+        任何落子座標，使用限制改依持有數量（上限3）與每兩次落子間至多用1個
+        （FR-B5）。因 PVE 無伴隨落子座標，下列 anchor/target/secondStone 部分欄位在
+        PVE 情境下承載的座標角色與 PVP 不同，各欄位 description 已分別註明。
       properties:
         skillType:
           type: string
@@ -1340,25 +1390,43 @@ components:
           type: string
           enum: [UP, DOWN, LEFT, RIGHT]
           nullable: true
-          description: '橫劈用 UP/DOWN；縱劈用 LEFT/RIGHT；大絕四方向皆可'
+          description: '橫劈用 UP/DOWN；縱劈用 LEFT/RIGHT；大絕四方向皆可（PVP/PVE 通用）'
         anchor:
           type: object
           nullable: true
-          description: '大絕錨點，必須為空格（需求 #42 #43）'
+          description: >
+            大絕（HEAVEN_EARTH_REVERSAL/PIONEER_STAR）：施法錨點，PVP/PVE 皆須為空格，
+            錨點本身不落子，僅界定3x2共6格作用區（需求 #42 #43，FR-A2）。
+            橫劈/縱劈（HORIZONTAL_SLASH/VERTICAL_SLASH）：推擠參考格。PVP 由本手
+            row/col 帶入（先落子、後以該落子點為參考推擠，本欄位不使用）；PVE 因技能
+            為獨立行動、無伴隨落子，改由本欄位提供參考格座標，該格本身不因此落子，
+            可為空格或現有棋子（FR-A2 FR-B5）。
+            散射（SCATTER_SHOT）：PVP 由本手 row/col 作為第一顆棋子座標（本欄位不使用）；
+            PVE 因無伴隨落子，改由本欄位作為第一顆新棋子座標，與 secondStone 的
+            Chebyshev 距離規則不變。
           properties:
             row: { type: integer }
             col: { type: integer }
         target:
           type: object
           nullable: true
-          description: '精準狙擊指定的現存敵方棋子座標'
+          description: >
+            精準狙擊（PRECISION_SNIPE）指定的『現存敵方棋子』座標。PVP：現存敵方棋子＝
+            對手顏色棋子，且必須與本手 row/col 一致（本欄位為選填防呆確認，實際作用
+            座標仍是 row/col）。PVE：無真人對手、技能為獨立行動無伴隨落子，故本欄位
+            為必填、直接代表作用座標；PVE 的『現存敵方棋子』定義為深淵突變（第8關
+            ABYSS，FR-C6）動態生成之障礙棋子（棋盤上以白子表示），命中後轉為玩家棋子；
+            座標上無此棋子時回 422「精準狙擊目標非現存敵方棋子」。
           properties:
             row: { type: integer }
             col: { type: integer }
         secondStone:
           type: object
           nullable: true
-          description: '散射第二顆棋子座標，與 row/col 的 Chebyshev 距離須 >= 2'
+          description: >
+            散射（SCATTER_SHOT）第二顆棋子座標，與第一顆座標的 Chebyshev 距離須 >= 2、
+            兩格皆須為空格可落子。PVP 第一顆座標＝本手 row/col；PVE 第一顆座標＝本
+            schema 的 anchor 欄位（因技能獨立行動、無伴隨落子座標）。
           properties:
             row: { type: integer }
             col: { type: integer }
@@ -1550,6 +1618,15 @@ components:
       required: [classType]
       properties:
         classType: { type: string, enum: [WARRIOR, ARCHER], description: 'FR-B1：建關依職業附贈1個技能（WARRIOR附HORIZONTAL_SLASH／ARCHER附PRECISION_SNIPE，FR-B5）' }
+        seed:
+          type: string
+          nullable: true
+          maxLength: 64
+          example: "determinism-test-001"
+          description: >
+            選填，供決定性測試/問題重現注入固定 seed（FR-A3：同 seed＋同操作序列必得
+            同結果，驅動場地生成、隱藏格位置、Boss突變隨機事件、商店抽取等）。
+            省略或空白時由伺服器自動產生亂數 seed，一般玩家建立 Run 不需提供。
 
     PveRunStateResponse:
       type: object
@@ -1617,6 +1694,15 @@ components:
         skillUsableThisInterval:
           type: boolean
           description: '本間隔（上一手落子後、下一手落子前）是否仍可使用技能，每間隔至多1個（FR-B5）'
+        usedSkills:
+          type: array
+          description: >
+            本關已使用技能清單（依使用順序，可含重複；FR-B7 關卡結算畫面顯示用，
+            斷線續玩查詢時同步回傳，FR-B6）。本關總傷害可由 bossHpMax-bossHpCurrent
+            推算，剩餘手數可由 moveBudget-movesUsed 推算，皆無需新增欄位。
+          items:
+            type: string
+            enum: [HORIZONTAL_SLASH, VERTICAL_SLASH, HEAVEN_EARTH_REVERSAL, PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR]
         lastResolution:
           type: object
           nullable: true
@@ -1655,7 +1741,10 @@ components:
     PveSkillUseRequest:
       type: object
       required: [skillType]
-      description: 'PVE技能獨立行動使用請求；欄位語意沿用 SkillActionRequest（方向/錨點/目標/第二子，FR-A2 FR-B5）'
+      description: >
+        PVE技能獨立行動使用請求，不附掛任何落子座標；各欄位於 PVE 情境下的具體語意
+        （direction/anchor/target/secondStone 因無伴隨落子而承載的座標角色）詳見
+        SkillActionRequest 各欄位 description（FR-A2 FR-B5）。
       allOf:
         - $ref: '#/components/schemas/SkillActionRequest'
 

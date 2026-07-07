@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋 — PVE 商店</title>
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<div id="hdr"></div>
+<main class="page shop-page">
+  <div class="center col" style="text-align:center;margin:18px 0 20px">
+    <span class="badge badge-duel">PVE 挑戰模式 · 商店</span>
+    <h1 style="font-size:26px;margin-top:8px" id="clearedLabel">已通過第 1 關</h1>
+  </div>
+
+  <div class="shop-grid" id="shopGrid"></div>
+
+  <!-- 行動版金幣與操作按鈕列固定於底部方便單手操作，specs/ui/PVE商店頁.md:25 -->
+  <div class="shop-actionbar" id="shopActionbar">
+    <div class="coin-display"><span class="ico">🪙</span><span class="num" id="goldLabel">0</span></div>
+    <div class="row gap-12 wrap" style="justify-content:center">
+      <button class="btn btn-accent btn-lg" id="rerollBtn" onclick="reroll()">重抽（5 🪙）</button>
+      <button class="btn btn-primary btn-lg" onclick="skip()">跳過，前往下一關</button>
+    </div>
+  </div>
+
+  <div class="card pad mt-24">
+    <h3 style="margin-bottom:10px">目前持有</h3>
+    <p class="dim" style="font-size:12px;margin-bottom:8px">遺物（上限 5）</p>
+    <div class="held-list" id="heldRelics" style="margin-bottom:14px"><span class="dim">尚無</span></div>
+    <p class="dim" style="font-size:12px;margin-bottom:8px">技能（總持有上限 3）</p>
+    <div class="held-list" id="heldSkills"><span class="dim">尚無</span></div>
+  </div>
+</main>
+
+<script src="../assets/ui.js"></script>
+<script>
+document.getElementById('hdr').innerHTML=renderHeader({identity:'registered',nickname:'KuPlayer'});
+
+function loadRun(){ try{return JSON.parse(sessionStorage.getItem('pveRun')||'null');}catch(e){return null;} }
+function saveRun(r){ sessionStorage.setItem('pveRun', JSON.stringify(r)); }
+
+let run=loadRun();
+if(!run){
+  // 直接開啟本頁供獨立檢視：建立示範用剛通關狀態
+  run={class:'warrior',stage:2,gold:34,totalDamage:120,spentGold:0,
+    relics:[],skills:[{id:'horizontal',name:'橫劈',count:1}],levelField:{},encounter:null,encounterId:'ENC-DEMO'};
+  saveRun(run);
+}
+document.getElementById('clearedLabel').textContent='已通過第 '+run.stage+' 關';
+
+/* FR-C5：遺物清單（初始池8個，效果數值為示意，最終數值由需求/引擎模組定案） */
+const RELICS=[
+  {id:'blade',name:'銳刃',effect:'連線基礎分 +20',price:8},
+  {id:'chain',name:'連鎖核心',effect:'你的技能推移效果連鎖距離 +1 格',price:6},
+  {id:'diag',name:'斜行者',effect:'斜向連線的倍率 +0.5',price:10},
+  {id:'volcheart',name:'火山之心',effect:'噴發清除的棋子，每顆對 Boss 造成 10 傷害',price:10},
+  {id:'seawall',name:'防潮堤',effect:'海浪與漲潮不移動、不移除你的棋子',price:8},
+  {id:'metronome',name:'節拍器',effect:'Run 累計落子每逢第5的倍數手，倍率 +0.1（Run 內永久生效）',price:12},
+  {id:'recycler',name:'回收商',effect:'因連線移除的棋子累計每10顆，手數預算 +1（當關生效）',price:10},
+  {id:'gemini',name:'雙子星',effect:'一手同時完成 ≥2 條線時，該手總傷害 ×2',price:14}
+];
+/* FR-C4：技能池僅限自身職業 3 技能，同名技能可重複購買持有 */
+const SKILL_POOL={
+  warrior:[{id:'horizontal',name:'橫劈'},{id:'vertical',name:'縱劈'},{id:'ultimate_w',name:'大絕：天地反轉'}],
+  archer:[{id:'snipe',name:'精準狙擊'},{id:'scatter',name:'散射'},{id:'ultimate_a',name:'開拓之星'}]
+};
+const RELIC_CAP=5, SKILL_CAP=3, REROLL_COST=5, SKILL_PRICE=6;
+
+let offers=null; // {relics:[{...,bought}], skill:{...,bought}}
+
+function heldRelicIds(){ return new Set(run.relics.map(r=>r.id)); }
+function skillTotalCount(){ return run.skills.reduce((a,s)=>a+s.count,0); }
+
+function rollOffers(){
+  const held=heldRelicIds();
+  const pool=RELICS.filter(r=>!held.has(r.id));
+  const shuffled=[...pool].sort(()=>Math.random()-0.5);
+  const relicOffers=(shuffled.length?shuffled:RELICS).slice(0,2).map(r=>({...r,bought:false}));
+  const skillPool=SKILL_POOL[run.class];
+  const skillPick=skillPool[Math.floor(Math.random()*skillPool.length)];
+  offers={relics:relicOffers, skill:{...skillPick, price:SKILL_PRICE, bought:false}};
+}
+rollOffers();
+
+function renderShop(){
+  document.getElementById('goldLabel').textContent=run.gold;
+  const relicMaxed = run.relics.length>=RELIC_CAP;
+  const skillMaxed = skillTotalCount()>=SKILL_CAP;
+  const cards=[];
+  offers.relics.forEach((r,idx)=>{
+    const disabled = r.bought || relicMaxed || run.gold<r.price;
+    cards.push(`<div class="shop-card ${r.bought?'bought':''} ${relicMaxed&&!r.bought?'maxed':''}">
+      <span class="kind">遺物</span><h4>${r.name}</h4><p class="dim" style="font-size:13px">${r.effect}</p>
+      <span class="price">${r.price} 🪙</span>
+      <button class="btn btn-primary btn-block mt-8" ${disabled?'disabled':''} onclick="buyRelic(${idx})">
+        ${r.bought?'已購買':relicMaxed?'已達上限':'購買'}</button>
+    </div>`);
+  });
+  const s=offers.skill;
+  const sDisabled = s.bought || skillMaxed || run.gold<s.price;
+  cards.push(`<div class="shop-card ${s.bought?'bought':''} ${skillMaxed&&!s.bought?'maxed':''}">
+    <span class="kind">技能（限 ${run.class==='warrior'?'劍士':'弓箭手'}）</span><h4>${s.name}</h4>
+    <p class="dim" style="font-size:13px">消耗型・獨立行動；同名技能可重複持有</p>
+    <span class="price">${s.price} 🪙</span>
+    <button class="btn btn-accent btn-block mt-8" ${sDisabled?'disabled':''} onclick="buySkill()">
+      ${s.bought?'已購買':skillMaxed?'已達上限':'購買'}</button>
+  </div>`);
+  document.getElementById('shopGrid').innerHTML=cards.join('');
+  document.getElementById('rerollBtn').disabled = run.gold<REROLL_COST;
+
+  document.getElementById('heldRelics').innerHTML = run.relics.length
+    ? run.relics.map(r=>`<span class="held-chip" title="${r.effect}">${r.name}</span>`).join('')
+    : '<span class="dim">尚無</span>';
+  document.getElementById('heldSkills').innerHTML = run.skills.length
+    ? run.skills.map(s=>`<span class="held-chip">${s.name} ×${s.count}</span>`).join('')
+    : '<span class="dim">尚無</span>';
+}
+renderShop();
+
+function buyRelic(idx){
+  const r=offers.relics[idx];
+  if(r.bought){ return; }
+  if(run.relics.length>=RELIC_CAP){ toast('遺物已達持有上限（5），無法購買','error'); return; }
+  if(run.gold<r.price){ toast('金幣不足','error'); return; }
+  run.gold-=r.price; run.spentGold=(run.spentGold||0)+r.price;
+  run.relics.push({id:r.id,name:r.name,effect:r.effect});
+  r.bought=true;
+  saveRun(run); renderShop();
+  toast('已購買遺物：'+r.name,'success');
+}
+function buySkill(){
+  const s=offers.skill;
+  if(s.bought){ return; }
+  if(skillTotalCount()>=SKILL_CAP){ toast('技能已達持有上限（3），無法購買','error'); return; }
+  if(run.gold<s.price){ toast('金幣不足','error'); return; }
+  run.gold-=s.price; run.spentGold=(run.spentGold||0)+s.price;
+  const existing=run.skills.find(x=>x.id===s.id);
+  if(existing) existing.count++; else run.skills.push({id:s.id,name:s.name,count:1});
+  s.bought=true;
+  saveRun(run); renderShop();
+  toast('已購買技能：'+s.name,'success');
+}
+function reroll(){
+  if(run.gold<REROLL_COST){ toast('金幣不足，無法重抽','error'); return; }
+  run.gold-=REROLL_COST; run.spentGold=(run.spentGold||0)+REROLL_COST;
+  saveRun(run);
+  rollOffers(); renderShop();
+  toast('已重抽三個展示位（-5 🪙）','success');
+}
+function advanceStage(){
+  run.stage+=1;
+  run.encounter=null;
+  saveRun(run);
+  location.href='../pve-game/index.html';
+}
+function skip(){
+  toast('已跳過本次商店，前往下一關…','success');
+  setTimeout(advanceStage,500);
+}
+</script>
+</body>
+</html>

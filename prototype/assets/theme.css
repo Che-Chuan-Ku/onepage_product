@@ -68,7 +68,7 @@ a{color:var(--c-accent);text-decoration:none}
 .btn-block{width:100%}
 
 /* Mode entry big buttons */
-.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .mode-card{
   border-radius:var(--r-lg);padding:34px 26px;cursor:pointer;border:1px solid var(--c-border);
   background:linear-gradient(160deg,var(--c-surface-2),var(--c-surface));
@@ -76,6 +76,7 @@ a{color:var(--c-accent);text-decoration:none}
 }
 .mode-card:hover{transform:translateY(-3px);border-color:var(--c-primary)}
 .mode-card.online:hover{border-color:var(--c-accent)}
+.mode-card.pve:hover{border-color:var(--c-danger)}
 .mode-card h2{font-size:24px;margin-bottom:6px}
 .mode-card .ico{font-size:40px;margin-bottom:14px}
 
@@ -264,3 +265,73 @@ table.tbl{width:100%;border-collapse:collapse}
 .fx-burn{animation:fxBurn .9s ease}
 .fx-wave{animation:fxWave 1.1s ease}
 .fx-tide{animation:fxTide 1.4s ease}
+
+/* ═══ PVE 挑戰模式（增量需求，2026-07-07，documents/PVE-挑戰模式-增量需求.md）═══ */
+
+/* Boss HP / 手數預算 bars */
+.boss-hp{display:flex;flex-direction:column;gap:6px;flex:2;min-width:200px}
+.move-budget{display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px}
+.boss-hp .label,.move-budget .label{display:flex;justify-content:space-between;font-size:12px;color:var(--c-text-dim)}
+.boss-hp .bar{height:14px;border-radius:var(--r-pill);background:var(--c-surface-2);border:1px solid var(--c-border);overflow:hidden}
+.move-budget .bar{height:9px;border-radius:var(--r-pill);background:var(--c-surface-2);border:1px solid var(--c-border);overflow:hidden}
+.boss-hp .fill{height:100%;background:linear-gradient(90deg,#e0573e,#ff8a5c);transition:width .5s ease;border-radius:var(--r-pill)}
+.boss-hp.low .fill{animation:pulse 1s infinite}
+.move-budget .fill{height:100%;background:var(--c-accent);transition:width .3s ease;border-radius:var(--r-pill)}
+.move-budget.low .fill{background:var(--c-danger)}
+
+/* Stage / Boss 突變 badge + 提示橫幅 */
+.stage-badge{display:inline-flex;align-items:center;gap:6px;background:#33414a;color:#cfe6f2;padding:4px 12px;border-radius:var(--r-pill);font-size:13px;font-weight:600}
+.mutation-banner{display:flex;align-items:center;gap:10px;background:linear-gradient(160deg,#3a1e1e,var(--c-surface-2));border:1px solid var(--c-danger);border-radius:var(--r-md);padding:10px 14px;font-size:13px}
+.mutation-banner .ico{font-size:20px}
+
+/* 落子連線傷害浮動數字（PVE 核心手感，見小丑牌設計指引「連線清除」風險項） */
+.dmg-anchor{position:absolute;z-index:25;pointer-events:none;transform:translate(-50%,-50%)}
+.dmg-float{font-weight:800;font-size:22px;color:#ffd34d;text-shadow:0 2px 6px rgba(0,0,0,.65);text-align:center;white-space:nowrap;animation:dmgFloat 1.15s ease forwards}
+.dmg-breakdown{font-size:11px;color:var(--c-text-dim);font-weight:600;margin-top:2px;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+@keyframes dmgFloat{0%{opacity:0;transform:translateY(0) scale(.8)}18%{opacity:1;transform:translateY(-6px) scale(1.05)}100%{opacity:0;transform:translateY(-50px) scale(1)}}
+
+/* 技能持有數量徽章（PVE 消耗型技能，可持有多個同技能） */
+.skill-btn .qty{position:absolute;bottom:-6px;right:-6px;background:var(--c-primary);color:#2a1d0c;font-size:10px;font-weight:800;min-width:16px;height:16px;padding:0 3px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-stone)}
+
+/* 資訊橫幅（職業選擇頁：手數/BossHP/棋盤/場地） */
+.pve-info-banner{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--c-text-dim);background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-md);padding:12px 16px}
+.pve-info-banner b{color:var(--c-text)}
+
+/* 商店卡片 */
+.shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:900px){.shop-grid{grid-template-columns:1fr}}
+.shop-card{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-md);padding:18px;display:flex;flex-direction:column;gap:10px;text-align:left}
+.shop-card .kind{font-size:11px;color:var(--c-text-dim);text-transform:uppercase;letter-spacing:.06em}
+.shop-card h4{font-size:16px}
+.shop-card .price{font-weight:700;color:var(--c-primary)}
+.shop-card.bought{opacity:.55}
+.shop-card.maxed{opacity:.6}
+.coin-display{display:flex;align-items:center;gap:8px;font-weight:700;font-size:22px}
+.coin-display .ico{font-size:24px}
+.held-list{display:flex;gap:8px;flex-wrap:wrap;font-size:12px}
+.held-chip{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-pill);padding:4px 10px}
+
+/* Run / 關卡結算統計格 */
+.pve-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+@media(max-width:640px){.pve-stat-grid{grid-template-columns:1fr 1fr}}
+.pve-stat-grid .stat{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-md);padding:14px;text-align:center}
+.pve-stat-grid .stat .v{font-size:22px;font-weight:800}
+.pve-stat-grid .stat .k{font-size:12px;color:var(--c-text-dim);margin-top:4px}
+.result-banner.won{color:var(--c-win)}
+.result-banner.lost{color:var(--c-danger)}
+.result-banner.abandoned{color:var(--c-text-dim)}
+.encounter-recap{border:1px dashed var(--c-border);border-radius:var(--r-md);padding:14px 16px;margin-bottom:18px}
+.run-recap{animation:slideUp .4s ease}
+@media(max-width:640px){.pve-info-banner{flex-direction:column;gap:6px}}
+
+/* PVE 商店行動版：金幣與操作按鈕列固定底部方便單手操作（specs/ui/PVE商店頁.md:25 RWD）。
+   純新增 class（.shop-page/.shop-actionbar 僅 pve-shop 使用），不影響既有 PVP 頁面版型。 */
+.shop-actionbar{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:24px}
+@media(max-width:640px){
+  .shop-page{padding-bottom:150px}
+  .shop-actionbar{position:fixed;left:0;right:0;bottom:0;margin-top:0;z-index:50;
+    background:var(--c-surface);border-top:1px solid var(--c-border);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.4)}
+  .shop-actionbar .row{width:100%}
+  .shop-actionbar .row .btn{flex:1}
+}

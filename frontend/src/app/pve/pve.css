@@ -1,0 +1,121 @@
+/* ──────────────────────────────────────────────────────────────
+ * PVE 挑戰模式 — 頁面專屬樣式（class / shop / result / home 小增量）
+ * 只在這 4 個頁面 import。棋盤關卡頁（/pve/game）由另一 agent 負責，
+ * 其樣式不放這裡（避免共用檔衝突，見任務分工說明）。
+ *
+ * 這裡的 class 名稱與數值大量對照 prototype/assets/theme.css 第
+ * 269–337 行「PVE 挑戰模式」區塊，逐字搬過來以維持視覺一致；
+ * .mode-grid/.mode-card/.class-grid/.class-card/.badge-duel/.overlay/
+ * .modal/.result-banner 等既有共用 class 已存在於 globals.css，不重複
+ * 定義（只在此新增 `.result-banner.won/.lost/.abandoned` 的顏色變體）。
+ * ────────────────────────────────────────────────────────────── */
+
+/* 首頁小增量：三張入口卡（本地雙人/線上連線/PVE）需要 3 欄，globals.css 的
+ * `.mode-grid` 只定義了 2 欄（既有 PVP 版面）。這裡加一個額外 class 而非
+ * 改動 `.mode-grid` 本身，維持「只增量、不動既有 PVP 檔案」的限制。 */
+.mode-grid-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 640px) {
+  .mode-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* 職業選擇頁：本局固定資訊列（手數/BossHP/棋盤/場地） */
+.pve-info-banner {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--c-text-dim);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+}
+.pve-info-banner b { color: var(--c-text); }
+@media (max-width: 640px) {
+  .pve-info-banner { flex-direction: column; gap: 6px; }
+}
+
+/* 商店頁：展示位卡片 grid */
+.shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 900px) {
+  .shop-grid { grid-template-columns: 1fr; }
+}
+.shop-card {
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+.shop-card .kind {
+  font-size: 11px;
+  color: var(--c-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.shop-card h4 { font-size: 16px; }
+.shop-card .price { font-weight: 700; color: var(--c-primary); }
+.shop-card.bought { opacity: 0.55; }
+.shop-card.maxed { opacity: 0.6; }
+
+.coin-display { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 22px; }
+.coin-display .ico { font-size: 24px; }
+
+.held-list { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; }
+.held-chip {
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
+  padding: 4px 10px;
+}
+
+/* 商店頁行動版：金幣與操作按鈕列固定底部方便單手操作（specs/ui/PVE商店頁.md RWD） */
+.shop-actionbar { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 24px; }
+@media (max-width: 640px) {
+  .shop-page { padding-bottom: 150px; }
+  .shop-actionbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-top: 0;
+    z-index: 50;
+    background: var(--c-surface);
+    border-top: 1px solid var(--c-border);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.4);
+  }
+  .shop-actionbar .row { width: 100%; }
+  .shop-actionbar .row .btn { flex: 1; }
+}
+
+/* 結算畫面：Run / 關卡統計格 + banner 色彩變體 */
+.pve-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 18px 0; }
+@media (max-width: 640px) {
+  .pve-stat-grid { grid-template-columns: 1fr 1fr; }
+}
+.pve-stat-grid .stat {
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 14px;
+  text-align: center;
+}
+.pve-stat-grid .stat .v { font-size: 22px; font-weight: 800; }
+.pve-stat-grid .stat .k { font-size: 12px; color: var(--c-text-dim); margin-top: 4px; }
+
+.result-banner { font-size: 30px; font-weight: 800; text-align: center; }
+.result-banner.won { color: var(--c-win); }
+.result-banner.lost { color: var(--c-danger); }
+.result-banner.abandoned { color: var(--c-text-dim); }
+
+.encounter-recap {
+  border: 1px dashed var(--c-border);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.run-recap { animation: slideUp 0.4s ease; }

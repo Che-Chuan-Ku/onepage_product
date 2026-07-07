@@ -76,9 +76,28 @@ public class SeriousEconomySteps {
     @And("系統發布 SkillUsed 事件")
     public void skillUsedPublished() {
         assertLastSuccess();
+        // Shared wording between PVP and PVE features: in a PVE scenario the
+        // usage lives in the pve_encounter_events stream, not skill_usages.
+        Object pveEncounterId = ctx.getMemo("pve:encounterId");
+        if (pveEncounterId != null) {
+            Assertions.assertThat(pveSkillUsedRecorded(pveEncounterId.toString()))
+                    .as("a PVE SKILL_USED event must be recorded for this encounter")
+                    .isTrue();
+            return;
+        }
         Assertions.assertThat(support.anySkillUsageRecorded())
                 .as("some skill usage must be recorded for this game")
                 .isTrue();
+    }
+
+    @Autowired
+    private com.gomoku.repository.PveEncounterEventRepository pveEncounterEventRepository;
+
+    private boolean pveSkillUsedRecorded(String encounterId) {
+        return !pveEncounterEventRepository
+                .findByEncounterIdAndEventTypeOrderByOccurredAtAscIdAsc(
+                        encounterId, com.gomoku.domain.enums.PveEncounterEventType.SKILL_USED)
+                .isEmpty();
     }
 
     @Given("玩家 {string} 本場已使用過 {string}")

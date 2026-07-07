@@ -133,7 +133,7 @@ class GomokuBoard{
       ctx.beginPath();ctx.moveTo(p,p+i*g);ctx.lineTo(S-p,p+i*g);ctx.stroke();
     }
     // star points
-    const stars=this.N===15?[[3,3],[3,11],[11,3],[11,11],[7,7]]:[[3,3],[3,12],[12,3],[12,12]];
+    const stars=this.N===15?[[3,3],[3,11],[11,3],[11,11],[7,7]]:this.N===11?[[2,2],[2,8],[8,2],[8,8],[5,5]]:[[3,3],[3,12],[12,3],[12,12]];
     ctx.fillStyle='#5a3f23';
     stars.forEach(([r,c])=>{const[x,y]=this._xy(r,c);ctx.beginPath();ctx.arc(x,y,g*0.10,0,7);ctx.fill();});
     // volcano obstacles（雙方可見,需求 Q5）

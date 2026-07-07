@@ -104,9 +104,18 @@ public class SeriousFieldSteps {
 
     @When("玩家於 \\({int},{int}\\) 落子")
     public void playerPlacesAt(int row, int col) {
+        // Shared wording between the PVP beach feature and PVE line features —
+        // branch on the PVE scenario context.
+        if (ctx.getMemo("pve:encounterId") != null) {
+            pveBattleSteps.placePveAt(row, col);
+            return;
+        }
         support.placeAs(support.currentTurnUser(),
                 String.format("{\"row\":%d,\"col\":%d}", row, col));
     }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.gomoku.steps.pve.PveBattleSteps pveBattleSteps;
 
     @Then("系統發布 VolcanoErupted 事件")
     public void volcanoEruptedPublished() {
@@ -261,8 +270,17 @@ public class SeriousFieldSteps {
 
     @When("海浪觸發")
     public void waveTriggers() {
+        // Shared wording between the PVP beach feature and the PVE breakwater
+        // relic feature — branch on the PVE scenario context.
+        if (ctx.getMemo("pve:encounterId") != null) {
+            pveRelicSteps.triggerPveWave();
+            return;
+        }
         playOneHand();
     }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.gomoku.steps.pve.PveRelicSteps pveRelicSteps;
 
     @Then("該棋子依推擠解算器規則往沙灘方向推 1 格")
     public void stonePushedTowardSand() {

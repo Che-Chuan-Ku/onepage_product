@@ -6,22 +6,22 @@
 version: "3.0"
 project_root: "/Users/chechuanku/Documents/aiproject/gomoku"
 created_at: "2026-05-24T03:40:48Z"
-updated_at: "2026-07-07T09:41:10Z"
+updated_at: "2026-07-07T15:18:00Z"
 
 # ── 模組 DAG（所有模組一視同仁）────────────────────
 # 階段管理由人透過 Git PR/MR 控制，Hub 不追蹤階段狀態
 modules:
   demand_analysis:
-    status: "in_progress"
-    audit: "pending"
+    status: "completed"
+    audit: "passed"
     depends_on: []
     options: {"knowledge_base": "documents/"}
     input:  ["document/"]
     output: ["specs/"]
     token_usage_total:           # 模組累計 token（含審核），由工具自動累加
-      input_tokens: 767600
-      output_tokens: 91220
-      total_tokens: 945224
+      input_tokens: 1290600
+      output_tokens: 137820
+      total_tokens: 1453122
 
   uiux_design:
     status: "completed"
@@ -31,9 +31,9 @@ modules:
     input:  ["specs/activities/", "specs/ui/", "specs/actors/"]
     output: ["prototype/"]
     token_usage_total:
-      input_tokens: 443200
-      output_tokens: 60071
-      total_tokens: 503271
+      input_tokens: 867200
+      output_tokens: 108271
+      total_tokens: 1089766
 
   document_generate_sa:
     status: "completed"
@@ -55,9 +55,9 @@ modules:
     input:  []                   # 依技術棧決定
     output: ["backend/"]
     token_usage_total:
-      input_tokens: 1466800
-      output_tokens: 112620
-      total_tokens: 1696059
+      input_tokens: 2030800
+      output_tokens: 188920
+      total_tokens: 2616294
 
   frontend_development:
     status: "completed"
@@ -67,9 +67,9 @@ modules:
     input:  ["specs/", "prototype/"]
     output: ["frontend/"]
     token_usage_total:
-      input_tokens: 1116000
-      output_tokens: 115900
-      total_tokens: 1231900
+      input_tokens: 2454000
+      output_tokens: 217400
+      total_tokens: 1568015
 
   integration_test:
     status: "completed"

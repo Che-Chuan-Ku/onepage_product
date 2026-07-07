@@ -16,8 +16,13 @@ public class DbCleanupHook {
 
     @Before(order = 0)
     public void cleanDatabase() {
+        // Note: effect_definitions is intentionally NOT truncated — it holds
+        // migration-seeded data-driven effect declarations (PVE increment A).
         jdbcTemplate.execute(
-                "TRUNCATE TABLE skill_usages, field_events, field_cells, field_states, "
+                "TRUNCATE TABLE pve_shop_offer_slots, pve_shop_visits, pve_run_relics, "
+                        + "pve_run_skills, pve_encounter_events, pve_field_states, "
+                        + "pve_field_cells, pve_encounter_moves, pve_encounters, pve_runs, "
+                        + "skill_usages, field_events, field_cells, field_states, "
                         + "opening_stones, moves, games, room_chat_messages, "
                         + "room_members, game_rooms, player_stats, players "
                         + "RESTART IDENTITY CASCADE");
