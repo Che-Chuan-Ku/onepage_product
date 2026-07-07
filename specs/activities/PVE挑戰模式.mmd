@@ -1,0 +1,90 @@
+%% ═══ 區段一：Activity 標頭與 Actor 宣告 ═══
+%% [ACTIVITY] PVE 挑戰模式（建立Run → 逐關落子/技能/結算判定 → 商店構築 → 下一關 → Run結算）
+%% [ACTOR] 註冊玩家 -> {specs/actors/註冊玩家.md}
+%% 說明：PVE 僅限已登入玩家（documents/PVE-挑戰模式-增量需求.md §4.2），訪客玩家不適用本圖。
+%%       單人模式一律 HTTP request/response，不使用 STOMP；與現有 房間/真劍勝負 流程完全獨立、無交會點。
+%%       本圖涵蓋增量 B（單關挑戰，虛線框內 S3~D5 可獨立交付）與增量 C（Run 循環，含 S1/S2/D6/S6~S8）。
+
+flowchart TD
+
+    Start(( ))
+
+    %% [STEP:1] @玩家 {specs/ui/PVE職業選擇頁.md}
+    S1["@玩家<br/>於模式選擇首頁點選「PVE 挑戰模式」，選擇職業(劍士/弓箭手)"]
+
+    %% [STEP:2] 系統 {features/pve/建立挑戰與職業選擇.feature}
+    S2["系統<br/>建立 Run(職業/seed/金幣0)，同時建立第1關(PLAIN,BossHP100,手數預算30)"]
+
+    %% [STEP:3] @玩家 {features/pve/技能使用.feature}
+    S3["@玩家<br/>回合行動:落子 或 於任兩手之間使用技能(獨立行動,消耗型,每間隔至多1個)"]
+
+    %% [STEP:4] 系統 {features/pve/連線傷害結算.feature}
+    S4["系統<br/>結算連線(最多4方向同時)->計算傷害->扣減BossHP->該線棋子移除"]
+
+    %% [DECISION:4a] 關卡是否結束
+    D4a{"BossHP<=0 或 手數用盡?"}
+
+    %% [BRANCH:4a:未結束 -> 3] @玩家 {features/pve/技能使用.feature}
+    B4a_cont["@玩家<br/>換手繼續(尚有手數預算)"]
+
+    %% [STEP:5] 系統 {features/pve/關卡勝敗判定.feature}
+    S5["系統<br/>判定關卡勝敗(BossHP<=0=通過;手數用盡且BossHP>0=失敗)"]
+
+    %% [DECISION:5a] 關卡勝敗
+    D5a{"關卡通過?"}
+
+    %% [STEP:5b] @玩家 {specs/ui/PVE結算畫面.md}
+    S5b["@玩家<br/>關卡失敗結算畫面(勝/敗/總傷害/剩餘手數/已用技能)"]
+
+    %% [STEP:5c] 系統 {features/pve/Run終止與結算.feature}
+    S5c["系統<br/>Run結算(LOST):到達關數/總傷害/持有遺物技能"]
+
+    %% [DECISION:5d] 是否為第8關
+    D5d{"剛通過第8關?"}
+
+    %% [STEP:6] 系統 {features/pve/金幣與商店.feature}
+    S6["系統<br/>發放金幣(10+剩餘手數),開啟商店(遺物x2+技能x1)"]
+
+    %% [STEP:7] @玩家 {features/pve/金幣與商店.feature}
+    S7["@玩家<br/>購買/重抽(5金幣)/跳過"]
+
+    %% [STEP:8] 系統 {features/pve/Run循環與場地排程.feature}
+    S8["系統<br/>建立下一關(依序推進,場地依排程,第3/6/8關套用固定突變)"]
+
+    %% [STEP:9] 系統 {features/pve/Run終止與結算.feature}
+    S9["系統<br/>Run結算(WON):8關全通過"]
+
+    %% [STEP:10] @玩家 {specs/ui/PVE結算畫面.md}
+    S10["@玩家<br/>Run結算畫面(到達關數/總傷害/獲得花費金幣/最終持有遺物技能)"]
+
+    End((( )))
+
+%% ═══ 區段二：分支節點放棄路徑 ═══
+    %% [BRANCH:any] @玩家 {features/pve/Run終止與結算.feature}
+    B_abandon["@玩家<br/>主動放棄Run(視同失敗)"]
+
+%% ═══ 區段三：邊（連線）定義 ═══
+
+    Start --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> D4a
+    D4a -- 否 --> B4a_cont
+    B4a_cont --> S3
+    D4a -- 是 --> S5
+    S5 --> D5a
+    D5a -- 否(失敗) --> S5b
+    S5b --> S5c
+    S5c --> S10
+    D5a -- 是(通過) --> D5d
+    D5d -- 是 --> S9
+    S9 --> S10
+    D5d -- 否 --> S6
+    S6 --> S7
+    S7 --> S8
+    S8 --> S3
+    S10 --> End
+
+    S3 -.-> B_abandon
+    B_abandon -.-> S5c

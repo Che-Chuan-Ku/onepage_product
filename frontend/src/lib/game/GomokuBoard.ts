@@ -811,11 +811,18 @@ export class GomokuBoard {
     }
   }
 
-  /** 橫劈/縱劈：a blade-shaped bar (bright white core, dark outline, pointed
-   * leading edge) sweeps along the push axis, trailing motion-blur afterimage
-   * bands; if `moves` is present the pushed stones tween from origin to
-   * destination as the blade reaches them (with a brief post-impact shake)
-   * instead of appearing already-arrived (see `slideSuppressedCells`). */
+  /** 橫劈/縱劈：a crescent-shaped (彎月狀) white-light blade arcs along the
+   * push axis — a quadratic-bezier stroke bowed forward in the travel
+   * direction, bright core + outer glow + fading afterimage crescents —
+   * trailing motion-blur behind the leading edge; if `moves` is present the
+   * pushed stones tween from origin to destination as the blade reaches them
+   * (with a brief post-impact shake) instead of appearing already-arrived
+   * (see `slideSuppressedCells`). Both the blade position and the stone tween
+   * below read the same `progress`/`eased` timeline, so blade-arrival and
+   * stone-arrival never drift apart. The sweep's far end is the single
+   * farthest pushed cell by distance from origin — robust to `cells`' event
+   * order — so a long chained push sweeps exactly as far as the chain runs,
+   * not a fixed short distance. */
   private drawSlashAnim(
     a: Extract<SkillAnim, { kind: "slash" }>,
     progress: number,
@@ -828,65 +835,90 @@ export class GomokuBoard {
     const perpVals = a.cells.length ? a.cells.map((c) => (a.axis === "row" ? c.col : c.row)) : [originPerp];
     const perpMin = Math.min(originPerp, ...perpVals);
     const perpMax = Math.max(originPerp, ...perpVals);
+    // Farthest affected cell by absolute distance from origin — NOT array
+    // order (resolvePush emits a chain's farthest-pushed stone first, so a
+    // naive "last element" read understated the sweep for chained pushes).
+    // Also folds in `moves` destinations as a second source of truth.
     const travelVals = a.cells.map((c) => (a.axis === "row" ? c.row : c.col));
-    const farVal = travelVals.length ? travelVals[travelVals.length - 1] : originVal;
-    const dirSign = Math.sign(farVal - originVal) || 1;
+    const moveVals = (a.moves ?? []).map((m) => (a.axis === "row" ? m.to.row : m.to.col));
+    const deltas = [...travelVals, ...moveVals].map((v) => v - originVal);
+    const maxAbsDelta = deltas.length ? Math.max(...deltas.map(Math.abs)) : 0;
+    const dirSign = Math.sign(deltas.find((d) => Math.abs(d) === maxAbsDelta) ?? 0) || 1;
+    const farVal = originVal + dirSign * maxAbsDelta;
     const endVal = farVal + dirSign * 0.5; // slight follow-through past the last cell
     const span = endVal - originVal || 1;
     const curVal = originVal + span * eased;
 
     const perpA = this.toPx(perpMin - 0.5);
     const perpB = this.toPx(perpMax + 0.5);
-    const thick = g * 0.46;
+    const midPerp = (perpA + perpB) / 2;
+    const thick = g * 0.4;
 
-    // blade band: a rectangle across the pushed width + a pointed tip at the
-    // leading (travel-direction) edge — reads as a cleaver/blade silhouette.
-    const drawBand = (travelPx: number, alpha: number, tipLen: number) => {
+    // Crescent blade: a thick round-capped stroke along a quadratic bezier
+    // that bows forward (in the travel direction) at its midpoint — reads as
+    // a moon-shaped arc of light slicing across the pushed width. `bow`
+    // controls how strongly it curves (the bright head bows the most, giving
+    // it a pointed-crescent leading edge; afterimages bow less, like a fading
+    // sabre trail).
+    const drawCrescent = (travelPx: number, alpha: number, bow: number) => {
       ctx.save();
       ctx.globalAlpha = alpha;
-      const front = travelPx + (thick / 2) * dirSign;
-      const back = travelPx - (thick / 2) * dirSign;
-      const midPerp = (perpA + perpB) / 2;
-      const tip = front + tipLen * dirSign;
-      ctx.beginPath();
+      let p0x: number, p0y: number, p1x: number, p1y: number, cx: number, cy: number;
       if (a.axis === "row") {
-        ctx.moveTo(perpA, back);
-        ctx.lineTo(perpB, back);
-        ctx.lineTo(perpB, front);
-        ctx.lineTo(midPerp, tip);
-        ctx.lineTo(perpA, front);
+        p0x = perpA;
+        p0y = travelPx;
+        p1x = perpB;
+        p1y = travelPx;
+        cx = midPerp;
+        cy = travelPx + bow * dirSign;
       } else {
-        ctx.moveTo(back, perpA);
-        ctx.lineTo(back, perpB);
-        ctx.lineTo(front, perpB);
-        ctx.lineTo(tip, midPerp);
-        ctx.lineTo(front, perpA);
+        p0x = travelPx;
+        p0y = perpA;
+        p1x = travelPx;
+        p1y = perpB;
+        cx = travelPx + bow * dirSign;
+        cy = midPerp;
       }
-      ctx.closePath();
+      const path = new Path2D();
+      path.moveTo(p0x, p0y);
+      path.quadraticCurveTo(cx, cy, p1x, p1y);
+      // dark outline pass first (slightly wider), then the bright core on top
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "rgba(10,10,14,.75)";
+      ctx.lineWidth = thick + 4;
+      ctx.stroke(path);
       const grad =
-        a.axis === "row" ? ctx.createLinearGradient(0, back, 0, tip) : ctx.createLinearGradient(back, 0, tip, 0);
-      grad.addColorStop(0, "rgba(255,255,255,.1)");
-      grad.addColorStop(0.55, "rgba(250,250,255,.95)");
-      grad.addColorStop(1, "rgba(255,255,255,1)");
-      ctx.fillStyle = grad;
+        a.axis === "row" ? ctx.createLinearGradient(perpA, 0, perpB, 0) : ctx.createLinearGradient(0, perpA, 0, perpB);
+      grad.addColorStop(0, "rgba(255,255,255,.25)");
+      grad.addColorStop(0.5, "rgba(255,255,255,1)");
+      grad.addColorStop(1, "rgba(255,255,255,.25)");
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = thick;
       ctx.shadowColor = "rgba(255,255,255,.95)";
-      ctx.shadowBlur = 13;
-      ctx.fill();
+      ctx.shadowBlur = 16;
+      ctx.stroke(path);
+      // inner bright highlight sliver for a glinting-edge look
       ctx.shadowBlur = 0;
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "rgba(10,10,14,.88)"; // dark outline — contrast per spec
-      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,.9)";
+      ctx.lineWidth = thick * 0.32;
+      ctx.stroke(path);
       ctx.restore();
     };
 
-    // fading motion-blur afterimage bands trailing the blade head
+    // fading motion-blur afterimage crescents trailing the blade head (bow
+    // shrinks toward the tail so the trail flattens out as it fades)
     const steps = 4;
     for (let i = steps; i >= 1; i--) {
-      const v = curVal - dirSign * (i / steps) * g * 0.85;
-      drawBand(this.toPx(v), (1 - i / steps) * 0.4, 0);
+      // offset in GRID units (fraction of a cell) — curVal/originVal/farVal
+      // are all grid-space; `g` (pixel gap) must only apply at the toPx() call
+      // below, never mixed into a grid-space coordinate (pre-existing bug:
+      // the old `g * 0.85` pixel-scale offset flung most afterimages tens of
+      // cells off-board, visible as a stray mispositioned band near the top).
+      const v = curVal - dirSign * (i / steps) * 0.85;
+      drawCrescent(this.toPx(v), (1 - i / steps) * 0.42, g * 0.16 * (1 - i / steps));
     }
-    // bright blade head with pointed tip
-    drawBand(this.toPx(curVal), 0.97, g * 0.42);
+    // bright crescent head, bowed forward the most (pointed leading edge)
+    drawCrescent(this.toPx(curVal), 0.97, g * 0.34);
 
     // pushed-stone slide tween + impact shake (only when moves data present)
     const rad = g * 0.42;

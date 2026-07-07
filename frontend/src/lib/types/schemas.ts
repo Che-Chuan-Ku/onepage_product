@@ -384,6 +384,14 @@ export const GameStateResponse = z.object({
     .array(z.object({ row: z.number().int(), col: z.number().int(), color: Color }))
     .nullable()
     .optional(),
+  // Additive (bug fix, 2026-07-07): the skill settled by THIS hand, sent by
+  // the real backend so remote viewers (opponent/spectator via STOMP) don't
+  // have to infer it from skillEvents — inference broke for slashes (the
+  // backend's STONE_PUSHED row/col is the push DESTINATION, 2 cells from the
+  // move, so adjacency-based inferSkillCast returned null → no skill anim /
+  // toast for anyone in real-backend online mode) and is impossible for
+  // SCATTER_SHOT (no event signature). Null when the hand had no skill.
+  skillType: SkillType.nullable().optional(),
 });
 export type GameStateResponse = z.infer<typeof GameStateResponse>;
 

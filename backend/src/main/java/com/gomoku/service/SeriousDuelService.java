@@ -193,7 +193,8 @@ public class SeriousDuelService {
         persistEvents(settlement);
 
         // 3) The one and only win check (Q2).
-        GameStateResponse response = judgeAndBuildResponse(settlement, playerId);
+        GameStateResponse response = judgeAndBuildResponse(settlement, playerId,
+                skill == null ? null : skill.skillType().name());
         broadcaster.broadcastGameState(game.getId(), response);
         return response;
     }
@@ -272,17 +273,28 @@ public class SeriousDuelService {
     }
 
     /**
-     * Slash push (Q10): the 3 cells adjacent to the placed stone in the chosen
-     * direction (front + both diagonals) are pushed 1 cell that way, using the
-     * shared chain resolver (req #38).
+     * Slash push. HORIZONTAL_SLASH (Q10): the 3 cells adjacent to the placed
+     * stone in the chosen direction (front + both diagonals) are pushed 1 cell
+     * that way. VERTICAL_SLASH (rule change 2026-07-07, clarify doc final
+     * section): 1-wide — only the single cell adjacent to the placed stone in
+     * the chosen direction (left/right) is pushed. Both use the shared chain
+     * resolver (req #38): chain push, off-board removal, obstacle block.
      */
     private void slashPush(Settlement s, int row, int col, SkillDirection dir, boolean horizontal) {
         int dr = dir.dRow();
         int dc = dir.dCol();
         List<int[]> sources = new ArrayList<>(3);
-        for (int side = -1; side <= 1; side++) {
-            int r = horizontal ? row + dr : row + side;
-            int c = horizontal ? col + side : col + dc;
+        if (horizontal) {
+            for (int side = -1; side <= 1; side++) {
+                int r = row + dr;
+                int c = col + side;
+                if (s.board.inBounds(r, c)) {
+                    sources.add(new int[]{r, c});
+                }
+            }
+        } else {
+            int r = row;
+            int c = col + dc;
             if (s.board.inBounds(r, c)) {
                 sources.add(new int[]{r, c});
             }
@@ -474,7 +486,7 @@ public class SeriousDuelService {
 
     // ────────────────────────── win judgement + response ─────────────────────
 
-    private GameStateResponse judgeAndBuildResponse(Settlement s, String requestPlayerId) {
+    private GameStateResponse judgeAndBuildResponse(Settlement s, String requestPlayerId, String skillType) {
         Game game = s.game;
         List<int[]> blackLine = GomokuRules.scanWinningLine(s.board.stones(), StoneColor.BLACK);
         List<int[]> whiteLine = GomokuRules.scanWinningLine(s.board.stones(), StoneColor.WHITE);
@@ -547,7 +559,8 @@ public class SeriousDuelService {
                 buildFieldStateView(s.fieldCells, s.fieldState),
                 buildRevealedHiddenCells(s.fieldCells, result != null),
                 eventViews,
-                buildStoneSnapshot(s.board));
+                buildStoneSnapshot(s.board),
+                skillType);
     }
 
     /** Authoritative occupied-cell snapshot (bug fix: see GameStateResponse.stones doc). */
@@ -590,7 +603,8 @@ public class SeriousDuelService {
                 buildFieldStateView(fieldCells, fieldState),
                 buildRevealedHiddenCells(fieldCells, game.getStatus() == GameStatus.FINISHED),
                 List.of(),
-                buildStoneSnapshot(board));
+                buildStoneSnapshot(board),
+                null);
     }
 
     /** Full skill-usage history for replay/reconnect (R2-3: restore used-skill state). */

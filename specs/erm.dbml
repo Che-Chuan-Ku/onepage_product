@@ -401,3 +401,326 @@ Table field_events {
   Note: '[exempt: created_at/updated_at/version/is_deleted, reason: 不可變場地/技能事件流，供回放重現]'
 }
 Ref: field_events.game_id > games.id
+
+// ══════════════════════════════════════════════════════════════
+// ── PVE 挑戰模式增量（documents/PVE-挑戰模式-增量需求.md）───────
+// 增量 A（效果資料驅動化）/ B（單關挑戰）/ C（Run 循環）共用區段
+// ══════════════════════════════════════════════════════════════
+
+// ── 增量 A：效果系統資料驅動化 Enums（FR-A1 FR-A2）────────────
+Enum battle_context {
+  PVP [note: '真劍勝負模式；一般技能=ATTACHED_TO_MOVE、大絕=REPLACE_MOVE，皆 ONCE_PER_GAME']
+  PVE [note: '挑戰模式；全部技能=INDEPENDENT，皆 CONSUMABLE（FR-A2）']
+}
+
+Enum effect_action_type {
+  ATTACHED_TO_MOVE [note: '附加於落子，與落子同手結算']
+  REPLACE_MOVE     [note: '取代落子，施放本身即為該手行動']
+  INDEPENDENT      [note: '獨立行動：不落子、不消耗手數（PVE 專用，FR-A2/FR-B5）']
+}
+
+Enum effect_usage_limit_type {
+  ONCE_PER_GAME [note: '每場對局每玩家至多使用一次（PVP 現況）']
+  CONSUMABLE    [note: '消耗型：使用一次即從持有中移除（PVE 專用）']
+  CHARGE        [note: '充能型：保留擴充，本增量未使用']
+}
+
+// ── 增量 A：效果定義表（FR-A1 FR-A2 FR-A3）────────────────────
+// 同一 effect_key（對應現有 skill_type 或 field_event_type 列舉值）依 battle_context
+// 各自宣告 action_type / usage_limit_type，藉此让 PVP／PVE 使用同一效果卻有不同行為型態，
+// 不寫死於程式碼。引擎僅實作 ops 值域內的原子操作：PLACE(落子)/REMOVE(移除)/PUSH(推移)/
+// TRANSFORM(變換,如顏色互換)/GENERATE(生成)/MODIFY_VALUE(數值修飾,如傷害倍率)。
+// 實作型態（DB 表 or 靜態 JSON 設定檔）由工程階段擇一，本表定義其邏輯結構供對照。
+Table effect_definitions {
+  id varchar(36) [pk]
+  effect_key varchar(50) [not null, note: '對應 skill_type 或 field_event_type 列舉值（如 HORIZONTAL_SLASH、VOLCANO_ERUPTED）']
+  applicable_mode battle_context [not null]
+  action_type effect_action_type [not null]
+  usage_limit_type effect_usage_limit_type [not null]
+  trigger varchar(100) [not null, note: '觸發時機，如 on_move_placed / on_move_interval / on_line_resolved']
+  condition varchar [note: 'JSON：觸發條件（如錨點需為空格、目標需為現存敵方棋子）']
+  ops varchar [not null, note: 'JSON 陣列：原子操作序列，值域見上方 ops 說明']
+  params varchar [note: 'JSON：數值參數（推擠距離、範圍、倍率、傷害基礎值等）']
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (effect_key, applicable_mode) [unique, name: 'uk_effect_definitions_key_mode']
+  }
+  Note: 'FR-A1/A2：現有 6 技能 + 2 場地效果（VOLCANO_ERUPTED/WAVE_SURGED 等）皆須有對應列；PVP 行為不變（回歸驗證基準）'
+}
+
+// ── 增量 B/C：PVE Enums ────────────────────────────────────────
+Enum pve_run_status {
+  IN_PROGRESS [note: '進行中']
+  WON         [note: '通過第 8 關']
+  LOST        [note: '任一關手數用盡、Boss HP 未歸零']
+  ABANDONED   [note: '玩家主動放棄（視同失敗，FR-C7）']
+}
+
+Enum pve_encounter_status {
+  IN_PROGRESS
+  CLEARED [note: 'Boss HP <= 0，立即結束（FR-B4）']
+  FAILED  [note: '手數用盡且 Boss HP > 0（FR-B4）']
+}
+
+Enum pve_field_type {
+  PLAIN   [note: '無場地效果，11×11（FR-B1，第1/3/4/6/8關）']
+  VOLCANO [note: 'PVE 專用 11×11 變體；與真劍勝負 field_type(VOLCANO=15×15) 為新幾何規格，不共用棋盤尺寸（FR-C2 工程註記）']
+  BEACH   [note: 'PVE 專用 11×11 變體；海側 5 行、沙側 6 行（⌊11/2⌋=5，FR-C2）；與真劍勝負 BEACH(16×16) 不共用棋盤尺寸']
+}
+
+Enum pve_mutation_type {
+  NONE     [note: '第 1/2/4/5/7 關無突變']
+  ONE_EYE  [note: '第 3 關「獨眼」：橫向連線不結算（FR-C6）']
+  RAGE     [note: '第 6 關「震怒」：每落 5 手隨機噴發清除一格+周圍8格（FR-C6）']
+  ABYSS    [note: '第 8 關「深淵」：每次連線結算後隨機空格生成 1 顆障礙棋子（FR-C6）']
+}
+
+Enum pve_relic_type {
+  SHARP_BLADE       [note: '銳刃：連線基礎分 +20（售價8）']
+  CHAIN_CORE        [note: '連鎖核心：技能推移連鎖距離 +1 格（售價6）']
+  DIAGONAL_WALKER   [note: '斜行者：斜向連線倍率 +0.5（售價10）']
+  VOLCANO_HEART     [note: '火山之心：噴發清除的棋子每顆對 Boss 造成10傷害（售價10）']
+  TIDE_BREAKWATER   [note: '防潮堤：海浪/漲潮不移動不移除玩家棋子（售價8）']
+  METRONOME         [note: '節拍器：落子計數 Run 全程累計，每逢累計第5倍數手倍率+0.1永久生效（售價12）']
+  RECYCLER          [note: '回收商：因連線移除的棋子累計每10顆，手數預算+1（當關生效，售價10）']
+  GEMINI_STAR       [note: '雙子星：一手同時完成>=2條線時，該手總傷害x2（售價14）']
+}
+
+Enum pve_shop_offer_kind {
+  RELIC
+  SKILL
+}
+
+Enum pve_shop_visit_status {
+  OPEN   [note: '尚未結束（可購買/重抽/跳過）']
+  CLOSED [note: '已跳過或已結束，玩家進入下一關']
+}
+
+Enum pve_encounter_event_type {
+  LINE_RESOLVED           [note: '連線結算：一手最多4方向同時各自結算，detail 含線長/方向/傷害/倍率breakdown（FR-B2 FR-B3）']
+  SKILL_USED              [note: 'PVE 技能使用，move_number=使用當下已完成落子數（間隔序號，FR-B5）']
+  STONES_PUSHED
+  STONE_REMOVED_OFF_BOARD
+  VOLCANO_ERUPTED
+  WAVE_SURGED
+  TIDE_TRIGGERED
+  BOSS_MUTATION_TRIGGERED [note: '震怒噴發 / 深淵生成障礙棋子（FR-C6）']
+  ENCOUNTER_CLEARED
+  ENCOUNTER_FAILED
+}
+
+// ── 增量 C：一輪 Run（FR-C1 FR-C3 FR-C7 FR-C8）─────────────────
+Table pve_runs {
+  id varchar(36) [pk]
+  player_id varchar(36) [not null, note: 'PVE 僅限已登入玩家（documents/PVE-挑戰模式-增量需求.md §4.2）']
+  class_type class_type [not null, note: '沿用既有 WARRIOR/ARCHER 列舉（FR-B1）']
+  status pve_run_status [not null, default: 'IN_PROGRESS']
+  seed varchar(64) [not null, note: 'FR-A3：同 seed+同操作序列必得同結果；場地生成與各關隨機效果皆衍生自此']
+  gold int [not null, default: 0, note: 'Run 內貨幣，不設上限，Run 結束歸零不跨局（FR-C3）']
+  current_encounter_sequence int [not null, default: 1, note: '目前所在關次，1..8']
+  reached_encounter_sequence int [not null, default: 0, note: '已通過的最高關次，供 Run 結算「到達關數」顯示（FR-C7）']
+  total_damage_dealt bigint [not null, default: 0, note: '全 Run 累計傷害（FR-C7 結算顯示）']
+  metronome_multiplier_bonus decimal(6,2) [not null, default: 0, note: '節拍器持有時的永久倍率加成累計；未持有節拍器時恆為0（FR-C5 #6）']
+  ended_at timestamp [note: '通關/失敗/放棄時填入']
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (player_id, status) [name: 'idx_pve_runs_player_status', note: '應用層保證同一 player_id 至多 1 筆 status=IN_PROGRESS（FR-C8），DBML 無法表示部分唯一索引，改由 service 層檢查']
+  }
+}
+Ref: pve_runs.player_id > players.id
+
+// ── 增量 B/C：關卡（FR-B1 FR-C1 FR-C2）─────────────────────────
+Table pve_encounters {
+  id varchar(36) [pk]
+  run_id varchar(36) [not null]
+  sequence int [not null, note: '1..8，固定順序（FR-C1）；增量B單關挑戰時 run 僅含 1 筆']
+  field_type pve_field_type [not null]
+  mutation_type pve_mutation_type [not null, default: 'NONE', note: '固定綁定第3/6/8關，不隨機（FR-C6）']
+  board_rows int [not null, default: 11]
+  board_cols int [not null, default: 11]
+  boss_hp_max int [not null, note: '依 1.6 倍曲線：100/160/260/420/670/1070/1710/2740（FR-C1）；增量B單關固定100']
+  boss_hp_current int [not null]
+  move_budget int [not null, default: 30]
+  moves_used int [not null, default: 0]
+  status pve_encounter_status [not null, default: 'IN_PROGRESS']
+  cleared_at timestamp
+  failed_at timestamp
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (run_id, sequence) [unique, name: 'uk_pve_encounters_run_sequence']
+  }
+}
+Ref: pve_encounters.run_id > pve_runs.id
+
+// ── 增量 B：關卡落子序列（FR-B2 FR-B6）─────────────────────────
+// 不可變事件流，免審計欄位（同 moves 慣例）
+Table pve_encounter_moves {
+  id varchar(36) [pk]
+  encounter_id varchar(36) [not null]
+  encounter_move_number int [not null, note: '本關第幾手，1..30（對照 move_budget）']
+  run_move_number int [not null, note: 'Run 全程累計手數，跨關不重置；節拍器倍率計算依此（FR-C5 #6）']
+  row int [not null]
+  col int [not null]
+  placed_at timestamp [not null]
+
+  Indexes {
+    (encounter_id, encounter_move_number) [unique, name: 'uk_pve_encounter_moves_encounter_seq']
+  }
+  Note: '[exempt: created_at/updated_at/version/is_deleted, reason: 不可變關卡落子事件流]'
+}
+Ref: pve_encounter_moves.encounter_id > pve_encounters.id
+
+// ── 增量 B/C：關卡場地格（沿用 field_cell_kind／board_side 列舉，FR-C2）─
+Table pve_field_cells {
+  id varchar(36) [pk]
+  encounter_id varchar(36) [not null]
+  cell_kind field_cell_kind [not null, note: 'OBSTACLE 開局即可見；ERUPTION/TIDE server-only 直到觸發（同 PVP 慣例）']
+  row int [not null]
+  col int [not null]
+  visible_to_player boolean [not null, default: false]
+  triggered boolean [not null, default: false]
+  triggered_at timestamp
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (encounter_id, row, col) [unique, name: 'uk_pve_field_cells_encounter_position']
+  }
+  Note: 'VOLCANO：可見障礙格3–5個、隱藏噴發格至多3個；ABYSS突變動態生成的障礙棋子亦記錄於此（FR-C2 FR-C6）'
+}
+Ref: pve_field_cells.encounter_id > pve_encounters.id
+
+Table pve_field_states {
+  id varchar(36) [pk]
+  encounter_id varchar(36) [not null]
+  sea_side board_side [note: 'BEACH限定：海側起始方向，由 seed 決定']
+  eroded_rows int [not null, default: 0]
+  tide_triggered boolean [not null, default: false]
+  wave_move_counter int [not null, default: 0, note: '累計落子手數，滿10手觸發一次海浪後歸零（PVE 單人以落子數計，非雙方輪次，FR-C2）']
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    encounter_id [unique, name: 'uk_pve_field_states_encounter_id']
+  }
+}
+Ref: pve_field_states.encounter_id > pve_encounters.id
+
+// ── 增量 B/C：關卡技能／場地事件流（FR-B2 FR-B3 FR-B5 FR-C6）───
+// 不可變事件流，供結算重現與續玩恢復（FR-B6），免審計欄位
+Table pve_encounter_events {
+  id varchar(36) [pk]
+  encounter_id varchar(36) [not null]
+  move_number int [note: '對應觸發之落子序號；SKILL_USED 時為使用當下已完成落子數（間隔序號，FR-B5）']
+  event_type pve_encounter_event_type [not null]
+  row int
+  col int
+  detail varchar [note: 'JSON：連線座標清單/線長/方向/基礎分/倍率breakdown/推擠方向/生成座標等']
+  occurred_at timestamp [not null]
+
+  Indexes {
+    (encounter_id, move_number) [name: 'idx_pve_encounter_events_encounter_move']
+  }
+  Note: '[exempt: created_at/updated_at/version/is_deleted, reason: 不可變事件流，供回放與續玩重建]'
+}
+Ref: pve_encounter_events.encounter_id > pve_encounters.id
+
+// ── 增量 C：Run 持有技能／遺物（FR-C4 FR-C5）───────────────────
+Table pve_run_skills {
+  id varchar(36) [pk]
+  run_id varchar(36) [not null]
+  skill_type skill_type [not null, note: '僅限玩家職業對應3技能池（WARRIOR/ARCHER各3種，FR-C4）；建立Run時依職業附贈1個（FR-B5）']
+  quantity int [not null, default: 1, note: '同名技能可重複持有；使用時遞減，歸零即視為不再持有（FR-C4）']
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (run_id, skill_type) [unique, name: 'uk_pve_run_skills_run_skill']
+  }
+  Note: '應用層保證同一 run 的 quantity 加總 <= 3（持有上限，FR-C4）'
+}
+Ref: pve_run_skills.run_id > pve_runs.id
+
+Table pve_run_relics {
+  id varchar(36) [pk]
+  run_id varchar(36) [not null]
+  relic_type pve_relic_type [not null]
+  acquired_at timestamp [not null]
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (run_id, relic_type) [unique, name: 'uk_pve_run_relics_run_relic', note: '已持有遺物不會被抽出、亦不可重複持有（FR-C4）']
+  }
+  Note: '應用層保證同一 run 至多持有 5 件遺物（持有上限，FR-C4）'
+}
+Ref: pve_run_relics.run_id > pve_runs.id
+
+// ── 增量 C：商店（FR-C4）───────────────────────────────────────
+Table pve_shop_visits {
+  id varchar(36) [pk]
+  run_id varchar(36) [not null]
+  after_encounter_sequence int [not null, note: '第幾關通過後開啟；第8關通關後不開商店（FR-C4）']
+  status pve_shop_visit_status [not null, default: 'OPEN']
+  reroll_count int [not null, default: 0, note: '重抽次數不限，僅受金幣限制，每次5金幣（FR-C4）']
+  opened_at timestamp [not null]
+  closed_at timestamp
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (run_id, after_encounter_sequence) [unique, name: 'uk_pve_shop_visits_run_sequence']
+  }
+}
+Ref: pve_shop_visits.run_id > pve_runs.id
+
+Table pve_shop_offer_slots {
+  id varchar(36) [pk]
+  shop_visit_id varchar(36) [not null]
+  slot_index int [not null, note: '0,1=遺物展示位；2=技能展示位（固定遺物x2、技能x1，FR-C4）']
+  offer_kind pve_shop_offer_kind [not null]
+  relic_type pve_relic_type [note: 'offer_kind=RELIC 時必填；已持有遺物不會被抽出']
+  skill_type skill_type [note: 'offer_kind=SKILL 時必填；僅自玩家職業3技能池抽取']
+  price int [not null, note: '技能售價固定6；遺物售價見 pve_relic_type 附註（FR-C4 FR-C5）']
+  purchased boolean [not null, default: false]
+
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  version int [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+
+  Indexes {
+    (shop_visit_id, slot_index) [unique, name: 'uk_pve_shop_offer_slots_visit_slot']
+  }
+}
+Ref: pve_shop_offer_slots.shop_visit_id > pve_shop_visits.id

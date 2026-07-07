@@ -39,7 +39,7 @@
 39,真劍勝負模式,火山場地,15×15；開局隨機生成障礙物 5–8 格（雙方可見、禁止落子）；隱藏噴發格最多5格（server-only、一次性），踩中即噴發燒毀周邊8格棋子（觸發子保留、格子之後仍可下）,Should,FieldGenerator + 噴發結算邏輯,FieldGenerated / VolcanoErupted / StonesBurned,噴發後該格變普通格
 40,真劍勝負模式,沙灘場地,專用 16×16 棋盤；海洋8排＋沙灘8排、海側四方向隨機；海洋格可正常落子；隱藏漲潮格最多5格（server-only）,Should,棋盤尺寸參數化（前後端 N 常數解耦）+ FieldGenerator,FieldGenerated / TideTriggered,現有渲染器寫死15×15需參數化
 41,真劍勝負模式,海浪與漲潮結算,每5輪（雙方各下一手為1輪）海浪將海洋格棋子往沙灘方向連鎖推1格；漲潮觸發後每次海浪追加侵蝕最靠海一排沙灘變海洋，其上棋子保留變海洋棋子,Should,回合計數器 + 場地狀態機,WaveSurged / TideRisen / SandEroded,侵蝕漸進直到全海洋
-42,真劍勝負模式,劍士技能組,橫劈/縱劈：附掛落子，以該子為基準選方向（橫劈上/下、縱劈左/右），緊鄰該方向一排3格往該方向推1格、含劈砍特效；大絕天地反轉：取代落子，選空格錨點+四方向之 3寬×2深 6格內棋子顏色雙方互換,Should,SkillResolver + PushResolver 重用,SkillUsed / StonesPushed / ColorsSwapped,大絕錨點格必須為空格
+42,真劍勝負模式,劍士技能組,橫劈：附掛落子選上/下，緊鄰該方向橫排3格往該方向推1格；縱劈：選左/右，僅推緊鄰該方向那一格（一格寬，2026-07-07 規則變更）、含劈砍特效；大絕天地反轉：取代落子，選空格錨點+四方向之 3寬×2深 6格內棋子顏色雙方互換,Should,SkillResolver + PushResolver 重用,SkillUsed / StonesPushed / ColorsSwapped,大絕錨點格必須為空格
 43,真劍勝負模式,弓箭手技能組,精準狙擊：附掛落子，替換場上現存一顆敵方棋子為己方顏色（替換即該手落子）；散射：該手同時下2子於空格、兩子不得在彼此九宮格內（中心距≥2）；大絕開拓之星：取代落子，選空格錨點+四方向之 3寬×2深 6格內棋子全部消除,Should,SkillResolver + 目標合法性驗證,SkillUsed / StoneReplaced / StonesCleared,大絕錨點格必須為空格
 44,真劍勝負模式,隱藏格資訊管理,噴發格/漲潮格位置僅存 server 端、不下發前端；觀戰者同玩家視角（看不到隱藏格）,Should,GameState DTO 過濾 + 觸發時才廣播事件,VolcanoErupted / TideTriggered,防作弊延伸
 45,真劍勝負模式,技能與場地特效,劈砍/狙擊/散射/大絕/噴發/海浪/漲潮均有前端特效與音效占位；具體動畫於 UI 設計階段定案,Should,Framer Motion / Canvas 動畫層,對應各結算事件,需求先標「有特效」

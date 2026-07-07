@@ -83,12 +83,14 @@ export function ultimateRect(anchor: Cell, dir: SkillDirection, size: number): C
   return cells;
 }
 
-// ── Slash target cells (Q10) ────────────────────────────────────
+// ── Slash target cells (Q10; 縱劈 rule change 2026-07-07) ───────
 /**
  * HORIZONTAL_SLASH (dir UP/DOWN): the 3 cells of the adjacent row in `dir`
  * (front + front-left + front-right of the just-placed stone), each pushed
- * 1 step in `dir`. VERTICAL_SLASH (dir LEFT/RIGHT): symmetric on columns.
- * Out-of-board cells are dropped.
+ * 1 step in `dir`. VERTICAL_SLASH (dir LEFT/RIGHT): 1-wide (rule change
+ * 2026-07-07, clarify doc final section) — ONLY the single cell adjacent to
+ * the placed stone in the chosen direction is pushed (chain push / off-board
+ * removal / obstacle block unchanged). Out-of-board cells are dropped.
  */
 export function slashCells(
   stone: Cell,
@@ -104,10 +106,9 @@ export function slashCells(
       if (inBoard(row, col, size)) cells.push({ row, col });
     }
   } else {
+    const row = stone.row;
     const col = stone.col + d.dc;
-    for (let row = stone.row - 1; row <= stone.row + 1; row++) {
-      if (inBoard(row, col, size)) cells.push({ row, col });
-    }
+    if (inBoard(row, col, size)) cells.push({ row, col });
   }
   return cells;
 }

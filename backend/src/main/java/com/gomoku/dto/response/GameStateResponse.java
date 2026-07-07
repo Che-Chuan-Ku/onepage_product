@@ -35,7 +35,15 @@ public record GameStateResponse(
         // this authoritative full-board snapshot is now the source of truth
         // for stone positions, no event math required. Null for NORMAL games
         // (frontend derives their board from lastMove append, which is exact).
-        List<StoneView> stones
+        List<StoneView> stones,
+        // Additive (bug fix, 2026-07-07): the skill settled by THIS hand, so
+        // remote viewers (opponent/spectator via STOMP) don't have to infer it
+        // from skillEvents — inference broke for slashes (STONE_PUSHED row/col
+        // is the DESTINATION, 2 cells from the move, so the adjacency-based
+        // guess failed) and is impossible for SCATTER_SHOT (no event
+        // signature). Null when the hand carried no skill / NORMAL games /
+        // read-side snapshots (GET state has no per-hand context).
+        String skillType
 ) {
     public record LastMove(String color, int row, int col) {
     }
@@ -70,6 +78,6 @@ public record GameStateResponse(
     public GameStateResponse(String gameId, String status, String currentTurn, int moveCount,
                              LastMove lastMove, String result, List<Cell> winningLine) {
         this(gameId, status, currentTurn, moveCount, lastMove, result, winningLine,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null);
     }
 }

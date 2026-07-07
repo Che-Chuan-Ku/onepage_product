@@ -62,7 +62,8 @@ const SKILL_INFO: Record<SkillType, { name: string; ico: string; desc: string }>
   VERTICAL_SLASH: {
     name: "縱劈",
     ico: "🗡️",
-    desc: "落子時發動。選擇左或右，將緊鄰該方向的縱列3格棋子往該方向推1格。一場限一次。",
+    // 規則變更（2026-07-07 裁決）：縱劈改為一格寬。
+    desc: "落子時發動。選擇左或右，將緊鄰該方向的一格棋子往前推1格（連鎖推擠、出界移除、遇障礙擋停）。一場限一次。",
   },
   HEAVEN_EARTH_REVERSAL: {
     name: "天地反轉（大絕）",
@@ -174,14 +175,24 @@ function buildCasterSkillAnim(
 }
 
 /**
- * Best-effort broadcast-side SkillAnim (opponent/spectator via STOMP, real
- * backend only — MSW never sends a duel broadcast, so this path has no e2e
- * coverage). Reuses inferSkillCast's own event coordinates directly (no
- * origin+delta arithmetic — applyDuelBroadcast's doc notes the real
- * backend's STONE_PUSHED row/col is already the destination cell here).
- * SCATTER_SHOT has no event signature (documented gap) and is skipped.
+ * Best-effort broadcast-side SkillAnim (all viewers on the STOMP path — the
+ * caster included: in real-backend online mode submitMove deliberately skips
+ * the direct-apply path, so this broadcast IS everyone's anim source; MSW
+ * never sends a duel broadcast, that path uses buildCasterSkillAnim).
+ * Reuses the events' own coordinates directly (no origin+delta arithmetic —
+ * the real backend's STONE_PUSHED row/col is already the destination cell).
+ * `extras` (bug fix 散射/劈砍): scatterTargets = the two landed cells derived
+ * by the caller from the authoritative stones-snapshot diff (SCATTER_SHOT has
+ * no event signature at all); slideMoves = pushed-stone origin→destination
+ * tweens derived from the pre-broadcast board, so slashes show 推子 slides on
+ * the broadcast path too, same as the caster-side MSW path.
  */
-function buildBroadcastSkillAnim(skill: SkillType, events: AnyEvent[], lastMove: Cell | null): SkillAnim | null {
+function buildBroadcastSkillAnim(
+  skill: SkillType,
+  events: AnyEvent[],
+  lastMove: Cell | null,
+  extras?: { scatterTargets?: Cell[]; slideMoves?: SlideMove[] },
+): SkillAnim | null {
   switch (skill) {
     case "HORIZONTAL_SLASH":
     case "VERTICAL_SLASH": {
@@ -197,8 +208,13 @@ function buildBroadcastSkillAnim(skill: SkillType, events: AnyEvent[], lastMove:
         axis: skill === "HORIZONTAL_SLASH" ? "row" : "col",
         origin: lastMove,
         cells: pushed,
+        moves: extras?.slideMoves?.length ? extras.slideMoves : undefined,
       };
     }
+    case "SCATTER_SHOT":
+      return extras?.scatterTargets?.length
+        ? { kind: "scatter", targets: extras.scatterTargets.map((c) => ({ row: c.row, col: c.col })) }
+        : null;
     case "HEAVEN_EARTH_REVERSAL": {
       const cells = events
         .filter((e) => e.eventType === "COLORS_SWAPPED" && e.row != null && e.col != null)
@@ -334,6 +350,10 @@ export default function GamePage() {
   // moves once a real online identity is known.
   const turnRef = useRef<Color>("BLACK");
   const myColorRef = useRef<Color | null>(null);
+  // Bug fix (散射/劈砍 broadcast anims): the pre-broadcast board, for deriving
+  // scatter's two landed cells (snapshot diff) and slash slide-tween colors
+  // inside the STOMP callback (same staleness concern as the refs above).
+  const stonesRef = useRef<PlacedStone[]>([]);
 
   // Bug fix: online p1Name/p2Name used to be hardcoded placeholder strings.
   // Real nicknames + correct black/white mapping are resolved below once the
@@ -358,6 +378,9 @@ export default function GamePage() {
   useEffect(() => {
     turnRef.current = turn;
   }, [turn]);
+  useEffect(() => {
+    stonesRef.current = stones;
+  }, [stones]);
 
   useEffect(() => {
     // reset on (re)mount: React StrictMode's dev unmount/remount keeps the
@@ -609,6 +632,9 @@ export default function GamePage() {
       // overwrites turnRef's next value (via its mirroring effect) — see
       // turnRef's own doc comment.
       const actorColor = turnRef.current;
+      // Pre-broadcast board (see stonesRef doc): captured BEFORE setStones
+      // below replaces it with the authoritative snapshot.
+      const prevStones = stonesRef.current;
       if (state.stones) {
         setStones(state.stones.map((s) => ({ r: s.row, c: s.col, color: lc(s.color) })));
       } else {
@@ -619,21 +645,55 @@ export default function GamePage() {
       if (state.lastMove) setLastMove([state.lastMove.row, state.lastMove.col]);
       setMoveCount(state.moveCount);
       if (state.currentTurn) setTurn(state.currentTurn);
-      // UI fix（對手施放技能提示）: this viewer has no local knowledge of
-      // which skill the remote actor pressed — best-effort inference from
-      // the settlement's own skillEvents (see inferSkillCast doc; known gap:
-      // SCATTER_SHOT has no event signature and won't be announced here).
-      if (state.skillEvents?.length) {
-        const lastMoveCell = state.lastMove ? { row: state.lastMove.row, col: state.lastMove.col } : null;
-        const inferred = inferSkillCast(state.skillEvents, lastMoveCell);
-        if (inferred) {
-          announceSkillCast(actorColor, inferred);
-          // 機能性技能動畫（新增）：best-effort — see buildBroadcastSkillAnim doc.
-          const anim = buildBroadcastSkillAnim(inferred, state.skillEvents, lastMoveCell);
-          if (anim) {
-            const duration = anim.kind === "reversal" || anim.kind === "pioneer" ? 1500 : 700;
-            boardRef.current?.playSkillAnim(anim, duration);
-          }
+      // 對手施放技能提示＋動畫（bug fix, 2026-07-07）: prefer the payload's own
+      // additive `skillType` (api.yml GameStateResponse.skillType) — event
+      // inference broke for slashes on the real backend (STONE_PUSHED row/col
+      // is the push DESTINATION, 2 cells from the move, so the adjacency-based
+      // inferSkillCast returned null → 橫劈/縱劈 showed no blade/toast for any
+      // viewer, the caster included, since online real-backend mode renders
+      // everything from this broadcast) and can never work for SCATTER_SHOT
+      // (no event signature). inferSkillCast stays as the fallback for older
+      // backend payloads without the field.
+      const events = state.skillEvents ?? [];
+      const lastMoveCell = state.lastMove ? { row: state.lastMove.row, col: state.lastMove.col } : null;
+      const skillCast = state.skillType ?? (events.length ? inferSkillCast(events, lastMoveCell) : null);
+      if (skillCast) {
+        announceSkillCast(actorColor, skillCast);
+        // 散射（bug fix）：no event signature — the two landed cells are the
+        // actor-colored stones present in the authoritative snapshot but not
+        // on the pre-broadcast board.
+        let scatterTargets: Cell[] | undefined;
+        if (skillCast === "SCATTER_SHOT" && state.stones) {
+          const before = new Set(prevStones.map((s) => cellKey(s.r, s.c)));
+          scatterTargets = state.stones
+            .filter((s) => lc(s.color) === lc(actorColor) && !before.has(cellKey(s.row, s.col)))
+            .map((s) => ({ row: s.row, col: s.col }));
+        }
+        // 劈砍推子滑動（bug fix）：derive each pushed stone's origin (destination
+        // minus one step along the push direction) + color from the
+        // pre-broadcast board, so the broadcast path tweens stones exactly
+        // like the caster-side MSW path instead of teleporting them.
+        let slideMoves: SlideMove[] | undefined;
+        if ((skillCast === "HORIZONTAL_SLASH" || skillCast === "VERTICAL_SLASH") && lastMoveCell) {
+          const waveIdx = events.findIndex((e) => e.eventType === "WAVE_SURGED");
+          const preWave = waveIdx === -1 ? events : events.slice(0, waveIdx);
+          const axis: "row" | "col" = skillCast === "HORIZONTAL_SLASH" ? "row" : "col";
+          const prevMap = new Map(prevStones.map((s) => [cellKey(s.r, s.c), s.color]));
+          slideMoves = preWave
+            .filter((e) => e.eventType === "STONE_PUSHED" && e.row != null && e.col != null)
+            .map((e) => {
+              const to = { row: e.row!, col: e.col! };
+              const sign = Math.sign(axis === "row" ? to.row - lastMoveCell.row : to.col - lastMoveCell.col) || 1;
+              const from = axis === "row" ? { row: to.row - sign, col: to.col } : { row: to.row, col: to.col - sign };
+              const color = prevMap.get(cellKey(from.row, from.col));
+              return color ? { from, to, color } : null;
+            })
+            .filter((m): m is SlideMove => m !== null);
+        }
+        const anim = buildBroadcastSkillAnim(skillCast, events, lastMoveCell, { scatterTargets, slideMoves });
+        if (anim) {
+          const duration = anim.kind === "reversal" || anim.kind === "pioneer" ? 1500 : 700;
+          boardRef.current?.playSkillAnim(anim, duration);
         }
       }
       // 場地事件警示（新增，需求 #2）：海浪來襲/漲潮/侵蝕 — 每位觀眾（含觀戰者）都看得到。

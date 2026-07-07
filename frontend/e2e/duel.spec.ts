@@ -114,6 +114,43 @@ test.describe("真劍勝負：火山場地與技能（需求 #36 #39 #42 #43）"
     await expect(page.getByText("1/3 已用")).toBeVisible();
   });
 
+  test("D11 縱劈規則變更（2026-07-07）：一格寬 — 僅推緊鄰所選方向那一格", async ({ page }) => {
+    await page.goto("/game/duel-volcano-demo?mode=local");
+    await expect(page.getByTestId("skill-bar")).toBeVisible();
+    // tooltip 定案文案（規則變更後：一格寬）
+    await page.getByTestId("skill-info-VERTICAL_SLASH").click();
+    await expect(page.getByTestId("skill-tooltip-VERTICAL_SLASH")).toContainText(
+      "落子時發動。選擇左或右，將緊鄰該方向的一格棋子往前推1格（連鎖推擠、出界移除、遇障礙擋停）。一場限一次。",
+    );
+    await page.getByTestId("skill-info-VERTICAL_SLASH").click();
+    // 鋪局（避開 demo 障礙物/噴發格）：
+    //  h1 黑(2,4)、h2 白(7,6)＝縱劈目標、h3 黑(2,6)、h4 白(6,6)＝舊 3 格寬
+    //  規則下也會被推、新一格寬規則下必須不動的對照子。
+    await clickBoard(page, 2, 4, 15);
+    await expect(page.getByText("第 1 手")).toBeVisible();
+    await clickBoard(page, 7, 6, 15);
+    await expect(page.getByText("第 2 手")).toBeVisible();
+    await clickBoard(page, 2, 6, 15);
+    await expect(page.getByText("第 3 手")).toBeVisible();
+    await clickBoard(page, 6, 6, 15);
+    await expect(page.getByText("第 4 手")).toBeVisible();
+    // 黑（劍士）縱劈向左，落子 (7,7)：只推 (7,6) → (7,5)
+    await page.getByRole("button", { name: /縱劈/ }).click();
+    await page.getByTestId("dir-pad").getByRole("button", { name: "左", exact: true }).click();
+    await clickBoard(page, 7, 7, 15);
+    await expect(page.getByTestId("skill-anim")).toHaveAttribute("data-active", "true");
+    await expect(page.getByText("第 5 手")).toBeVisible();
+    await expect(page.getByText("1/3 已用")).toBeVisible();
+    // 一格寬驗證 1：對照子 (6,6) 未被推動 → (6,5) 仍為空格、白可落子。
+    // （舊 3 格寬規則會把 (6,6) 推到 (6,5)，該格被佔、此落子將永遠不成立；
+    //  另佔用格點擊是 client-side no-op —— GomokuBoard 直接忽略，不會有 toast。）
+    await clickBoard(page, 6, 5, 15);
+    await expect(page.getByText("第 6 手")).toBeVisible();
+    // 一格寬驗證 2：目標子已離開 (7,6)（被推到 (7,5)）→ 該格可立即落子（黑）。
+    await clickBoard(page, 7, 6, 15);
+    await expect(page.getByText("第 7 手")).toBeVisible();
+  });
+
   test("D5 精準狙擊：白方（弓箭手）替換黑棋（Q10）", async ({ page }) => {
     await page.goto("/game/duel-volcano-demo?mode=local");
     await expect(page.getByTestId("skill-bar")).toBeVisible();

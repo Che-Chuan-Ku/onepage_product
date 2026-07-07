@@ -36,18 +36,22 @@ public class SeriousSkillSteps {
     // ================================================================
 
     /**
-     * Slash attach without pre-seeded stones in the feature: seed the three
-     * adjacent cells with enemy stones so the push assertions are observable.
+     * Slash attach without pre-seeded stones in the feature: seed the slash
+     * zone with enemy stones so the push assertions are observable —
+     * HORIZONTAL_SLASH: the 3 adjacent cells; VERTICAL_SLASH: only the single
+     * adjacent cell (1-wide, rule change 2026-07-07).
      */
     @When("玩家 {string} 於 \\({int},{int}\\) 落子並附掛 {string}，方向 {string}")
     public void placeWithSlash(String user, int row, int col, String skill, String direction) {
         boolean horizontal = "HORIZONTAL_SLASH".equals(skill);
         int dr = "UP".equals(direction) ? -1 : "DOWN".equals(direction) ? 1 : 0;
         int dc = "LEFT".equals(direction) ? -1 : "RIGHT".equals(direction) ? 1 : 0;
-        for (int side = -1; side <= 1; side++) {
-            int r = horizontal ? row + dr : row + side;
-            int c = horizontal ? col + side : col + dc;
-            support.insertStone(StoneColor.WHITE, r, c);
+        if (horizontal) {
+            for (int side = -1; side <= 1; side++) {
+                support.insertStone(StoneColor.WHITE, row + dr, col + side);
+            }
+        } else {
+            support.insertStone(StoneColor.WHITE, row, col + dc);
         }
         support.ensureTurn(user);
         support.placeAs(user, String.format(
@@ -60,9 +64,12 @@ public class SeriousSkillSteps {
         assertPushedFrom(new int[][]{{r1, c1}, {r2, c2}, {r3, c3}});
     }
 
-    @Then("系統對 \\({int},{int}\\),\\({int},{int}\\),\\({int},{int}\\) 這一縱列施加往左推 1 格")
-    public void verticalColumnPushedLeft(int r1, int c1, int r2, int c2, int r3, int c3) {
-        assertPushedFrom(new int[][]{{r1, c1}, {r2, c2}, {r3, c3}});
+    /** VERTICAL_SLASH is 1-wide (rule change 2026-07-07): exactly one pushed cell. */
+    @Then("系統對 \\({int},{int}\\) 這一格施加往左推 1 格")
+    public void singleCellPushedLeft(int r1, int c1) {
+        assertPushedFrom(new int[][]{{r1, c1}});
+        // 1-wide: no other slash push may have happened this settlement.
+        Assertions.assertThat(pushedDetails()).hasSize(1);
     }
 
     @And("系統發布 SkillUsed 與 StonesPushed 事件")
@@ -218,12 +225,14 @@ public class SeriousSkillSteps {
     public void resolverPushesLine(String direction) {
         int headRow = (Integer) ctx.getMemo("lineHeadRow");
         int headCol = (Integer) ctx.getMemo("lineHeadCol");
-        // VERTICAL_SLASH RIGHT placed at (headRow-1, headCol-1) pushes the column
-        // (headRow-2..headRow, headCol) — including the line head — to the right.
+        // VERTICAL_SLASH is 1-wide (rule change 2026-07-07): place directly
+        // behind the line head (opposite the push direction) so the single
+        // adjacent cell IS the head — the chain then pushes the whole line.
+        int dc = "LEFT".equals(direction) ? -1 : 1;
         support.ensureTurn("alice");
         support.placeAs("alice", String.format(
                 "{\"row\":%d,\"col\":%d,\"skill\":{\"skillType\":\"VERTICAL_SLASH\",\"direction\":\"%s\"}}",
-                headRow - 1, headCol - 1, direction));
+                headRow, headCol - dc, direction));
         Assertions.assertThat(((ResponseEntity<?>) ctx.getLastResponse())
                 .getStatusCode().is2xxSuccessful()).isTrue();
     }

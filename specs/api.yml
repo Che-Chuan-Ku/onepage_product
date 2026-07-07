@@ -26,6 +26,11 @@ tags:
     description: 對局開局、落子、Swap2
   - name: history
     description: 對局歷史與回放
+  - name: pve
+    description: >
+      PVE 挑戰模式（documents/PVE-挑戰模式-增量需求.md）：建立 Run、關卡落子、技能使用、
+      商店購買/重抽/跳過、放棄 Run。單人模式一律 HTTP request/response，不使用 STOMP（§6）；
+      現有 PVP 契約零修改。
 
 paths:
   /auth/register:
@@ -738,6 +743,335 @@ paths:
                         $ref: '#/components/schemas/GameReplayResponse'
         '404': { $ref: '#/components/responses/NotFound' }
 
+  # ── PVE 挑戰模式（documents/PVE-挑戰模式-增量需求.md）─────────
+  /pve/runs:
+    post:
+      tags: [pve]
+      operationId: createPveRun
+      summary: 建立挑戰 Run
+      description: >
+        選擇職業後建立一輪新 Run，同時建立第一關（FR-B1 FR-C1 FR-C8）。同一帳號同時
+        至多 1 個進行中的 Run；已有進行中 Run 時回 422（FR-C8）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PveRunCreateRequest'
+      responses:
+        '201':
+          description: 建立成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveRunStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422':
+          description: 已存在進行中的 Run，需先結束（通關/失敗/放棄）才能建立新 Run（FR-C8）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+
+  /pve/runs/current:
+    get:
+      tags: [pve]
+      operationId: getCurrentPveRun
+      summary: 查詢目前進行中的 Run
+      description: 供斷線/重新整理後續玩（FR-B6 FR-C8）；含目前關卡、持有技能/遺物、金幣。
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveRunStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /pve/runs/{runId}/actions/abandon:
+    post:
+      tags: [pve]
+      operationId: abandonPveRun
+      summary: 放棄 Run
+      description: 玩家主動放棄，視同失敗；回傳 Run 結算資料（FR-C7）。
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 已放棄
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveRunResultResponse'
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /pve/encounters/{encounterId}:
+    get:
+      tags: [pve]
+      operationId: getPveEncounter
+      summary: 查詢關卡狀態
+      description: 供續玩恢復（FR-B6），回傳 Boss HP、剩餘手數、場地狀態、已使用技能。
+      parameters:
+        - name: encounterId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveEncounterStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /pve/encounters/{encounterId}/moves:
+    post:
+      tags: [pve]
+      operationId: placePveMove
+      summary: 關卡落子
+      description: >
+        伺服器權威驗證落子並結算連線傷害（FR-B2 FR-B3 FR-B4）。一手最多 4 方向同時
+        結算多條線，各自計傷、共用棋子僅移除一次。結算後立即判定關卡勝敗；Boss HP<=0
+        時立即結束、不再接受落子。回應 P95 < 500ms（NFR-2）。
+      parameters:
+        - name: encounterId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PveMoveCreateRequest'
+      responses:
+        '201':
+          description: 落子成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveEncounterStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: >
+            落子不合法（非本人關卡 / 位置已佔 / 超出11x11範圍 / 障礙格禁止落子 /
+            手數已用盡 / 關卡已結束）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+
+  /pve/encounters/{encounterId}/actions/use-skill:
+    post:
+      tags: [pve]
+      operationId: usePveSkill
+      summary: 使用技能
+      description: >
+        PVE 技能一律獨立行動、消耗型：不落子、不消耗手數（FR-A2 FR-B5）。僅能於任兩次
+        落子之間（含第一次落子前）使用，每個間隔至多 1 個；第30手落子結算完成後不可再用。
+      parameters:
+        - name: encounterId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PveSkillUseRequest'
+      responses:
+        '201':
+          description: 使用成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveEncounterStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: >
+            使用不合法（未持有該技能 / 本間隔已使用過技能 / 關卡已結束 /
+            大絕錨點非空格 / 精準狙擊目標非現存敵方棋子 / 散射兩子距離不足）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+
+  /pve/runs/{runId}/shop:
+    get:
+      tags: [pve]
+      operationId: getPveShop
+      summary: 查詢商店展示
+      description: 通過一關後開啟；固定展示遺物x2、技能x1（FR-C4）。
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveShopStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /pve/runs/{runId}/shop/actions/purchase:
+    post:
+      tags: [pve]
+      operationId: purchasePveShopOffer
+      summary: 購買商店展示品
+      description: 依 slotIndex 購買遺物或技能；金幣不足、已達持有上限（遺物5/技能3）時回 422（FR-C4）。
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PveShopPurchaseRequest'
+      responses:
+        '200':
+          description: 購買成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveShopStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /pve/runs/{runId}/shop/actions/reroll:
+    post:
+      tags: [pve]
+      operationId: rerollPveShop
+      summary: 重抽商店展示
+      description: 三個展示位全部重新抽取；固定花費5金幣，次數不限，僅受金幣限制（FR-C4）。
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 重抽成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveShopStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: 金幣不足（FR-C4）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+
+  /pve/runs/{runId}/shop/actions/skip:
+    post:
+      tags: [pve]
+      operationId: skipPveShop
+      summary: 跳過商店
+      description: 不購買，直接進入下一關；第8關通關後無商店，直接 Run 結算（FR-C4 FR-C7）。
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: >
+            已跳過。若下一關存在則回傳下一關狀態（data 為 PveEncounterStateResponse）；
+            若剛通過第8關則回傳 Run 結算（data 為 PveRunResultResponse）。
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
 components:
   schemas:
     ManageResponse:
@@ -1111,6 +1445,16 @@ components:
               row: { type: integer }
               col: { type: integer }
               color: { type: string, enum: [BLACK, WHITE] }
+        skillType:
+          type: string
+          enum: [HORIZONTAL_SLASH, VERTICAL_SLASH, HEAVEN_EARTH_REVERSAL, PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR]
+          nullable: true
+          description: >
+            （additive bug fix，2026-07-07）本手結算所附掛/施放的技能型別。供 STOMP
+            廣播端（對手/觀戰者）直接得知技能、觸發對應動畫與提示——先前僅靠
+            skillEvents 推斷：劈砍會因 STONE_PUSHED 的 row/col 是推擠「目的格」
+            （距落子 2 格）而推斷失敗，散射則完全無事件特徵可推斷（需求 #45、R2-1）。
+            本手無技能、NORMAL 對局、或 GET 讀取快照（無單手脈絡）時為 null。
 
     OpeningStoneCreateRequest:
       type: object
@@ -1199,6 +1543,184 @@ components:
               color: { type: string, enum: [BLACK, WHITE] }
               row: { type: integer }
               col: { type: integer }
+
+    # ── PVE 挑戰模式 Schemas（documents/PVE-挑戰模式-增量需求.md）─
+    PveRunCreateRequest:
+      type: object
+      required: [classType]
+      properties:
+        classType: { type: string, enum: [WARRIOR, ARCHER], description: 'FR-B1：建關依職業附贈1個技能（WARRIOR附HORIZONTAL_SLASH／ARCHER附PRECISION_SNIPE，FR-B5）' }
+
+    PveRunStateResponse:
+      type: object
+      description: 'Run 全貌：目前關卡、金幣、持有技能/遺物（FR-B6 FR-C8）'
+      properties:
+        runId: { type: string }
+        classType: { type: string, enum: [WARRIOR, ARCHER] }
+        status: { type: string, enum: [IN_PROGRESS, WON, LOST, ABANDONED] }
+        gold: { type: integer, example: 30, description: 'Run內貨幣，不跨Run累積（FR-C3）' }
+        currentEncounterSequence: { type: integer, example: 1, minimum: 1, maximum: 8 }
+        reachedEncounterSequence: { type: integer, example: 0 }
+        totalDamageDealt: { type: integer, example: 0 }
+        currentEncounter:
+          $ref: '#/components/schemas/PveEncounterStateResponse'
+        heldSkills:
+          type: array
+          description: '持有上限3（含重複），FR-C4'
+          items:
+            type: object
+            properties:
+              skillType: { type: string, enum: [HORIZONTAL_SLASH, VERTICAL_SLASH, HEAVEN_EARTH_REVERSAL, PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR] }
+              quantity: { type: integer, example: 1 }
+        heldRelics:
+          type: array
+          description: '持有上限5，不可重複（FR-C4）'
+          items:
+            type: object
+            properties:
+              relicType:
+                type: string
+                enum: [SHARP_BLADE, CHAIN_CORE, DIAGONAL_WALKER, VOLCANO_HEART, TIDE_BREAKWATER, METRONOME, RECYCLER, GEMINI_STAR]
+
+    PveEncounterStateResponse:
+      type: object
+      description: 供關卡對局頁渲染與續玩恢復（FR-B6）
+      properties:
+        encounterId: { type: string }
+        runId: { type: string }
+        sequence: { type: integer, example: 1, minimum: 1, maximum: 8 }
+        fieldType: { type: string, enum: [PLAIN, VOLCANO, BEACH], description: 'PVE專用11x11幾何規格，與真劍勝負場地不共用尺寸（FR-C2）' }
+        mutationType: { type: string, enum: [NONE, ONE_EYE, RAGE, ABYSS], description: '固定綁定第3/6/8關（FR-C6）' }
+        boardRows: { type: integer, example: 11 }
+        boardCols: { type: integer, example: 11 }
+        bossHpMax: { type: integer, example: 100 }
+        bossHpCurrent: { type: integer, example: 100 }
+        moveBudget: { type: integer, example: 30 }
+        movesUsed: { type: integer, example: 0 }
+        status: { type: string, enum: [IN_PROGRESS, CLEARED, FAILED] }
+        stones:
+          type: array
+          description: '權威全盤快照（同真劍勝負 GameStateResponse.stones 慣例）'
+          items:
+            type: object
+            properties:
+              row: { type: integer }
+              col: { type: integer }
+        obstacles:
+          type: array
+          description: 'VOLCANO可見障礙格3–5個；ABYSS突變動態生成的障礙棋子亦列於此（FR-C2 FR-C6）'
+          items:
+            type: object
+            properties:
+              row: { type: integer }
+              col: { type: integer }
+        skillUsableThisInterval:
+          type: boolean
+          description: '本間隔（上一手落子後、下一手落子前）是否仍可使用技能，每間隔至多1個（FR-B5）'
+        lastResolution:
+          type: object
+          nullable: true
+          description: '最近一次落子/技能結算結果，供傷害數字與特效觸發（FR-B2 FR-B3）'
+          properties:
+            damageDealt: { type: integer, example: 90 }
+            linesResolved:
+              type: array
+              items:
+                type: object
+                properties:
+                  length: { type: integer, example: 7, description: '線長，5以上；六連以上見需求文件§5 FR-B3成因說明' }
+                  baseScore: { type: integer, example: 90 }
+                  multiplier: { type: number, format: float, example: 1.0 }
+                  direction: { type: string, enum: [HORIZONTAL, VERTICAL, DIAGONAL, ANTI_DIAGONAL] }
+        events:
+          type: array
+          description: '本次結算事件，供特效觸發（同真劍勝負 skillEvents 慣例）'
+          items:
+            type: object
+            properties:
+              eventType:
+                type: string
+                enum: [LINE_RESOLVED, SKILL_USED, STONES_PUSHED, STONE_REMOVED_OFF_BOARD, VOLCANO_ERUPTED, WAVE_SURGED, TIDE_TRIGGERED, BOSS_MUTATION_TRIGGERED, ENCOUNTER_CLEARED, ENCOUNTER_FAILED]
+              row: { type: integer, nullable: true }
+              col: { type: integer, nullable: true }
+
+    PveMoveCreateRequest:
+      type: object
+      required: [row, col]
+      description: '純落子；PVE技能一律獨立行動，不附掛於本請求（見 usePveSkill，FR-A2 FR-B5）'
+      properties:
+        row: { type: integer, minimum: 0, maximum: 10, example: 5 }
+        col: { type: integer, minimum: 0, maximum: 10, example: 5 }
+
+    PveSkillUseRequest:
+      type: object
+      required: [skillType]
+      description: 'PVE技能獨立行動使用請求；欄位語意沿用 SkillActionRequest（方向/錨點/目標/第二子，FR-A2 FR-B5）'
+      allOf:
+        - $ref: '#/components/schemas/SkillActionRequest'
+
+    PveShopStateResponse:
+      type: object
+      properties:
+        shopVisitId: { type: string }
+        runId: { type: string }
+        afterEncounterSequence: { type: integer, example: 1 }
+        status: { type: string, enum: [OPEN, CLOSED] }
+        rerollCount: { type: integer, example: 0 }
+        gold: { type: integer, example: 30 }
+        offers:
+          type: array
+          description: '固定3位：遺物x2＋技能x1（FR-C4）'
+          items:
+            $ref: '#/components/schemas/PveShopOfferItem'
+
+    PveShopOfferItem:
+      type: object
+      properties:
+        slotIndex: { type: integer, example: 0 }
+        offerKind: { type: string, enum: [RELIC, SKILL] }
+        relicType:
+          type: string
+          nullable: true
+          enum: [SHARP_BLADE, CHAIN_CORE, DIAGONAL_WALKER, VOLCANO_HEART, TIDE_BREAKWATER, METRONOME, RECYCLER, GEMINI_STAR]
+        skillType:
+          type: string
+          nullable: true
+          enum: [HORIZONTAL_SLASH, VERTICAL_SLASH, HEAVEN_EARTH_REVERSAL, PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR]
+        price: { type: integer, example: 8 }
+        purchased: { type: boolean, example: false }
+
+    PveShopPurchaseRequest:
+      type: object
+      required: [slotIndex]
+      properties:
+        slotIndex: { type: integer, example: 0, description: '0,1=遺物位；2=技能位（FR-C4）' }
+
+    PveRunResultResponse:
+      type: object
+      description: 'Run 結算：通關/失敗/放棄皆回傳此結構（FR-C7）'
+      properties:
+        runId: { type: string }
+        status: { type: string, enum: [WON, LOST, ABANDONED] }
+        reachedEncounterSequence: { type: integer, example: 3 }
+        totalDamageDealt: { type: integer, example: 640 }
+        goldEarned: { type: integer, example: 90 }
+        goldSpent: { type: integer, example: 60 }
+        finalHeldSkills:
+          type: array
+          items:
+            type: object
+            properties:
+              skillType: { type: string, enum: [HORIZONTAL_SLASH, VERTICAL_SLASH, HEAVEN_EARTH_REVERSAL, PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR] }
+              quantity: { type: integer }
+        finalHeldRelics:
+          type: array
+          items:
+            type: object
+            properties:
+              relicType:
+                type: string
+                enum: [SHARP_BLADE, CHAIN_CORE, DIAGONAL_WALKER, VOLCANO_HEART, TIDE_BREAKWATER, METRONOME, RECYCLER, GEMINI_STAR]
 
   responses:
     BadRequest:
