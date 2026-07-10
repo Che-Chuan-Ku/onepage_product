@@ -43,10 +43,14 @@ Feature: 效果系統資料驅動化
 
   Rule: 後置（狀態）- 同一 seed 加同一操作序列必得同一結果
 
-    Example: 相同 seed 建立兩次 Run，場地隨機判定結果相同
+    Example: 相同 seed 建立兩次 Run，第5關（VOLCANO）岩石障礙位置相同
+      # 2026-07-10 全對弈階梯改版：L2 固定 PLAIN（花月開局教學關），不再有隨機
+      # VOLCANO/BEACH 判定；本例改用 L5（documents/PVE-全對弈階梯設計-2026-07-10.md
+      # §4.2 一次性靜態岩石，經 PveRandoms.forPurpose(seed,"volcano-l5") 播種）
+      # 驗證同一決定性論證。
       Given 使用 seed "abc123" 建立第一個 PVE Run
       And 使用相同 seed "abc123" 建立第二個 PVE Run
-      When 比對兩個 Run 第 2 關（隨機 VOLCANO/BEACH 判定）的場地類型與障礙格/隱藏格位置
+      When 比對兩個 Run 第 5 關的岩石障礙格位置
       Then 兩者完全相同（FR-A3 NFR-1）
 
   # FR-A1/A2/A3 已定：原子操作集=落子/移除/推移/變換/生成/數值修飾；

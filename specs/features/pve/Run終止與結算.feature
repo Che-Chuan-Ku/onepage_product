@@ -10,11 +10,16 @@ Feature: Run終止與結算
 
   Rule: 後置（狀態）- 任一關失敗即整個Run終止
 
-    Example: 第3關失敗時Run狀態變為LOST
-      Given 玩家 "alice" 於第3關手數用盡且BossHP>0
-      When 系統判定該關失敗
+    Example: 第4關Boss連五時Run狀態變為LOST
+      # documents/PVE-全對弈階梯設計-2026-07-10.md §1: 全8關皆為DUEL——手數
+      # 用盡本身不再判定失敗（那是DRAW，見魔王對弈.feature），唯有Boss完成
+      # 連五才會使整個Run終止。刻意選第4關而非第3關：第3關「不可橫向」
+      # （§4.1）雙方對稱，橫向連五對Boss也不算勝，本情境用的是一條橫向四連
+      # 種子，換一個沒有該限制的關卡驗證。
+      Given 玩家 "alice" 於第4關Boss即將完成連五
+      When 系統判定該關失敗（Boss連五）
       Then Run狀態變為 "LOST"
-      And 系統發布 PveRunEnded 事件，reachedEncounterSequence為2
+      And 系統發布 PveRunEnded 事件，reachedEncounterSequence為3
 
   Rule: 後置（狀態）- 玩家可主動放棄，視同失敗
 
@@ -35,6 +40,9 @@ Feature: Run終止與結算
   Rule: 後置（狀態）- Run結算顯示到達關數、總傷害、金幣收支、最終持有遺物與技能
 
     Example: 失敗Run的結算內容
+      # totalDamageDealt 欄位保留（api.yml additive philosophy，不刪除既有
+      # 欄位）；全對弈化後真實對局中這個值恆為0（DUEL無傷害概念），此處數值
+      # 純粹測試「欄位正確透傳到結算回應」這條資料管線本身，非真實玩法示例。
       Given 玩家 "alice" 於第3關失敗，全Run總傷害累計640，共獲得90金幣、花費60金幣
       And 玩家 "alice" 最終持有遺物 "SHARP_BLADE"、技能 "HORIZONTAL_SLASH" 數量2
       When 玩家 "alice" 查看Run結算

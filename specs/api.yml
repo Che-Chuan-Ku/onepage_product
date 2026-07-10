@@ -992,6 +992,47 @@ paths:
                     properties:
                       data: { type: object }
 
+  /pve/encounters/{encounterId}/actions/retry:
+    post:
+      tags: [pve]
+      operationId: retryPveEncounter
+      summary: 重試和局的魔王對弈關（DUEL限定）
+      description: >
+        2026-07-09 新增（documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §1.5/§6.5
+        公平性修正）：關卡狀態為 DRAW（DUEL限定——手數耗盡且雙方皆未連五）時可呼叫，
+        原地重開同一關（同sequence），盤面重新開始、Boss AI RNG重新播種，Run本身
+        不受影響（不沒收、不計敗、可無限次重試）。回傳新的
+        PveEncounterStateResponse（新 encounterId，舊的失效）。
+      parameters:
+        - name: encounterId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: 重試成功，回傳新關卡狀態
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PveEncounterStateResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: 關卡非DUEL類型 / 關卡狀態非DRAW
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ManageResponse'
+                  - type: object
+                    properties:
+                      data: { type: object }
+
   /pve/runs/{runId}/shop:
     get:
       tags: [pve]
@@ -1666,18 +1707,34 @@ components:
         encounterId: { type: string }
         runId: { type: string }
         sequence: { type: integer, example: 1, minimum: 1, maximum: 8 }
-        fieldType: { type: string, enum: [PLAIN, VOLCANO, BEACH], description: 'PVE專用11x11幾何規格，與真劍勝負場地不共用尺寸（FR-C2）' }
-        mutationType: { type: string, enum: [NONE, ONE_EYE, RAGE, ABYSS], description: '固定綁定第3/6/8關（FR-C6）' }
+        fieldType: { type: string, enum: [PLAIN, VOLCANO, BEACH], description: 'PVE專用11x11幾何規格，與真劍勝負場地不共用尺寸（FR-C2）；DUEL關（第4/8關）固定PLAIN' }
+        mutationType: { type: string, enum: [NONE, ONE_EYE, RAGE, ABYSS], description: '固定綁定第3/6關（FR-C6）；DUEL關（第4/8關）固定NONE，ABYSS已隨2026-07-09魔王對弈改版retired（無任何關卡使用）' }
+        encounterType:
+          type: string
+          enum: [PUZZLE, DUEL]
+          description: >
+            2026-07-09 新增（documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §1.0/§5.1）:
+            PUZZLE（第1/2/3/5/6/7關，預放黑棋雛形+補完消線）或 DUEL（第4/8關固定，
+            魔王對弈——玩家黑子先手、Boss白子後手交替落子，玩家連五過關、Boss
+            連五或手數用盡敗，無BossHP/傷害/場地突變概念）。前端須依此欄位切換
+            渲染：DUEL不顯示HP條，改顯示手數/回合提示。
         boardRows: { type: integer, example: 11 }
         boardCols: { type: integer, example: 11 }
-        bossHpMax: { type: integer, example: 100 }
-        bossHpCurrent: { type: integer, example: 100 }
-        moveBudget: { type: integer, example: 30 }
+        bossHpMax: { type: integer, example: 100, description: 'DUEL關固定為0（無HP概念，前端不應渲染HP條，見encounterType）' }
+        bossHpCurrent: { type: integer, example: 100, description: 'DUEL關固定為0' }
+        moveBudget: { type: integer, example: 30, description: 'DUEL關為玩家自己手數的預算，Boss回手不佔用此配額（第4關45／第8關70，§1.7起始值經§4統計驗收後之實作校準值）' }
         movesUsed: { type: integer, example: 0 }
-        status: { type: string, enum: [IN_PROGRESS, CLEARED, FAILED] }
+        status:
+          type: string
+          enum: [IN_PROGRESS, CLEARED, FAILED, DRAW]
+          description: >
+            DRAW（2026-07-09新增，documents/PVE-魔王對弈與策略引導設計-2026-07-09.md
+            §1.5/§6.5 公平性修正）：DUEL限定——手數耗盡且雙方皆未連五，與FAILED不同，
+            不沒收Run（Run仍IN_PROGRESS），前端應顯示「勢均力敵！再來一局」並呼叫
+            retryPveEncounter原地重試（可無限次），不導向結算頁。
         stones:
           type: array
-          description: '權威全盤快照（同真劍勝負 GameStateResponse.stones 慣例）'
+          description: '權威全盤快照（同真劍勝負 GameStateResponse.stones 慣例）；DUEL關為玩家黑子'
           items:
             type: object
             properties:
@@ -1685,21 +1742,32 @@ components:
               col: { type: integer }
         obstacles:
           type: array
-          description: 'VOLCANO可見障礙格3–5個；ABYSS突變動態生成的障礙棋子亦列於此（FR-C2 FR-C6）'
+          description: 'VOLCANO可見障礙格3–5個；PUZZLE關的ABYSS突變動態生成障礙棋子（已retired）；DUEL關的Boss白子（kind=ENEMY_STONE）亦列於此（FR-C2 FR-C6，2026-07-09擴充）'
           items:
             type: object
             properties:
               row: { type: integer }
               col: { type: integer }
+              kind:
+                type: string
+                enum: [ROCK, ENEMY_STONE]
+                description: >
+                  2026-07-09 新增（additive，舊consumer可忽略此欄位）：ROCK＝
+                  VOLCANO障礙／PUZZLE關ABYSS障礙棋子（前端沿用既有岩石圖示）；
+                  ENEMY_STONE＝DUEL關Boss活棋（前端須改走一般雙色棋子渲染，
+                  不可用岩石圖示，見§5.2）。
         skillUsableThisInterval:
           type: boolean
           description: '本間隔（上一手落子後、下一手落子前）是否仍可使用技能，每間隔至多1個（FR-B5）'
         usedSkills:
           type: array
           description: >
-            本關已使用技能清單（依使用順序，可含重複；FR-B7 關卡結算畫面顯示用，
-            斷線續玩查詢時同步回傳，FR-B6）。本關總傷害可由 bossHpMax-bossHpCurrent
-            推算，剩餘手數可由 moveBudget-movesUsed 推算，皆無需新增欄位。
+            本關「玩家」已使用技能清單（依使用順序，可含重複；FR-B7 關卡結算畫面
+            顯示用，斷線續玩查詢時同步回傳，FR-B6）。本關總傷害可由
+            bossHpMax-bossHpCurrent 推算，剩餘手數可由 moveBudget-movesUsed 推算，
+            皆無需新增欄位。**bug fix（2026-07-10）**：此欄位現在只含玩家自己的施
+            放紀錄——舊版曾把 L8 SKILL_DEMON 的 Boss 施法也併入同一份清單、前端無
+            從分辨，見下方 bossUsedSkills。
           items:
             type: string
             enum: [HORIZONTAL_SLASH, VERTICAL_SLASH, HEAVEN_EARTH_REVERSAL, PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR]
@@ -1726,9 +1794,54 @@ components:
             properties:
               eventType:
                 type: string
-                enum: [LINE_RESOLVED, SKILL_USED, STONES_PUSHED, STONE_REMOVED_OFF_BOARD, VOLCANO_ERUPTED, WAVE_SURGED, TIDE_TRIGGERED, BOSS_MUTATION_TRIGGERED, ENCOUNTER_CLEARED, ENCOUNTER_FAILED]
+                enum: [LINE_RESOLVED, SKILL_USED, STONES_PUSHED, STONE_REMOVED_OFF_BOARD, VOLCANO_ERUPTED, WAVE_SURGED, TIDE_TRIGGERED, BOSS_MUTATION_TRIGGERED, BOSS_MOVE_PLACED, ENCOUNTER_CLEARED, ENCOUNTER_FAILED, ENCOUNTER_DRAWN]
+                description: >
+                  BOSS_MOVE_PLACED（2026-07-09新增，additive）：DUEL關（第4/8關）
+                  專用，Boss每回應一手即發布一次，row/col為Boss落子座標——前端
+                  用於短暫高亮「Boss剛下的這一手」動畫（複用highlight機制，§5.2）。
+                  ENCOUNTER_DRAWN（2026-07-09新增，additive，§1.5/§6.5）：DUEL關
+                  限定，手數耗盡且雙方皆未連五時發布，對應 status=DRAW（見上方
+                  status 欄位說明）。
               row: { type: integer, nullable: true }
               col: { type: integer, nullable: true }
+        horizontalDisabled:
+          type: boolean
+          default: false
+          description: >
+            2026-07-10 新增（additive，documents/PVE-全對弈階梯設計-2026-07-10.md
+            §4.1）：L3限定「不可橫向」——true時橫向連五不算勝（雙方對稱，全遊戲
+            僅此關）。前端應顯示提示（本關橫向連五不算勝）。
+        bossSkillEvents:
+          type: array
+          description: >
+            2026-07-10 新增（additive，§3/§9.2）：L8 SKILL_DEMON限定，本次結算內
+            Boss施放的弓箭手技能（精準狙擊/散射/開拓之星，各僅一次charge），供
+            前端播放「這是Boss施法」的動畫變體，與玩家自己施法的既有動畫路徑
+            區分。cells為該技能影響的座標：精準狙擊=1格（轉為Boss棋子）、
+            散射=2格（新落的Boss棋子）、開拓之星=清除範圍內所有棋子座標。
+          items:
+            type: object
+            properties:
+              skillType:
+                type: string
+                enum: [PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR]
+              cells:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    row: { type: integer }
+                    col: { type: integer }
+        bossUsedSkills:
+          type: array
+          description: >
+            2026-07-10 新增（additive，bug fix：舊版 usedSkills 曾把 Boss 的施法
+            也混入玩家清單、前端無標註）：L8 SKILL_DEMON 限定，本關 Boss 已施放的
+            弓箭手技能歷史清單（依使用順序），與 usedSkills（玩家清單）分開列出，
+            供前端加上「魔王」標籤顯示，不與玩家自己的施法紀錄混淆。
+          items:
+            type: string
+            enum: [PRECISION_SNIPE, SCATTER_SHOT, PIONEER_STAR]
 
     PveMoveCreateRequest:
       type: object

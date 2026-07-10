@@ -6,7 +6,7 @@
 version: "3.0"
 project_root: "/Users/chechuanku/Documents/aiproject/gomoku"
 created_at: "2026-05-24T03:40:48Z"
-updated_at: "2026-07-07T15:18:00Z"
+updated_at: "2026-07-08T13:16:14Z"
 
 # ── 模組 DAG（所有模組一視同仁）────────────────────
 # 階段管理由人透過 Git PR/MR 控制，Hub 不追蹤階段狀態
@@ -69,7 +69,7 @@ modules:
     token_usage_total:
       input_tokens: 2454000
       output_tokens: 217400
-      total_tokens: 1568015
+      total_tokens: 1684504
 
   integration_test:
     status: "completed"
@@ -79,9 +79,9 @@ modules:
     input:  ["specs/", "frontend/", "backend/"]
     output: []                   # 測試腳本 + pass/fail，可觸發 document_generate
     token_usage_total:
-      input_tokens: 1628000
-      output_tokens: 133600
-      total_tokens: 1818458
+      input_tokens: 2142000
+      output_tokens: 180600
+      total_tokens: 2565655
 
 # ── 當前 interrupt（Hub 工具寫入）─────────────────
 # 模組回傳 interrupt 後，Hub 工具將內容寫在此段
