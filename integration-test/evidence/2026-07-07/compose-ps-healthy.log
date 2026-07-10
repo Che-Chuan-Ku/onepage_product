@@ -1,0 +1,6 @@
+NAME                          IMAGE                      COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+gomoku-fullstack-backend-1    gomoku-fullstack-backend   "java -jar app.jar"      backend    11 minutes ago   Up 11 minutes (healthy)   127.0.0.1:18080->8080/tcp
+gomoku-fullstack-postgres-1   postgres:15-alpine         "docker-entrypoint.s…"   postgres   6 hours ago      Up 6 hours (healthy)      5432/tcp
+gomoku-fullstack-redis-1      redis:7-alpine             "docker-entrypoint.s…"   redis      6 hours ago      Up 6 hours (healthy)      6379/tcp
+image created: 2026-07-07T15:30:38.425746008Z
+HEAD commit: 3d6a4ae8e5f0b9d512565637140332978d846496 2026-07-07T23:20:58+08:00

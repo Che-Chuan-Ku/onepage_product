@@ -1,0 +1,37 @@
+(node:94477) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 12 tests using 9 workers
+
+(node:94481) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:94486) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:94480) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:94482) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:94479) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:94484) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:94487) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:94483) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:94485) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓   3 [chromium] › e2e/pve-real-api.spec.ts:310:7 › PVE 真後端整合：PveRunCreateRequest.seed 決定性（FR-A3，直接呼叫真後端 API） › 省略 seed 時伺服器自動產生亂數 seed，Run 仍可正常建立並推進 (265ms)
+  ✓   4 [chromium] › e2e/real-api.spec.ts:46:5 › 密碼錯誤登入失敗（401 真後端） (596ms)
+  ✓   8 [chromium] › e2e/real-api.spec.ts:55:5 › 訪客模式進入（POST /auth/guest 真後端） (617ms)
+  ✓  10 [chromium] › e2e/real-api.spec.ts:81:5 › 排行榜載入（GET /players/leaderboard 真後端，空資料容忍） (354ms)
+  ✓   5 [chromium] › e2e/pve-real-api.spec.ts:270:7 › PVE 真後端整合：PveRunCreateRequest.seed 決定性（FR-A3，直接呼叫真後端 API） › 同 seed 建立兩個獨立 Run（不同玩家）+ 相同落子序列 → 商店抽取結果一致 (733ms)
+  ✓   7 [chromium] › e2e/real-api.spec.ts:15:5 › 註冊帳號 → 自動登入（POST /auth/register 真後端） (768ms)
+  ✓   9 [chromium] › e2e/real-api.spec.ts:63:5 › 本地雙人對戰：開局 + 連續落子（POST /games + /moves 真後端） (816ms)
+  ✓   1 [chromium] › e2e/real-api.spec.ts:26:5 › 登入取得 JWT（先註冊再登出登入） (1.1s)
+  ✓  11 [chromium] › e2e/real-api.spec.ts:88:5 › 大廳載入 + 建立房間（訪客 → 大廳 → POST /rooms 真後端） (1.0s)
+  ✘   2 [chromium] › e2e/pve-real-api.spec.ts:185:7 › 已知 bug（追蹤用，不自修，回報詳見 integration-test/REPORT.md）：PVE 橫劈/縱劈技能前端未收集 anchor 參考格，真後端必 422 › 施放橫劈技能（依目前 UI 實際送出的請求，不選 anchor）打真後端回 422 (1.9s)
+  ✓   6 [chromium] › e2e/pve-real-api.spec.ts:69:7 › PVE 真後端整合：建 Run → 落子連線傷害 → 商店 → 放棄取得權威結算 › WARRIOR Run 全流程打真後端：Boss HP 真實下降、通關進商店購買/skip、第2關放棄後結算畫面顯示真後端資料 (4.2s)
+  ✓  12 [chromium] › e2e/real-api.spec.ts:132:7 › 真劍勝負線上對局（真後端，兩瀏覽器） › 建房(火山)→雙方選職業 Ready→開局：skill-bar 可見、場地/障礙資訊渲染、施放技能成功 (6.0s)
+
+  12 passed (7.1s)

@@ -1,0 +1,170 @@
+(node:96534) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2m[WebServer] [22m(node:96561) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 12 tests using 9 workers
+
+(node:96566) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:96570) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:96573) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:96568) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:96567) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:96572) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:96571) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:96574) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:96569) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓   1 [chromium] › e2e/pve-real-api.spec.ts:320:7 › PVE 真後端整合：PveRunCreateRequest.seed 決定性（FR-A3，直接呼叫真後端 API） › 省略 seed 時伺服器自動產生亂數 seed，Run 仍可正常建立並推進 (259ms)
+  ✓   2 [chromium] › e2e/pve-real-api.spec.ts:280:7 › PVE 真後端整合：PveRunCreateRequest.seed 決定性（FR-A3，直接呼叫真後端 API） › 同 seed 建立兩個獨立 Run（不同玩家）+ 相同落子序列 → 商店抽取結果一致 (596ms)
+[2m[WebServer] [22m(node:96561) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+  ✓   7 [chromium] › e2e/real-api.spec.ts:55:5 › 訪客模式進入（POST /auth/guest 真後端） (724ms)
+  ✓   9 [chromium] › e2e/real-api.spec.ts:46:5 › 密碼錯誤登入失敗（401 真後端） (737ms)
+  ✓  10 [chromium] › e2e/real-api.spec.ts:81:5 › 排行榜載入（GET /players/leaderboard 真後端，空資料容忍） (548ms)
+  ✓   4 [chromium] › e2e/real-api.spec.ts:15:5 › 註冊帳號 → 自動登入（POST /auth/register 真後端） (886ms)
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+  ✓   8 [chromium] › e2e/real-api.spec.ts:26:5 › 登入取得 JWT（先註冊再登出登入） (1.3s)
+  ✓   6 [chromium] › e2e/real-api.spec.ts:63:5 › 本地雙人對戰：開局 + 連續落子（POST /games + /moves 真後端） (1.5s)
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/room/[roomId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/room/[roomId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+  ✓  11 [chromium] › e2e/real-api.spec.ts:88:5 › 大廳載入 + 建立房間（訪客 → 大廳 → POST /rooms 真後端） (2.1s)
+  ✓   5 [chromium] › e2e/pve-real-api.spec.ts:171:7 › PVE 真後端整合：橫劈技能收集 anchor 後施放（bug 修復回歸驗證，見 REPORT.md） › 施放橫劈技能：選方向→點棋盤格收集 anchor→確認，真後端 201 且棋子確實被推擠 (3.0s)
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+  ✓   3 [chromium] › e2e/pve-real-api.spec.ts:73:7 › PVE 真後端整合：建 Run → 落子連線傷害 → 商店 → 放棄取得權威結算 › WARRIOR Run 全流程打真後端：Boss HP 真實下降、通關進商店購買/skip、第2關放棄後結算畫面顯示真後端資料 (6.0s)
+  ✓  12 [chromium] › e2e/real-api.spec.ts:132:7 › 真劍勝負線上對局（真後端，兩瀏覽器） › 建房(火山)→雙方選職業 Ready→開局：skill-bar 可見、場地/障礙資訊渲染、施放技能成功 (6.3s)
+
+  12 passed (9.6s)

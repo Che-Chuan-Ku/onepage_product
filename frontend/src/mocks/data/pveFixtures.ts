@@ -25,15 +25,157 @@ export const PVE_CLASS_SKILL_POOL: Record<ClassType, SkillType[]> = {
 export const PVE_INITIAL_GOLD = 0;
 export const PVE_INITIAL_BOARD_ROWS = 11;
 export const PVE_INITIAL_BOARD_COLS = 11;
-export const PVE_MOVE_BUDGET = 30;
 
-// ── Run循環與場地排程.feature ──
-// 8關固定順序；bossHpMax 曲線（index 0 = 第1關）。
-export const PVE_BOSS_HP_CURVE = [100, 160, 260, 420, 670, 1070, 1710, 2740];
-export const PVE_FIXED_PLAIN_SEQUENCES = [1, 3, 4, 6, 8];
+// ── Run循環與場地排程.feature（2026-07-08 關卡重做 + 2026-07-09 魔王對弈與
+//    策略引導改版，documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §3.1）──
+//    第4/8關固定改為 DUEL（魔王對弈，見下方 PVE_DUEL_SEQUENCES/PVE_DUEL_*），
+//    不再有 BossHP/預放雛形概念（陣列對應索引為 0 sentinel）；其餘6個PUZZLE
+//    關重新主題化並重算HP/預算曲線：50/90/100/-/180/212/315/-、2/4/6/-/9/16/13/-。
+export const PVE_BOSS_HP_CURVE = [50, 90, 100, 0, 180, 212, 315, 0];
+export const PVE_MOVE_BUDGET_CURVE = [2, 4, 6, 0, 9, 16, 13, 0];
+export const PVE_FIXED_PLAIN_SEQUENCES = [1, 3, 6]; // DUEL關（4/8）另外固定PLAIN，見下方
 export const PVE_RANDOM_FIELD_SEQUENCES = [2, 5, 7]; // seed 50% VOLCANO/BEACH
 
-// ── Boss突變.feature ──
+// ── 魔王對弈 DUEL（全8關，documents/PVE-全對弈階梯設計-2026-07-10.md §1）──
+// L2/L7 為07-09文件已驗證定案值（45/70）；其餘6格為該文件的設計起始值，經
+// backend N=200統計驗收校準（見 documents/PVE-全對弈階梯設計-2026-07-10.md
+// 校準記錄）。mock 的 Boss AI 本就不實作真實決策表（見下方 duelBossMove 註解），
+// 這裡的 PROFILE 常數僅供型別/文件對照用，不驅動任何 mock 行為分歧。
+export const PVE_DUEL_SEQUENCES = [1, 2, 3, 4, 5, 6, 7, 8];
+export const PVE_DUEL_MOVE_BUDGET: Record<number, number> = {
+  1: 50,
+  2: 45,
+  3: 55,
+  4: 55,
+  5: 60,
+  6: 65,
+  7: 70,
+  8: 75,
+};
+export const PVE_DUEL_PROFILE: Record<number, "NOVICE" | "APPRENTICE" | "ELITE" | "TRUE_DEMON"> = {
+  1: "NOVICE",
+  2: "APPRENTICE",
+  3: "APPRENTICE",
+  4: "ELITE",
+  5: "ELITE",
+  6: "ELITE",
+  7: "TRUE_DEMON",
+  8: "TRUE_DEMON",
+};
+export const PVE_DUEL_OPENING_SCRIPT: Record<number, "HUAYUE" | "PUYUE"> = {
+  2: "HUAYUE",
+  7: "PUYUE",
+  8: "PUYUE",
+};
+// L3限定「不可橫向」（§4.1，雙方對稱，全遊戲僅此關）。
+export const PVE_DUEL_HORIZONTAL_DISABLED_SEQUENCE = 3;
+// L5固定VOLCANO（開局一次性5-8格靜態岩石，無隱藏噴發，§4.2）；L6固定BEACH
+// （沿用每10手推浪，§4.3）；其餘DUEL關固定PLAIN。
+export const PVE_DUEL_VOLCANO_SEQUENCE = 5;
+export const PVE_DUEL_BEACH_SEQUENCE = 6;
+
+// ── 每關預放黑棋雛形（§0 §2）── TYPE_A「開三取五」(2手可解，offsets{1,2,3}
+// 已預放、{0,4}待補)／TYPE_B「缺一取五」(1手可解，offsets{0,1,3,4}已預放、
+// {2}待補)。orientation VERTICAL 時 line=固定欄、start=起始列；HORIZONTAL 時
+// line=固定列、start=起始欄。同 backend/src/main/resources/pve/level-
+// templates.json，僅供 mock 產生初始棋子與渲染，不含備援線（不影響解謎路徑）。
+export type PveShapeType = "TYPE_A" | "TYPE_B";
+export interface PveShapeSpec {
+  type: PveShapeType;
+  orientation: "VERTICAL" | "HORIZONTAL";
+  line: number;
+  start: number;
+}
+const shapeFilledOffsets = (type: PveShapeType) => (type === "TYPE_A" ? [1, 2, 3] : [0, 1, 3, 4]);
+export function shapeFilledCells(shape: PveShapeSpec): { row: number; col: number }[] {
+  return shapeFilledOffsets(shape.type).map((off) =>
+    shape.orientation === "VERTICAL"
+      ? { row: shape.start + off, col: shape.line }
+      : { row: shape.line, col: shape.start + off },
+  );
+}
+// 2026-07-09 改版：sequence 4/8 移除（改為DUEL，見PVE_DUEL_*常數），不再有
+// 模板概念；其餘6關同步 backend/src/main/resources/pve/level-templates.json
+// 的新主題化內容（L1=衝四單一TYPE_B、L5=死四活三精簡為2+2、L6=雙三+RAGE
+// 沿用舊L5的3+2欄位、L7=雙死四新增1條橫向row-band達成3+4）。
+export const PVE_LEVEL_TEMPLATES: Record<number, { templateA: PveShapeSpec[]; templateB: PveShapeSpec[] }> = {
+  1: {
+    templateA: [{ type: "TYPE_B", orientation: "VERTICAL", line: 4, start: 2 }],
+    templateB: [{ type: "TYPE_B", orientation: "VERTICAL", line: 4, start: 5 }],
+  },
+  2: {
+    templateA: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 2 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 8, start: 2 },
+    ],
+    templateB: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 5 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 8, start: 5 },
+    ],
+  },
+  3: {
+    templateA: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 2 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 8, start: 2 },
+    ],
+    templateB: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 5 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 8, start: 5 },
+    ],
+  },
+  5: {
+    templateA: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 0, start: 2 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 2 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 6, start: 2 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 8, start: 2 },
+    ],
+    templateB: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 0, start: 5 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 5 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 6, start: 5 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 8, start: 5 },
+    ],
+  },
+  6: {
+    templateA: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 0, start: 2 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 2 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 4, start: 2 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 6, start: 2 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 8, start: 2 },
+    ],
+    templateB: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 0, start: 5 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 5 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 4, start: 5 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 6, start: 5 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 8, start: 5 },
+    ],
+  },
+  7: {
+    templateA: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 0, start: 2 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 2 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 4, start: 2 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 6, start: 2 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 8, start: 2 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 10, start: 2 },
+      { type: "TYPE_B", orientation: "HORIZONTAL", line: 9, start: 3 },
+    ],
+    templateB: [
+      { type: "TYPE_A", orientation: "VERTICAL", line: 0, start: 5 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 2, start: 5 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 4, start: 5 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 6, start: 5 },
+      { type: "TYPE_A", orientation: "VERTICAL", line: 8, start: 5 },
+      { type: "TYPE_B", orientation: "VERTICAL", line: 10, start: 5 },
+      { type: "TYPE_B", orientation: "HORIZONTAL", line: 1, start: 3 },
+    ],
+  },
+};
+
+// ── Boss突變.feature ── 2026-07-09: 第8關改DUEL，ABYSS retired（無關卡使用）。
 export const PVE_MUTATION_BY_SEQUENCE: Record<number, "NONE" | "ONE_EYE" | "RAGE" | "ABYSS"> = {
   1: "NONE",
   2: "NONE",
@@ -42,7 +184,7 @@ export const PVE_MUTATION_BY_SEQUENCE: Record<number, "NONE" | "ONE_EYE" | "RAGE
   5: "NONE",
   6: "RAGE",
   7: "NONE",
-  8: "ABYSS",
+  8: "NONE",
 };
 
 // ── 遺物效果.feature（8個，名稱與效果摘要原樣抄錄） ──
@@ -82,6 +224,11 @@ export const PVE_ERROR = {
   SKILL_USED_THIS_INTERVAL: "本間隔已使用過技能",
   ENCOUNTER_ENDED: "關卡已結束",
   SKILL_NOT_HELD: "未持有該技能",
+  // 逐字對齊後端 PveChallengeService.requireAnchor()（backend/.../PveChallengeService.java:392-395）
+  // 的 422 訊息：橫劈/縱劈（axis）在 PVE 情境下 anchor 為推擠參考格且必填
+  // （api.yml SkillActionRequest.anchor 說明），mock 先前完全未驗證此欄位，
+  // 導致真後端才會擋下的契約違反在 mock 下被靜默放行（見本次交付回報）。
+  ANCHOR_REQUIRED: "必須指定施法錨點",
   // 以下訊息未在 features 逐字出現，是既有慣例延伸（照抄業務語意，非逐字定案）：
   RUN_NOT_FOUND: "Run不存在",
   RUN_NOT_IN_PROGRESS: "Run已結束，無法執行此操作",
@@ -95,6 +242,9 @@ export const PVE_ERROR = {
   SHOP_CLOSED: "商店已結束",
   SHOP_OFFER_INVALID: "展示位不合法或已被購買",
   UNAUTHORIZED: "未登入或憑證無效",
+  // 逐字對齊後端 PveChallengeService.retryDuelEncounter()（2026-07-09 §1.5/§6.5 公平性修正）。
+  ENCOUNTER_NOT_DUEL: "只有魔王對弈關可以重試",
+  ENCOUNTER_NOT_DRAWN: "關卡非和局狀態，無法重試",
 } as const;
 
 // ── 座標範例（連線傷害結算.feature，供 e2e / demo 佈局參考） ──

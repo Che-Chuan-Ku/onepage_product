@@ -3,11 +3,13 @@ import type {
   PveEncounterEvent,
   PveEncounterStateResponse,
   PveEncounterStatus,
+  PveEncounterType,
   PveFieldType,
   PveLastResolution,
   PveLineDirection,
   PveLineResolution,
   PveMutationType,
+  PveObstacleKind,
   PveRunResultResponse,
   PveRunResultStatus,
   PveRunStateResponse,
@@ -25,13 +27,20 @@ import {
   PVE_BOSS_HP_CURVE,
   PVE_CLASS_SKILL_POOL,
   PVE_CLEAR_GOLD_BASE,
+  PVE_DUEL_BEACH_SEQUENCE,
+  PVE_DUEL_HORIZONTAL_DISABLED_SEQUENCE,
+  PVE_DUEL_MOVE_BUDGET,
+  PVE_DUEL_OPENING_SCRIPT,
+  PVE_DUEL_SEQUENCES,
+  PVE_DUEL_VOLCANO_SEQUENCE,
   PVE_ERROR,
   PVE_FIXED_PLAIN_SEQUENCES,
   PVE_INITIAL_BOARD_COLS,
   PVE_INITIAL_BOARD_ROWS,
   PVE_INITIAL_GOLD,
+  PVE_LEVEL_TEMPLATES,
   PVE_MOCK_PLAYER_ID,
-  PVE_MOVE_BUDGET,
+  PVE_MOVE_BUDGET_CURVE,
   PVE_MUTATION_BY_SEQUENCE,
   PVE_OTHER_PLAYER_ID,
   PVE_RELIC_HOLD_CAP,
@@ -42,6 +51,7 @@ import {
   PVE_STARTER_SKILL,
   PVE_VOLCANO_OBSTACLE_MAX,
   PVE_VOLCANO_OBSTACLE_MIN,
+  shapeFilledCells,
 } from "../data/pveFixtures";
 
 /**
@@ -143,6 +153,8 @@ interface PveEncounterInternal {
   sequence: number;
   fieldType: PveFieldType;
   mutationType: PveMutationType;
+  /** 2026-07-09 新增：PUZZLE（消線關）或 DUEL（第4/8關魔王對弈，§1.0）。 */
+  encounterType: PveEncounterType;
   boardRows: number;
   boardCols: number;
   bossHpMax: number;
@@ -150,20 +162,32 @@ interface PveEncounterInternal {
   moveBudget: number;
   movesUsed: number;
   status: PveEncounterStatus;
+  /** DUEL關的玩家黑子與PUZZLE關的雛形黑棋共用同一個 Set。 */
   stones: Set<string>;
-  obstacles: { row: number; col: number }[];
+  /** kind: ROCK（VOLCANO/legacy ABYSS障礙）或 ENEMY_STONE（DUEL關Boss活棋）。 */
+  obstacles: { row: number; col: number; kind: PveObstacleKind }[];
   skillUsableThisInterval: boolean;
-  /** 本關已使用技能清單，依使用順序，可含重複（api.yml usedSkills, FR-B7）。 */
+  /** 本關「玩家」已使用技能清單，依使用順序，可含重複（api.yml usedSkills, FR-B7）。 */
   usedSkills: SkillType[];
+  /** 本關「Boss」已使用技能清單（bug fix, additive — 與 usedSkills 分開，避免前端無標註混淆）。 */
+  bossUsedSkills: SkillType[];
   lastResolution: PveLastResolution | null;
   events: PveEncounterEvent[];
   /** internal-only bookkeeping (not serialized): cumulative removed-stone
    * count this encounter, drives RECYCLER's +1 move-budget/10 removed. */
   removedStoneCount: number;
+  /** DUEL only: number of BOSS_MOVE_PLACED replies so far (drives opening-script-vs-AI branch). */
+  bossMoveCount: number;
+  /** L3 only (documents/PVE-全對弈階梯設計-2026-07-10.md §4.1): horizontal five-in-a-row doesn't count as a win. */
+  horizontalDisabled: boolean;
+  /** L8 SKILL_DEMON only (§3/§9.2): boss-cast skill events accumulated this settlement, surfaced as bossSkillEvents. */
+  bossSkillEvents: { skillType: SkillType; cells: { row: number; col: number }[] }[];
 }
 
 interface PveRunInternal {
   runId: string;
+  /** Original createRun seed string (FR-A3), kept verbatim (not just fed into `rng`) so e2e can opt into test-only behavior via a seed marker — see DRAW_TEST_SEED_MARKER. */
+  seed: string;
   playerId: string;
   classType: ClassType;
   status: PveRunStatus;
@@ -199,14 +223,99 @@ function isObstacle(enc: PveEncounterInternal, row: number, col: number) {
   return enc.obstacles.some((o) => o.row === row && o.col === col);
 }
 
+/**
+ * 2026-07-09 §1.5/§6.5 公平性修正 — e2e 測試用途：`createPveRun` 的 seed 字串
+ * 若包含此標記，**第2關**（DRAW e2e 的目標關卡）的 moveBudget 直接壓到 1
+ * （而非設計值 45），讓 e2e 能在單一玩家落子內就觸發手數耗盡＝DRAW，不需要
+ * 真的跑滿一整場對局。比照既有 `pve-run-e2e-won`「magic id」手法
+ * （ensurePveDemoFixtures 檔頭）同一精神：只影響測試專用 seed，不影響一般
+ * 玩家流程。
+ *
+ * 2026-07-10 修正：全對弈化（全8關皆DUEL）後，標記若套用到所有 DUEL 關會讓
+ * 第1關（budget=1）根本贏不了，e2e 無法推進到第2關——故收斂為只作用於
+ * 第2關（原本只有 4/8 是 DUEL 時「全部 DUEL 壓到 1」與「只壓目標關」等效，
+ * 現在不再等效）。
+ */
+const DRAW_TEST_SEED_MARKER = "pve-drawtest";
+const DRAW_TEST_TARGET_SEQUENCE = 2;
+
+/**
+ * e2e 測試鉤子（§7.6 item #2 L3 即時回饋 e2e 需要直達第3關）：seed 後綴
+ * `-pve-startseq-<n>` 讓新 Run 直接從第 n 關開始（reached=n-1），免去 e2e
+ * 真打贏前面每一關的冗長流程。同 DRAW_TEST_SEED_MARKER 精神：只影響帶標記
+ * 的測試 seed，一般玩家流程不受影響；剝掉標記後綴再餵 rng，維持既有 seed
+ * 的 RNG 序列不跑位。
+ */
+const START_SEQUENCE_SEED_MARKER = /-pve-startseq-([1-8])$/;
+
 function createEncounterInternal(run: PveRunInternal, sequence: number): PveEncounterInternal {
+  const encounterId = `pve-enc-${run.runId}-${sequence}`;
+
+  if (PVE_DUEL_SEQUENCES.includes(sequence)) {
+    // 魔王對弈 DUEL（documents/PVE-全對弈階梯設計-2026-07-10.md §1）：全8關皆為
+    // DUEL，無BossHP/傷害/消線機制；勝負由玩家連五/Boss連五/手數用盡決定（見
+    // placePveMove 的 DUEL 分支）。L5固定VOLCANO(一次性岩石)、L6固定BEACH，
+    // 其餘固定PLAIN；L3橫向連五不算勝（前端提示用，判定邏輯不在mock內，見
+    // PveBoard.tsx horizontalDisabled prop）。
+    const moveBudget =
+      run.seed.includes(DRAW_TEST_SEED_MARKER) && sequence === DRAW_TEST_TARGET_SEQUENCE
+        ? 1
+        : PVE_DUEL_MOVE_BUDGET[sequence];
+    const fieldType: PveFieldType =
+      sequence === PVE_DUEL_VOLCANO_SEQUENCE ? "VOLCANO" : sequence === PVE_DUEL_BEACH_SEQUENCE ? "BEACH" : "PLAIN";
+    const obstacles: { row: number; col: number; kind: PveObstacleKind }[] = [];
+    if (fieldType === "VOLCANO") {
+      const span = PVE_VOLCANO_OBSTACLE_MAX - PVE_VOLCANO_OBSTACLE_MIN + 1;
+      const count = 5 + Math.floor(run.rng() * (span + 3)); // 5..8 (§4.2)
+      const used = new Set<string>();
+      let guard = 0;
+      while (used.size < count && guard < 200) {
+        guard++;
+        const r = Math.floor(run.rng() * PVE_INITIAL_BOARD_ROWS);
+        const c = Math.floor(run.rng() * PVE_INITIAL_BOARD_COLS);
+        const k = cellKey(r, c);
+        if (used.has(k)) continue;
+        used.add(k);
+        obstacles.push({ row: r, col: c, kind: "ROCK" });
+      }
+    }
+    const encounter: PveEncounterInternal = {
+      encounterId,
+      runId: run.runId,
+      sequence,
+      fieldType,
+      mutationType: "NONE",
+      encounterType: "DUEL",
+      boardRows: PVE_INITIAL_BOARD_ROWS,
+      boardCols: PVE_INITIAL_BOARD_COLS,
+      bossHpMax: 0,
+      bossHpCurrent: 0,
+      moveBudget,
+      movesUsed: 0,
+      status: "IN_PROGRESS",
+      stones: new Set<string>(),
+      obstacles,
+      skillUsableThisInterval: true,
+      usedSkills: [],
+    bossUsedSkills: [],
+      lastResolution: null,
+      events: [],
+      removedStoneCount: 0,
+      bossMoveCount: 0,
+      horizontalDisabled: sequence === PVE_DUEL_HORIZONTAL_DISABLED_SEQUENCE,
+      bossSkillEvents: [],
+    };
+    pveEncounters.set(encounterId, encounter);
+    return encounter;
+  }
+
   const fieldType: PveFieldType = PVE_FIXED_PLAIN_SEQUENCES.includes(sequence)
     ? "PLAIN"
     : run.rng() < 0.5
       ? "VOLCANO"
       : "BEACH";
   const mutationType = PVE_MUTATION_BY_SEQUENCE[sequence] ?? "NONE";
-  const obstacles: { row: number; col: number }[] = [];
+  const obstacles: { row: number; col: number; kind: PveObstacleKind }[] = [];
   if (fieldType === "VOLCANO") {
     const span = PVE_VOLCANO_OBSTACLE_MAX - PVE_VOLCANO_OBSTACLE_MIN + 1;
     const count = PVE_VOLCANO_OBSTACLE_MIN + Math.floor(run.rng() * span);
@@ -220,30 +329,45 @@ function createEncounterInternal(run: PveRunInternal, sequence: number): PveEnco
       const k = cellKey(r, c);
       if (used.has(k)) continue;
       used.add(k);
-      obstacles.push({ row: r, col: c });
+      obstacles.push({ row: r, col: c, kind: "ROCK" });
     }
   }
-  const encounterId = `pve-enc-${run.runId}-${sequence}`;
+  // 預放黑棋雛形（documents/PVE-關卡重設計-2026-07-08.md §0 §2）：Template A/B
+  // 2選1（seed 50%），補完雛形即為本關的解謎手數 T，與 moveBudget 相互印證。
+  const level = PVE_LEVEL_TEMPLATES[sequence];
+  const shapes = run.rng() < 0.5 ? level.templateA : level.templateB;
+  const stones = new Set<string>();
+  for (const shape of shapes) {
+    for (const cell of shapeFilledCells(shape)) {
+      stones.add(cellKey(cell.row, cell.col));
+    }
+  }
+
   const encounter: PveEncounterInternal = {
     encounterId,
     runId: run.runId,
     sequence,
     fieldType,
     mutationType,
+    encounterType: "PUZZLE",
     boardRows: PVE_INITIAL_BOARD_ROWS,
     boardCols: PVE_INITIAL_BOARD_COLS,
     bossHpMax: PVE_BOSS_HP_CURVE[sequence - 1],
     bossHpCurrent: PVE_BOSS_HP_CURVE[sequence - 1],
-    moveBudget: PVE_MOVE_BUDGET,
+    moveBudget: PVE_MOVE_BUDGET_CURVE[sequence - 1],
     movesUsed: 0,
     status: "IN_PROGRESS",
-    stones: new Set(),
+    stones,
     obstacles,
     skillUsableThisInterval: true,
     usedSkills: [],
+    bossUsedSkills: [],
     lastResolution: null,
     events: [],
     removedStoneCount: 0,
+    bossMoveCount: 0,
+    horizontalDisabled: false,
+    bossSkillEvents: [],
   };
   pveEncounters.set(encounterId, encounter);
   return encounter;
@@ -256,6 +380,7 @@ function toEncounterResponse(e: PveEncounterInternal): PveEncounterStateResponse
     sequence: e.sequence,
     fieldType: e.fieldType,
     mutationType: e.mutationType,
+    encounterType: e.encounterType,
     boardRows: e.boardRows,
     boardCols: e.boardCols,
     bossHpMax: e.bossHpMax,
@@ -264,11 +389,14 @@ function toEncounterResponse(e: PveEncounterInternal): PveEncounterStateResponse
     movesUsed: e.movesUsed,
     status: e.status,
     stones: Array.from(e.stones).map(parseCellKey),
-    obstacles: e.obstacles.map((o) => ({ row: o.row, col: o.col })),
+    obstacles: e.obstacles.map((o) => ({ row: o.row, col: o.col, kind: o.kind })),
     skillUsableThisInterval: e.skillUsableThisInterval,
     usedSkills: [...e.usedSkills],
+    bossUsedSkills: [...e.bossUsedSkills],
     lastResolution: e.lastResolution,
     events: e.events,
+    horizontalDisabled: e.horizontalDisabled,
+    bossSkillEvents: e.bossSkillEvents.map((ev) => ({ skillType: ev.skillType, cells: ev.cells.map((c) => ({ ...c })) })),
   };
 }
 
@@ -313,38 +441,54 @@ function toShopResponse(run: PveRunInternal, shop: PveShopInternal): PveShopStat
   };
 }
 
+/**
+ * A2 修正（2026-07-08 調校輪，同步 PveShopOfferDrawer.drawSlots）：固定
+ * relic x2+skill x1 的展示位配置，在該類別已達持有上限時會出現「賣不出去
+ * 也占位」的廢卡。改為依上限動態決定relic/skill槽位數：技能達上限時（且
+ * 遺物未達上限、遺物池還有>=3種可抽）改抽3件遺物；遺物達上限時（且技能未
+ * 達上限）改抽3件技能。兩類同時達上限時維持舊配置（2 relic+1 skill，皆不
+ * 可購買）——這是無替代品可補時的僅存例外。
+ */
 function rollShopOffers(run: PveRunInternal): PveShopOfferItem[] {
   const held = new Set(run.heldRelics.map((r) => r.relicType));
   const relicPool = ALL_RELIC_TYPES.filter((r) => !held.has(r));
-  const relics = pickN(relicPool, 2, run.rng);
   const skillPool = PVE_CLASS_SKILL_POOL[run.classType];
-  const skill = skillPool[Math.floor(run.rng() * skillPool.length)];
-  return [
-    {
-      slotIndex: 0,
-      offerKind: "RELIC",
-      relicType: relics[0] ?? null,
-      skillType: null,
-      price: PVE_RELIC_SHOP_PRICE,
-      purchased: false,
-    },
-    {
-      slotIndex: 1,
-      offerKind: "RELIC",
-      relicType: relics[1] ?? null,
-      skillType: null,
-      price: PVE_RELIC_SHOP_PRICE,
-      purchased: false,
-    },
-    {
-      slotIndex: 2,
-      offerKind: "SKILL",
-      relicType: null,
-      skillType: skill,
-      price: PVE_SKILL_SHOP_PRICE,
-      purchased: false,
-    },
-  ];
+
+  const totalSkillQty = run.heldSkills.reduce((sum, s) => sum + s.quantity, 0);
+  const skillCapped = totalSkillQty >= PVE_SKILL_HOLD_CAP;
+  const relicCapped = run.heldRelics.length >= PVE_RELIC_HOLD_CAP;
+
+  let relicSlots = 2;
+  if (skillCapped && !relicCapped && relicPool.length >= 3) {
+    relicSlots = 3;
+  } else if (relicCapped && !skillCapped) {
+    relicSlots = 0;
+  }
+
+  const relics = pickN(relicPool, relicSlots, run.rng);
+  const offers: PveShopOfferItem[] = [];
+  for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
+    if (slotIndex < relicSlots) {
+      offers.push({
+        slotIndex,
+        offerKind: "RELIC",
+        relicType: relics[slotIndex] ?? null,
+        skillType: null,
+        price: PVE_RELIC_SHOP_PRICE,
+        purchased: false,
+      });
+    } else {
+      offers.push({
+        slotIndex,
+        offerKind: "SKILL",
+        relicType: null,
+        skillType: skillPool[Math.floor(run.rng() * skillPool.length)],
+        price: PVE_SKILL_SHOP_PRICE,
+        purchased: false,
+      });
+    }
+  }
+  return offers;
 }
 
 function buildShop(run: PveRunInternal, afterSequence: number): PveShopInternal {
@@ -384,7 +528,7 @@ function spawnAbyssObstacle(enc: PveEncounterInternal, run: PveRunInternal) {
   }
   if (empties.length === 0) return;
   const pick = empties[Math.floor(run.rng() * empties.length)];
-  enc.obstacles.push(pick);
+  enc.obstacles.push({ ...pick, kind: "ROCK" });
   enc.events.push({ eventType: "BOSS_MUTATION_TRIGGERED", row: pick.row, col: pick.col });
 }
 
@@ -410,7 +554,7 @@ function triggerRageBurst(enc: PveEncounterInternal, run: PveRunInternal) {
   }
   enc.events.push({ eventType: "BOSS_MUTATION_TRIGGERED", row: cr, col: cc });
   if (hasRelic(run, "RECYCLER")) {
-    enc.moveBudget = PVE_MOVE_BUDGET + Math.floor(enc.removedStoneCount / 10);
+    enc.moveBudget = PVE_MOVE_BUDGET_CURVE[enc.sequence - 1] + Math.floor(enc.removedStoneCount / 10);
   }
   if (enc.bossHpCurrent <= 0 && enc.status === "IN_PROGRESS") {
     enc.status = "CLEARED";
@@ -427,6 +571,7 @@ export function ensurePveDemoFixtures() {
   const runId = "pve-run-other-owner";
   const run: PveRunInternal = {
     runId,
+    seed: runId,
     playerId: PVE_OTHER_PLAYER_ID,
     classType: "WARRIOR",
     status: "IN_PROGRESS",
@@ -455,6 +600,7 @@ export function ensurePveDemoFixtures() {
   const wonRunId = "pve-run-e2e-won";
   const wonRun: PveRunInternal = {
     runId: wonRunId,
+    seed: wonRunId,
     playerId: PVE_MOCK_PLAYER_ID,
     classType: "WARRIOR",
     status: "WON",
@@ -477,21 +623,38 @@ export function ensurePveDemoFixtures() {
 
 // ── operations (one per api.yml operationId) ────────────────────
 
-export function createPveRun(classType: ClassType): PveOpResult<PveRunStateResponse> {
+export function createPveRun(classType: ClassType, seed?: string): PveOpResult<PveRunStateResponse> {
   ensurePveDemoFixtures();
   const existing = currentRunId ? pveRuns.get(currentRunId) : undefined;
   if (existing && existing.status === "IN_PROGRESS") {
     return { ok: false, httpStatus: 422, code: "422001", message: PVE_ERROR.RUN_IN_PROGRESS };
   }
   const runId = `pve-run-${Date.now().toString(36)}-${++pveRunSeq}`;
+  // 決定性測試注入（api.yml PveRunCreateRequest.seed，FR-A3）：呼叫端可傳入固定
+  // seed 讓場地/雛形模板挑選（Template A/B、VOLCANO/BEACH）可重現，供 e2e 精確
+  // 斷言座標；省略時仍以 runId 產生亂數 seed（一般玩家流程不受影響）。
+  const runSeed = seed && seed.length > 0 ? seed : runId;
+  // §1.5/§6.5 公平性修正 e2e 測試鉤子：DRAW_TEST_SEED_MARKER 只影響 DUEL 關的
+  // moveBudget 覆寫（見 createEncounterInternal），若直接把含標記的完整字串餵
+  // 進 makeRng 會連帶改變第1-3關（PUZZLE）的場地/雛形模板RNG序列，讓既有
+  // e2e 依賴的固定座標斷言全部跑位。餵給 rng 的字串先剝掉標記後綴，讓
+  // "<既有已驗證seed>-pve-drawtest" 在 PUZZLE 關的行為與裸 "<既有已驗證seed>"
+  // 完全一致，只有 DUEL 關的 moveBudget 覆寫會生效。
+  const startSeqMatch = runSeed.match(START_SEQUENCE_SEED_MARKER);
+  const startSequence = startSeqMatch ? Number(startSeqMatch[1]) : 1;
+  const rngBase = startSeqMatch ? runSeed.slice(0, -startSeqMatch[0].length) : runSeed;
+  const rngSeed = rngBase.endsWith(`-${DRAW_TEST_SEED_MARKER}`)
+    ? rngBase.slice(0, -(DRAW_TEST_SEED_MARKER.length + 1))
+    : rngBase;
   const run: PveRunInternal = {
     runId,
+    seed: runSeed,
     playerId: PVE_MOCK_PLAYER_ID,
     classType,
     status: "IN_PROGRESS",
     gold: PVE_INITIAL_GOLD,
-    currentEncounterSequence: 1,
-    reachedEncounterSequence: 0,
+    currentEncounterSequence: startSequence,
+    reachedEncounterSequence: startSequence - 1,
     totalDamageDealt: 0,
     currentEncounterId: null,
     heldSkills: [{ skillType: PVE_STARTER_SKILL[classType], quantity: 1 }],
@@ -501,10 +664,10 @@ export function createPveRun(classType: ClassType): PveOpResult<PveRunStateRespo
     metronomeBonus: 0,
     totalMovesInRun: 0,
     shop: null,
-    rng: makeRng(runId),
+    rng: makeRng(rngSeed || runId),
   };
   pveRuns.set(runId, run);
-  const enc = createEncounterInternal(run, 1);
+  const enc = createEncounterInternal(run, startSequence);
   run.currentEncounterId = enc.encounterId;
   currentRunId = runId;
   return { ok: true, data: toRunResponse(run) };
@@ -559,6 +722,188 @@ export function getPveEncounter(encounterId: string): PveOpResult<PveEncounterSt
   return { ok: true, data: toEncounterResponse(enc) };
 }
 
+// ── DUEL 魔王對弈 mock（documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §5.4）:
+// 「mock 只做輕量 bookkeeping、不模擬完整伺服器邏輯」——不需要真的實作 §1.2
+// 8層決策表，用一個「固定選最近候選格、必要時擋玩家已成形四」的極簡版本即可，
+// 足以支撐前端 e2e（玩家五連→過關、Boss五連→失敗、手數用盡→失敗）；真正的
+// BossAiPolicy 智力只在後端。
+const DUEL_DIRECTIONS: [number, number][] = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
+
+/** True if `occupied` (already includes the hypothetical placement) has a run of >=5 through (r,c). */
+/** `horizontalDisabled` (documents/PVE-全對弈階梯設計-2026-07-10.md §4.1, L3 unique twist): a horizontal-only five doesn't count as a win. */
+function fiveThrough(occupied: Set<string>, r: number, c: number, horizontalDisabled = false): boolean {
+  for (let dirIndex = 0; dirIndex < DUEL_DIRECTIONS.length; dirIndex++) {
+    if (horizontalDisabled && dirIndex === 0) continue;
+    const [dr, dc] = DUEL_DIRECTIONS[dirIndex];
+    let run = 1;
+    for (let i = 1; occupied.has(cellKey(r + dr * i, c + dc * i)); i++) run++;
+    for (let i = 1; occupied.has(cellKey(r - dr * i, c - dc * i)); i++) run++;
+    if (run >= 5) return true;
+  }
+  return false;
+}
+
+function duelOccupied(enc: PveEncounterInternal): Set<string> {
+  const occ = new Set(enc.stones);
+  for (const o of enc.obstacles) occ.add(cellKey(o.row, o.col));
+  return occ;
+}
+
+/** Boss's OWN stones only (ENEMY_STONE obstacles) — a five-in-a-row check for
+ * the boss must run on this set, NOT on `duelOccupied` (the union of both
+ * colors): a union check lets the boss "win" with a mixed-color line — e.g.
+ * its own forced block adjacent to the player's four counted as a boss five.
+ * This was the root cause of the intermittently-failing pve duel e2e specs
+ * (2026-07-10 修正). */
+function duelBossStones(enc: PveEncounterInternal): Set<string> {
+  return new Set(
+    enc.obstacles.filter((o) => o.kind === "ENEMY_STONE").map((o) => cellKey(o.row, o.col)),
+  );
+}
+
+/** Empty cells within Chebyshev<=2 of any stone; center if the board is blank. */
+function duelCandidates(enc: PveEncounterInternal, occupied: Set<string>): { row: number; col: number }[] {
+  if (occupied.size === 0) return [{ row: 5, col: 5 }];
+  const seen = new Set<string>();
+  const candidates: { row: number; col: number }[] = [];
+  for (const key of Array.from(occupied)) {
+    const { row: r, col: c } = parseCellKey(key);
+    for (let dr = -2; dr <= 2; dr++) {
+      for (let dc = -2; dc <= 2; dc++) {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (nr < 0 || nr >= enc.boardRows || nc < 0 || nc >= enc.boardCols) continue;
+        const k = cellKey(nr, nc);
+        if (seen.has(k) || occupied.has(k)) continue;
+        seen.add(k);
+        candidates.push({ row: nr, col: nc });
+      }
+    }
+  }
+  if (candidates.length === 0) {
+    // Dense/near-full board — widen to a full-board scan (mirrors backend's
+    // PveDuelCandidates fallback, avoids ever silently reusing an occupied cell).
+    for (let r = 0; r < enc.boardRows; r++) {
+      for (let c = 0; c < enc.boardCols; c++) {
+        if (!occupied.has(cellKey(r, c))) candidates.push({ row: r, col: c });
+      }
+    }
+  }
+  return candidates;
+}
+
+/** Boss's scripted first-move (§1.4): HUAYUE=orthogonal-adjacent, PUYUE=diagonal-adjacent; mirrors on overflow. */
+function duelOpeningMove(
+  script: "HUAYUE" | "PUYUE",
+  playerRow: number,
+  playerCol: number,
+  boardSize: number,
+): { row: number; col: number } {
+  const max = boardSize - 1;
+  const row = playerRow === max ? playerRow - 1 : playerRow + 1;
+  const col =
+    script === "HUAYUE" ? playerCol : playerCol === max ? playerCol - 1 : playerCol + 1;
+  return { row, col };
+}
+
+/** Simplified boss move: own five > block player's five > nearest-to-center candidate. */
+function simpleBossMove(enc: PveEncounterInternal): { row: number; col: number } {
+  const occupied = duelOccupied(enc);
+  const candidates = duelCandidates(enc, occupied);
+  const bossStones = duelBossStones(enc); // own-five must be color-pure (see duelBossStones)
+  for (const c of candidates) {
+    const trial = new Set(bossStones);
+    trial.add(cellKey(c.row, c.col));
+    if (fiveThrough(trial, c.row, c.col, enc.horizontalDisabled)) return c; // own five
+  }
+  for (const c of candidates) {
+    const trial = new Set(enc.stones);
+    trial.add(cellKey(c.row, c.col));
+    if (fiveThrough(trial, c.row, c.col, enc.horizontalDisabled)) return c; // block player's completing move
+  }
+  const center = 5;
+  candidates.sort((a, b) => {
+    const da = Math.max(Math.abs(a.row - center), Math.abs(a.col - center));
+    const db = Math.max(Math.abs(b.row - center), Math.abs(b.col - center));
+    return da - db;
+  });
+  return candidates[0];
+}
+
+/** DUEL branch of placePveMove (§1.5): no damage/mutation settlement at all — pure five-in-a-row + boss reply. */
+function placeDuelMove(
+  enc: PveEncounterInternal,
+  run: PveRunInternal,
+  row: number,
+  col: number,
+): PveOpResult<PveEncounterStateResponse> {
+  const k = cellKey(row, col);
+  enc.stones.add(k);
+  enc.movesUsed += 1;
+  enc.skillUsableThisInterval = true;
+  enc.events = [];
+  enc.bossSkillEvents = [];
+  enc.lastResolution = null;
+
+  if (fiveThrough(enc.stones, row, col, enc.horizontalDisabled)) {
+    enc.status = "CLEARED";
+    enc.events.push({ eventType: "ENCOUNTER_CLEARED", row: null, col: null });
+    settleEncounterClear(run, enc);
+    return { ok: true, data: toEncounterResponse(enc) };
+  }
+
+  if (enc.movesUsed >= enc.moveBudget) {
+    // 2026-07-09 §1.5/§6.5 公平性修正：手數耗盡且雙方皆未連五＝和局DRAW，不是
+    // FAILED——Run不沒收（保持IN_PROGRESS），本關可原地無限次重試
+    // （retryPveEncounter，見下方）。只有玩家有手數配額、Boss每手免費，
+    // 雙方零失誤卻判玩家全責並不公平（設計文件§122-123 附近／L8模擬耗盡率
+    // 44.2%）。
+    enc.status = "DRAW";
+    enc.events.push({ eventType: "ENCOUNTER_DRAWN", row: null, col: null });
+    return { ok: true, data: toEncounterResponse(enc) };
+  }
+
+  // L8 "SKILL_DEMON" (documents/PVE-全對弈階梯設計-2026-07-10.md §3/§9.2): a
+  // minimal, non-heuristic mock trigger — on the boss's 3rd reply, if the
+  // player has at least one stone on the board, "snipe" the first one found
+  // instead of a plain placement (施法佔用整手，不額外落子；real heuristics
+  // stay backend-only, matching this mock engine's existing convention).
+  if (enc.sequence === 8 && enc.bossMoveCount === 2 && enc.stones.size > 0) {
+    const target = parseCellKey(Array.from(enc.stones)[0]);
+    enc.stones.delete(cellKey(target.row, target.col));
+    enc.obstacles.push({ row: target.row, col: target.col, kind: "ENEMY_STONE" });
+    enc.bossMoveCount += 1;
+    enc.bossSkillEvents.push({ skillType: "PRECISION_SNIPE", cells: [target] });
+    enc.bossUsedSkills.push("PRECISION_SNIPE");
+    enc.events.push({ eventType: "SKILL_USED", row: target.row, col: target.col });
+    return { ok: true, data: toEncounterResponse(enc) };
+  }
+
+  const bossMove =
+    enc.bossMoveCount === 0
+      ? duelOpeningMove(PVE_DUEL_OPENING_SCRIPT[enc.sequence], row, col, enc.boardRows)
+      : simpleBossMove(enc);
+  enc.bossMoveCount += 1;
+  enc.obstacles.push({ row: bossMove.row, col: bossMove.col, kind: "ENEMY_STONE" });
+  enc.events.push({ eventType: "BOSS_MOVE_PLACED", row: bossMove.row, col: bossMove.col });
+
+  // Boss-win check runs on the boss's OWN stones only (see duelBossStones —
+  // a union-of-both-colors check here let the boss "win" via mixed lines).
+  const bossStonesAfter = duelBossStones(enc);
+  if (fiveThrough(bossStonesAfter, bossMove.row, bossMove.col, enc.horizontalDisabled)) {
+    enc.status = "FAILED";
+    enc.events.push({ eventType: "ENCOUNTER_FAILED", row: null, col: null });
+    run.status = "LOST";
+    currentRunId = null;
+  }
+  return { ok: true, data: toEncounterResponse(enc) };
+}
+
 export function placePveMove(
   encounterId: string,
   row: number,
@@ -583,6 +928,10 @@ export function placePveMove(
   }
   if (enc.movesUsed >= enc.moveBudget) {
     return { ok: false, httpStatus: 422, code: "422004", message: PVE_ERROR.MOVE_BUDGET_EXHAUSTED };
+  }
+
+  if (enc.encounterType === "DUEL") {
+    return placeDuelMove(enc, run, row, col);
   }
 
   enc.stones.add(k);
@@ -644,7 +993,7 @@ export function placePveMove(
   }
   // 回收商 RECYCLER：連線移除棋子累計每10顆，手數預算+1（當關生效）。
   if (hasRelic(run, "RECYCLER")) {
-    enc.moveBudget = PVE_MOVE_BUDGET + Math.floor(enc.removedStoneCount / 10);
+    enc.moveBudget = PVE_MOVE_BUDGET_CURVE[enc.sequence - 1] + Math.floor(enc.removedStoneCount / 10);
   }
 
   if (totalDamage > 0) {
@@ -681,6 +1030,32 @@ export function placePveMove(
   return { ok: true, data: toEncounterResponse(enc) };
 }
 
+/**
+ * POST /pve/encounters/{encounterId}/actions/retry (2026-07-09 §1.5/§6.5
+ * 公平性修正) — DUEL限定，關卡狀態須為DRAW：原地重開同一sequence（新
+ * encounterId、盤面重新開始），Run本身不受影響。舊encounterId自map移除，
+ * 之後查詢會404（比照後端軟刪除後 requireEncounter 找不到的行為）。
+ */
+export function retryPveEncounter(encounterId: string): PveOpResult<PveEncounterStateResponse> {
+  ensurePveDemoFixtures();
+  const enc = pveEncounters.get(encounterId);
+  if (!enc) {
+    return { ok: false, httpStatus: 404, code: "404001", message: PVE_ERROR.ENCOUNTER_NOT_FOUND };
+  }
+  const run = pveRuns.get(enc.runId);
+  if (!run) return { ok: false, httpStatus: 404, code: "404001", message: PVE_ERROR.RUN_NOT_FOUND };
+  if (enc.encounterType !== "DUEL") {
+    return { ok: false, httpStatus: 422, code: "422001", message: PVE_ERROR.ENCOUNTER_NOT_DUEL };
+  }
+  if (enc.status !== "DRAW") {
+    return { ok: false, httpStatus: 422, code: "422002", message: PVE_ERROR.ENCOUNTER_NOT_DRAWN };
+  }
+  pveEncounters.delete(encounterId);
+  const fresh = createEncounterInternal(run, enc.sequence);
+  run.currentEncounterId = fresh.encounterId;
+  return { ok: true, data: toEncounterResponse(fresh) };
+}
+
 export function usePveSkill(
   encounterId: string,
   body: PveSkillUseRequest,
@@ -701,6 +1076,17 @@ export function usePveSkill(
   }
   if (!enc.skillUsableThisInterval) {
     return { ok: false, httpStatus: 422, code: "422003", message: PVE_ERROR.SKILL_USED_THIS_INTERVAL };
+  }
+  // 橫劈/縱劈（axis）在 PVE 情境下 anchor＝推擠參考格，因技能獨立行動、無伴隨
+  // 落子座標，故必填（api.yml SkillActionRequest.anchor 說明；後端
+  // PveChallengeService.requireAnchor() 逐字同訊息）。mock 之前完全不驗證此欄位，
+  // 掩蓋了 frontend page.tsx 曾經漏收集 anchor 的契約違反（真後端 100% 422）。
+  const AXIS_SKILL_TYPES: SkillType[] = ["HORIZONTAL_SLASH", "VERTICAL_SLASH"];
+  if (
+    AXIS_SKILL_TYPES.includes(body.skillType) &&
+    (body.anchor == null || body.anchor.row == null || body.anchor.col == null)
+  ) {
+    return { ok: false, httpStatus: 422, code: "422004", message: PVE_ERROR.ANCHOR_REQUIRED };
   }
   held.quantity -= 1;
   run.heldSkills = run.heldSkills.filter((s) => s.quantity > 0);

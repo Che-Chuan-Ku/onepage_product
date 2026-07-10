@@ -51,6 +51,7 @@ import {
   getPveEncounter,
   placePveMove,
   usePveSkill,
+  retryPveEncounter,
   getPveShop,
   purchasePveShopOffer,
   rerollPveShop,
@@ -565,7 +566,7 @@ export const handlers = [
     if (unauthorized) return unauthorized;
     const body = PveRunCreateRequest.safeParse(await request.json());
     if (!body.success) return fail(422, "422000", "職業選擇不合法");
-    const res = createPveRun(body.data.classType);
+    const res = createPveRun(body.data.classType, body.data.seed ?? undefined);
     if (!res.ok) return fail(res.httpStatus, res.code, res.message);
     return created(res.data, "Run已建立");
   }),
@@ -618,6 +619,15 @@ export const handlers = [
     const res = usePveSkill(String(params.encounterId), body.data);
     if (!res.ok) return fail(res.httpStatus, res.code, res.message);
     return created(res.data, "技能已使用");
+  }),
+
+  // 2026-07-09 §1.5/§6.5 公平性修正：重試和局的魔王對弈關（DUEL限定、狀態須為DRAW）。
+  http.post(p("/pve/encounters/:encounterId/actions/retry"), ({ request, params }) => {
+    const unauthorized = requirePveAuth(request);
+    if (unauthorized) return unauthorized;
+    const res = retryPveEncounter(String(params.encounterId));
+    if (!res.ok) return fail(res.httpStatus, res.code, res.message);
+    return created(res.data, "已重試");
   }),
 
   http.get(p("/pve/runs/:runId/shop"), ({ request, params }) => {

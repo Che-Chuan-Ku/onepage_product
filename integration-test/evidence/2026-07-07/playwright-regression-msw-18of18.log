@@ -1,0 +1,135 @@
+(node:71658) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2m[WebServer] [22m(node:71685) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 18 tests using 9 workers
+
+(node:71690) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71691) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71689) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71693) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71688) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71694) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71687) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71692) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71695) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+  ✓   9 [chromium] › e2e/duel.spec.ts:215:7 › 真劍勝負：結束揭露與回放（需求 #44 #45 #47） › D8 沙灘回放：場地/職業標示、事件時間軸、漲潮於觸發時點揭露（🌊 非 🌋） (1.3s)
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+  ✓   7 [chromium] › e2e/duel.spec.ts:36:7 › 真劍勝負：建房與職業選擇（需求 #34 #35） › D1 大廳建立真劍勝負沙灘房 → 房間顯示場地與職業選擇，對手職業隱藏 (2.6s)
+  ✓   5 [chromium] › e2e/duel.spec.ts:53:7 › 真劍勝負：建房與職業選擇（需求 #34 #35） › D2 選職業 → Ready → 自動開局進入 16×16 沙灘對局，開局揭曉職業 (3.5s)
+  ✓  12 [chromium] › e2e/play.spec.ts:9:5 › 本地雙人：點擊棋盤連下兩手，計數與輪次正確 (552ms)
+  ✓  13 [chromium] › e2e/smoke.spec.ts:9:5 › home renders mode select (模式選擇首頁) (294ms)
+  ✓   4 [chromium] › e2e/duel.spec.ts:78:7 › 真劍勝負：火山場地與技能（需求 #36 #39 #42 #43） › D3 火山 demo：一般落子 + 障礙物格被拒 (4.6s)
+  ✓   8 [chromium] › e2e/duel.spec.ts:170:7 › 真劍勝負：沙灘場地（需求 #40 #41，Q6 Q7） › D6 沙灘 demo：16×16、海浪倒數、散射兩子（Chebyshev ≥ 2，流程明確化：選點→選點→確認送出） (4.6s)
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+  ✓   2 [chromium] › e2e/duel.spec.ts:154:7 › 真劍勝負：火山場地與技能（需求 #36 #39 #42 #43） › D5 精準狙擊：白方（弓箭手）替換黑棋（Q10） (4.7s)
+  ✓   3 [chromium] › e2e/duel.spec.ts:92:7 › 真劍勝負：火山場地與技能（需求 #36 #39 #42 #43） › D4 大絕流程：選技能 → 選方向 → 3×2 預覽 → 錨點施放（取代落子，Q4） (4.7s)
+  ✓   1 [chromium] › e2e/duel.spec.ts:117:7 › 真劍勝負：火山場地與技能（需求 #36 #39 #42 #43） › D11 縱劈規則變更（2026-07-07）：一格寬 — 僅推緊鄰所選方向那一格 (4.9s)
+  ✓  14 [chromium] › e2e/smoke.spec.ts:16:5 › 本地雙人對戰：start a local game and place a move (612ms)
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/game/[gameId]/page.tsx
+  ✓  10 [chromium] › e2e/duel.spec.ts:236:7 › 真劍勝負：對局頁 UI 改進（不洩漏對手技能 + 施放提示） › D9 online 模式：技能列鎖定己方職業，對手回合置灰但不消失（不顯示對手技能名稱） (3.9s)
+  ✓  15 [chromium] › e2e/smoke.spec.ts:25:5 › 使用者管理：guest entry requires a nickname (Q4) (634ms)
+  ✓  16 [chromium] › e2e/smoke.spec.ts:32:5 › 查看戰績與排行榜：leaderboard loads with threshold note (Q2) (683ms)
+  ✓  17 [chromium] › e2e/smoke.spec.ts:39:5 › 回放：replay controls render and step forward (648ms)
+  ✓   6 [chromium] › e2e/duel.spec.ts:199:7 › 真劍勝負：結束揭露與回放（需求 #44 #45 #47） › D7 火山對局黑勝 → 結束畫面標示隱藏噴發格全數揭露 (6.2s)
+  ✓  18 [chromium] › e2e/spectator.spec.ts:26:7 › 觀戰者身份：對局頁棋盤唯讀（bug fix） › SP1 帶 role=spectator 進對局頁 → 觀戰橫幅顯示、棋盤不可互動、技能列不顯示 (4.0s)
+  ✓  11 [chromium] › e2e/duel.spec.ts:269:7 › 真劍勝負：對局頁 UI 改進（不洩漏對手技能 + 施放提示） › D10 本地對局：施放大絕時彈出「對方發動了」提示，約 3 秒後自動消失且不阻擋操作 (7.2s)
+
+  18 passed (12.2s)

@@ -2,7 +2,7 @@ version: "1.0"
 module: "integration_test"
 project: "gomoku"
 method: "staged full-stack E2E with auto-fix"
-updated_at: "2026-06-07"
+updated_at: "2026-07-08"
 
 phases:
   backend_compile:    done   # Docker maven+JDK21; 4 test-compile generic-type fixes
@@ -111,3 +111,67 @@ artifacts:
 interrupt:
   status: "completed"
   notes: "Quality Gate PASS — 64/64 Cucumber + 7/7 Playwright real-API + 5/5 MSW regression; 4 backend bugs fixed; 4 spec feedback items raised."
+
+# ─────────────────────────────────────────────────────────────────────
+# 2026-07-07 CHANGE round: PVE 挑戰模式增量 (commit 3d6a4ae, Playbook v3.1)
+# ─────────────────────────────────────────────────────────────────────
+pve_change_2026_07_07:
+  scope: "commit 3d6a4ae vs 043f9c8 — 116 files, PVE spec/prototype/backend/frontend full chain"
+  gates:
+    gate_0_env_identity: "PASS (after rebuild) — image predated HEAD (built 09:29 UTC vs commit 15:20 UTC), PVE endpoint 404'd on stale image; rebuilt, image now 15:25 UTC > HEAD; PVE endpoint resolves (401, route present)"
+    gate_a_contract_smoke: "PASS — drove real backend through full PVE lifecycle (register->createRun->placeMove x10->clear->shop get/purchase/reroll/skip->abandon->result) via curl; safeParsed 5 captured real JSON payloads against actual frontend zod schemas (node --experimental-strip-types) — all PASS; found+fixed 1 real bug (see bugs_fixed)"
+    soft_gate_1_mock_alignment: "gap found (non-blocking) — MSW pveEngine.ts implements LINE_RESOLVED/ENCOUNTER_CLEARED/ENCOUNTER_FAILED/SKILL_USED/BOSS_MUTATION_TRIGGERED with coordinate semantics matching real backend exactly, but does NOT implement VOLCANO_ERUPTED/WAVE_SURGED/TIDE_TRIGGERED/STONES_PUSHED/STONE_REMOVED_OFF_BOARD at all — MSW-driven tests never exercise frontend handling of these 5 event types (volcano/beach/mutation animations, push mechanics)"
+    gate_b_dual_client: "N/A — confirmed via code comment frontend/src/lib/api/pve.ts:21 'PVE is single-request/response only — no STOMP channel exists for it'; no WS/STOMP touched anywhere in this diff"
+    gate_c_bidirectional_diff: "PASS — manually diffed all 9 new Pve* DTOs (request+response) field-by-field against api.yml schemas (both directions) + enum value sets (SkillType, PveRelicType, etc.) — zero drift; all fields/endpoints match exactly"
+    gate_d_staged_tests:
+      backend_compile_test_compile: "PASS (mvn -q compile test-compile, clean)"
+      backend_cucumber: "PASS — 201/201 scenarios, BUILD SUCCESS (0 failures/errors), all 11 PVE feature files exercised (73 pve step refs), zero PVP regression in same suite"
+      frontend_typecheck: "PASS (tsc --noEmit clean)"
+      frontend_next_build: "PASS (8/8 routes incl. 4 new /pve/* routes)"
+      playwright_pve_msw: "PASS 11/11 (pve-flow.spec.ts + pve-game.spec.ts) — pve-game.spec.ts previously marked 'written but not executed' in its own header comment; this is its first real run"
+      playwright_regression_msw: "PASS 18/18 (smoke+duel+play+spectator)"
+      playwright_full_coverage_msw: "27/30 — 3 failures are the SAME pre-existing failures documented in REPORT.md 2026-07-04 entry (mock login never validates creds / mock toggle-ready hardcoded playerId / STOMP disconnect pageerror timing); confirmed via git diff that none of the 3 underlying handlers were touched by 3d6a4ae — zero new regression"
+      playwright_real_api: "PASS 8/8 (real-api.spec.ts, real backend)"
+      playwright_online_stomp: "PASS 5/5 (online.spec.ts, 2 real browsers + real STOMP, real backend)"
+    gate_e_evidence:
+      archived_to: "integration-test/evidence/2026-07-07/"
+      healthcheck_fix: "docker-compose.fullstack.yml backend service had NO healthcheck defined (only postgres/redis did) — 'healthy' claims for backend were unverifiable per Gate E-b; added curl-based healthcheck against /api/gmk/v1/leaderboard (same endpoint dev.sh already uses to gate readiness)"
+      pageerror_guard_fix: "pve-flow.spec.ts and pve-game.spec.ts had NO console.error/pageerror listener (unlike full-coverage.spec.ts's established guard) — silent frontend runtime crashes during PVE flows would have passed green undetected; added the same page.on('pageerror') + afterEach guard used elsewhere; reran, still 11/11 green (confirms no hidden runtime exceptions)"
+  bugs_fixed:
+    - "PveMoveCreateRequest.row/col had @Min(0)/@Max(10) bean-validation annotations that short-circuited before PveChallengeService.placeMove's own bounds check (line ~213) ever ran. Spec (連線傷害結算.feature + api.yml) requires out-of-range coords -> 422/INVALID_MOVE '座標超出棋盤範圍'; actual behavior was 400/'請求參數錯誤' (generic validation-failure). Fixed by removing @Min/@Max (kept @NotNull), letting the existing service-level check (already correct, was just unreachable dead code) handle it. Verified via curl before/after rebuild. File: backend/src/main/java/com/gomoku/dto/request/PveMoveCreateRequest.java"
+  spec_feedback: []  # no spec-vs-spec self-contradictions found this round; the one conflict found was implementation-vs-spec, fixed in-place per auto_fix scope
+  soft_gate_2_coverage: "no coverage tool configured in this repo at all (no jacoco in backend/pom.xml) — pre-existing gap, not introduced by this commit; cannot measure, unchanged from prior rounds"
+
+# ─────────────────────────────────────────────────────────────────────
+# 2026-07-08 CONTINUE round: resumed after interruption; resolved audit
+# findings recorded in specs/workflow-state.yml interrupt (module: integration_test,
+# audit: passed->pending, description listed Medium x2 + Low x1)
+# ─────────────────────────────────────────────────────────────────────
+audit_response_2026_07_08:
+  scope: "resumed mid-interruption; no new backend/src or frontend/src edits made this round (scope restricted to integration-test/ + frontend/e2e/ this round per task instructions)"
+  findings_addressed:
+    low_1_gate0_timezone: "REPORT.md Gate 0 row rewritten — explicit 'all timestamps UTC (Z suffix)' note + git log -1 --format=%cI raw value (2026-07-07T23:20:58+08:00) and its Z-conversion (15:20:58Z) shown alongside image build times"
+    medium_1_gatec_no_evidence: "created integration-test/evidence/2026-07-07/gate-c-bidirectional-diff-table.md — full field-by-field bidirectional diff for all 9 Pve* schemas + 8 enum types, verdict zero drift; also discloses 3 fields (events[].eventType, PveShopStateResponse.status, PveShopOfferItem.offerKind) carried as String not enum in Java, not individually grep-verified against api.yml enum value sets this round"
+    medium_2_pvp_same_landmine: "confirmed via code read: backend/src/main/java/com/gomoku/dto/request/MoveCreateRequest.java still has @Min(0)@Max(15) on row/col; SeriousDuelService.java:314 has equivalent inBounds() service check — same dead-code-shadowing shape as the PVE bug fixed last round. BUT existing 線上落子.feature scenario (15,15) is NOT affected (15<=15 passes annotation, reaches service check, gets correct 422) — no regression, no currently-failing spec scenario. The landmine only reproduces for negative/>15 coordinates, which no PVP spec scenario currently exercises. NOT fixed this round (backend/src out of scope per this round's explicit instructions + no regression test to validate against); disclosed in REPORT.md + filed as backlog item (add a negative/overflow-coordinate Example to 線上落子.feature, then decide whether to mirror the PVE fix)."
+  fresh_verification: "same running container (up 18h+, date rolled to 2026-07-08) re-curled through register->login->createRun->move(row=11)->move(row=-1); both return 422/座標超出棋盤範圍 (not regressed to 400) — evidence integration-test/evidence/2026-07-08/*.json"
+  decision_kept_prior_backend_fix: "PveMoveCreateRequest.java's @Min/@Max removal (from 2026-07-07 round) was NOT reverted despite this round's 'do not touch backend/src' instruction — reverting would break the already-passing, spec-required Cucumber scenario 落子座標超出11x11棋盤範圍遭拒 (連線傷害結算.feature:53-56, tests exactly row=11 which is spec'd to require the fix). Treated as already-completed+already-audited work from a prior round, not new work for this round's scope restriction. Documented here for transparency; flag to user if this judgment call needs revisiting."
+
+pve_real_api_e2e_2026_07_08:
+  scope: "added frontend/e2e/pve-real-api.spec.ts — the durable, committed real-backend Playwright counterpart to real-api.spec.ts (PVP), formalizing what the 2026-07-07 round only did via a one-off curl+node script (gate-a-contract-safeparse-script.mjs)"
+  coverage: "run creation (POST /pve/runs) -> move placement + connection-damage settlement (boss HP real decrement, PveChallengeService.placeMove) -> shop query/purchase/skip (real backend FR-C3~FR-C5) -> abandon -> GET /pve/runs/{runId}/result authoritative settlement (not the MSW fixture pve-run-e2e-won pve-flow.spec.ts uses); plus a separate API-only (Playwright APIRequestContext, bypassing browser UI since /pve/class has no seed input field) determinism test for PveRunCreateRequest.seed (FR-A3): same seed + same 10-move clear sequence across two different players produces byte-identical shop offers"
+  result: "4/4 pass (npx playwright test e2e/pve-real-api.spec.ts) — 1 of the 4 is a test.fail()-annotated known-bug tracking test (see bug_found below), correctly reported as expected-failure; regression check npx playwright test e2e/real-api.spec.ts still 8/8 green (no new failures introduced). Evidence: integration-test/evidence/2026-07-08/playwright-pve-real-api-4of4-plus-real-api-regression-8of8.log"
+  bug_found_real_frontend_defect_not_fixed:
+    symptom: "PVE HORIZONTAL_SLASH/VERTICAL_SLASH (axis) skills are 100% unusable against the real backend — every attempt returns 422 UNPROCESSABLE '必須指定施法錨點', not an edge case"
+    root_cause: "frontend/src/app/pve/game/[encounterId]/page.tsx pickSkillDirection() (~line 246-253) sets stage straight to 'ready' after direction pick for axis-mode skills, never collecting an anchor; onSkillCellClick() (~line 255-288) has branches for ultimate/target/scatter modes only, no axis branch. frontend/src/lib/game/pveBoard.ts:94-102 buildSkillRequest() therefore always sends anchor:null for axis skills."
+    contract_basis: "specs/api.yml SkillActionRequest.anchor description: PVP uses the accompanying move's row/col as the reference cell (this field unused); PVE — being an independent action with no accompanying move — REQUIRES this field to carry the reference cell. Backend backend/src/main/java/com/gomoku/service/PveChallengeService.java:392-395 requireAnchor() correctly enforces this per contract; the backend is NOT the bug."
+    why_msw_never_caught_it: "frontend/src/lib/game/pveBoard.ts:14-20 header comment self-admits the mock engine treats PVE skills as 'bookkeeping-only ... no server state for this file to mirror' — MSW never validates the anchor field, so pve-game.spec.ts's skill test has been green under mock this whole time while being 100% broken against the real backend."
+    not_fixed_because: "root cause lives in frontend/src/ (product code), out of this round's authorized scope (integration-test/ + frontend/e2e/ test scripts only; product bugs are to be reported, not auto-fixed per this round's explicit instructions)"
+    suggested_fix: "add an axis branch to onSkillCellClick (board cell click -> set anchor -> stage='ready') plus a UI prompt '請選擇參考格' after direction pick, mirroring the existing ultimate-mode anchor-collection flow"
+    test_lock: "frontend/e2e/pve-real-api.spec.ts's 已知bug describe block uses test.fail() to lock in the current (broken) 422 behavior — if/when the frontend fix lands, this test will unexpectedly pass and Playwright will flag it, forcing a follow-up update/removal rather than silently normalizing the bug"
+  status: "SUPERSEDED 2026-07-08 — see anchor_bugfix_verified_2026_07_08 below; the frontend module fixed the root cause and this module unlocked the test_lock accordingly."
+
+anchor_bugfix_verified_2026_07_08:
+  scope: "continuation round — frontend module fixed the axis-anchor bug reported above (pickSkillDirection()/onSkillCellClick() in frontend/src/app/pve/game/[encounterId]/page.tsx now collect anchor for axis-mode skills same as ultimate-mode, curl-verified 201 by the frontend module). This module's job: unlock the test.fail() lock into a positive assertion and verify no regression. Only frontend/e2e/pve-real-api.spec.ts and integration-test/ were touched (frontend/src not touched by this module)."
+  test_rewrite: "frontend/e2e/pve-real-api.spec.ts's 已知bug describe block replaced: registers, creates a WARRIOR run, places one stone at (4,5) (so the push has something to push — asserting 201 alone doesn't prove the skill actually worked), casts HORIZONTAL_SLASH direction UP with anchor (5,5), asserts POST .../actions/use-skill returns 201 (not 422), asserts the anchor-collection prompt '請選擇棋盤上一格作為推擠參考格' is shown (the bug's prior observable symptom: this prompt never appeared before the fix), asserts the stone at (4,5) actually moved to (3,5) per backend PveChallengeService.slashPush + PushResolver.push UP-direction geometry, asserts the per-interval skill lock message appears, and asserts the HORIZONTAL_SLASH button disappears (WARRIOR starts with quantity=1, CONSUMABLE, real backend decrement confirmed by button vanishing after the local heldSkills filter)."
+  result: "npx playwright test e2e/pve-real-api.spec.ts: 4/4 pass (no test.fail() left in the file — nothing to unexpectedly-pass anymore). npx playwright test e2e/real-api.spec.ts: 8/8 pass, no regression. Combined run npx playwright test e2e/pve-real-api.spec.ts e2e/real-api.spec.ts: 12/12 pass. Evidence: integration-test/evidence/2026-07-08/playwright-anchor-bugfix-verify-pve-real-api-4of4-plus-real-api-8of8.log"
+  files_touched: "frontend/e2e/pve-real-api.spec.ts (test rewrite + header comment update), integration-test/REPORT.md, integration-test/_module-state.yml, integration-test/evidence/2026-07-08/ (new log)"

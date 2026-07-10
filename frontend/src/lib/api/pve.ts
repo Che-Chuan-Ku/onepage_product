@@ -58,6 +58,14 @@ export const pveService = {
       body,
     ),
 
+  /**
+   * POST /pve/encounters/{encounterId}/actions/retry — 重試和局的魔王對弈關
+   * （DUEL限定，關卡狀態須為DRAW；2026-07-09 §1.5/§6.5 公平性修正）。原地重開
+   * 同一關（同sequence），回傳新的 encounterId，舊的失效；Run本身不受影響。
+   */
+  retryEncounter: (encounterId: string) =>
+    api.post(`/pve/encounters/${encounterId}/actions/retry`, PveEncounterStateResponse),
+
   /** GET /pve/runs/{runId}/shop — 查詢商店展示（遺物x2、技能x1） */
   getShop: (runId: string) => api.get(`/pve/runs/${runId}/shop`, PveShopStateResponse),
 

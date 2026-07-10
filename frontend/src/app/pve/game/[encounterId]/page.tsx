@@ -1,26 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
 import { Modal } from "@/components/Modal";
 import { PveBoard } from "@/components/pve-game/PveBoard";
+import { PveStrategyCard } from "@/components/pve-game/PveStrategyCard";
 import { pveService } from "@/lib/api/pve";
 import { ApiError } from "@/lib/api/client";
 import { toast } from "@/lib/store/toast";
 import {
   PVE_DIR_LABEL,
+  PVE_DUEL_DRAW_COPY,
+  PVE_DUEL_FAIL_COPY,
   PVE_FIELD_LABEL,
   PVE_MUTATION_ICON,
   PVE_MUTATION_LABEL,
   PVE_SKILL_DIRECTIONS,
+  PVE_HORIZONTAL_VOID_TOAST,
+  bossLastMoveFrom,
+  bossSkillCastFrom,
+  horizontalFiveCells,
   buildSkillRequest,
+  duelFailReason,
   presentPveEvent,
   scatterDistanceOk,
   skillFlowPreviewCells,
   startSkillFlow,
   type PveSkillFlow,
 } from "@/lib/game/pveBoard";
+import { strategyCardFor } from "@/lib/game/pveStrategyCards";
 import { PVE_RELIC_INFO } from "@/mocks/data/pveFixtures";
 import { SKILL_NAME_ZH } from "@/components/pve/pveText";
 import type {
@@ -41,6 +50,18 @@ interface DamageFloat {
 }
 
 let dmgFloatSeq = 0;
+
+/**
+ * A1 修正（PVE-八關評論彙編與迭代清單-2026-07-08.md）：「本關已造成傷害」一律
+ * 從權威 encounter.bossHpMax - encounter.bossHpCurrent 推導，不再用本地累加器
+ * （sessionDamage）——累加器只在「本次頁面 session 內」發生的落子/技能才會加總，
+ * 一旦玩家刷新頁面或從別處續玩回這關（FR-B6 續玩），累加器會重置成0，但
+ * bossHpCurrent 早已反映之前造成的傷害，兩者對不上，面板就會顯示「0」。
+ * 用 bossHpMax-bossHpCurrent 永遠正確，且不需要任何本地狀態。
+ */
+function encounterDamageDealt(enc: PveEncounterStateResponse): number {
+  return Math.max(0, enc.bossHpMax - enc.bossHpCurrent);
+}
 
 /**
  * PVE 挑戰模式 — 棋盤關卡頁 (specs/ui/PVE棋盤關卡頁.md; pve-ui-spec.md §3).
@@ -65,7 +86,6 @@ export default function PveGamePage() {
   const [heldSkills, setHeldSkills] = useState<PveHeldSkillItem[]>([]);
   const [heldRelics, setHeldRelics] = useState<PveHeldRelicItem[]>([]);
   const [runFetchFailed, setRunFetchFailed] = useState(false);
-  const [sessionDamage, setSessionDamage] = useState(0);
 
   const [pendingCell, setPendingCell] = useState<Cell | null>(null);
   const [skillFlow, setSkillFlow] = useState<PveSkillFlow | null>(null);
@@ -73,13 +93,25 @@ export default function PveGamePage() {
   const [damageFloats, setDamageFloats] = useState<DamageFloat[]>([]);
   const [fxClass, setFxClass] = useState<string>("");
   const [confirmAbandon, setConfirmAbandon] = useState(false);
-  const [outcome, setOutcome] = useState<null | { kind: "cleared" | "failed"; damage: number }>(
-    null,
-  );
+  const [outcome, setOutcome] = useState<
+    null | { kind: "cleared" | "failed" | "draw"; damage: number; reasonText?: string }
+  >(null);
+  const [retrying, setRetrying] = useState(false);
+  // 策略卡（§2.2）：關卡載入後、棋盤可互動前顯示，「開始」後才收起。每次換關
+  // （encounterId 變化）重新顯示一次。
+  const [showStrategyCard, setShowStrategyCard] = useState(true);
+  // DUEL關（§5.2）：Boss最近一手回應座標，短暫高亮；換一次落子/技能後才更新。
+  const [bossLastMove, setBossLastMove] = useState<Cell | null>(null);
+  // L8 SKILL_DEMON（documents/PVE-全對弈階梯設計-2026-07-10.md §3/§9.2）：Boss
+  // 最近一次施放的技能（精準狙擊/散射/開拓之星），短暫高亮受影響格。
+  const [bossSkillCells, setBossSkillCells] = useState<Cell[]>([]);
 
   // ── load: refresh 直接重拉 encounter 續玩 (增量需求 持久化與續玩) ──
   useEffect(() => {
     let cancelled = false;
+    setShowStrategyCard(true);
+    setBossLastMove(null);
+    setBossSkillCells([]);
     (async () => {
       let enc: PveEncounterStateResponse;
       try {
@@ -95,6 +127,18 @@ export default function PveGamePage() {
       }
       if (cancelled) return;
       setEncounter(enc);
+      // bug fix（task item #4）：重新整理／重進一個已結束（CLEARED/FAILED/DRAW）
+      // 的關卡頁面時，先前只有 applyEncounterResponse（落子/技能等「即時」回應）
+      // 才會觸發 outcome 覆蓋層——這條初次載入路徑只 setEncounter 就結束，導致
+      // 重進已通關/已敗北的關卡完全看不到結算畫面/不會被導去結算頁。比照
+      // applyEncounterResponse 的判斷，依讀到的權威 status 補上同一組處理。
+      if (enc.status === "CLEARED") {
+        handleCleared(enc);
+      } else if (enc.status === "FAILED") {
+        handleFailed(enc);
+      } else if (enc.status === "DRAW") {
+        handleDrawn();
+      }
       try {
         const run = await pveService.getCurrentRun();
         if (cancelled) return;
@@ -125,8 +169,17 @@ export default function PveGamePage() {
 
   function applyEncounterResponse(enc: PveEncounterStateResponse) {
     setEncounter(enc);
+    if (enc.encounterType === "DUEL") {
+      setBossLastMove(bossLastMoveFrom(enc));
+      const cast = bossSkillCastFrom(enc);
+      if (cast) {
+        setBossSkillCells(cast.cells);
+        toast(`Boss 使用了 ${SKILL_NAME_ZH[cast.skillType] ?? cast.skillType}`, "info");
+      } else {
+        setBossSkillCells([]);
+      }
+    }
     if (enc.lastResolution) {
-      setSessionDamage((d) => d + enc.lastResolution!.damageDealt);
       const breakdown = enc.lastResolution.linesResolved
         .map((l) => `${l.length}連 ${l.baseScore}×${l.multiplier.toFixed(1)}`)
         .join("、");
@@ -144,11 +197,55 @@ export default function PveGamePage() {
       handleCleared(enc);
     } else if (enc.status === "FAILED") {
       handleFailed(enc);
+    } else if (enc.status === "DRAW") {
+      handleDrawn();
+    }
+  }
+
+  /**
+   * DUEL 和局（2026-07-09 §1.5/§6.5 公平性修正）：手數耗盡且雙方皆未連五。
+   * 與 CLEARED/FAILED 不同——不導向結算頁、Run 不受影響——顯示「勢均力敵」
+   * 提示，玩家按「再來一局」呼叫 retryPveEncounter 原地重開本關（新
+   * encounterId、盤面重新開始），可無限次重試。
+   */
+  function handleDrawn() {
+    setOutcome({ kind: "draw", damage: 0, reasonText: PVE_DUEL_DRAW_COPY });
+  }
+
+  async function retryDrawnEncounter() {
+    if (!encounter || retrying) return;
+    setRetrying(true);
+    try {
+      const fresh = await pveService.retryEncounter(encounter.encounterId);
+      setOutcome(null);
+      setPendingCell(null);
+      setSkillFlow(null);
+      setBossLastMove(null);
+      setShowStrategyCard(true);
+      setEncounter(fresh);
+      // encounterId 已變（舊關卡已在後端標記刪除），更新網址但不觸發整頁
+      // 重新導航／不重跑上方 useEffect 的初次載入流程（該流程只在 encounterId
+      // 這個 route param 變化時跑；用 replaceState 只換網址列顯示，行為與其他
+      // 純用戶端狀態轉換一致，避免多一次不必要的 GET /encounters 往返）。
+      window.history.replaceState(null, "", `/pve/game/${fresh.encounterId}`);
+    } catch (err) {
+      if (err instanceof ApiError) toast(err.message, "error");
+      else console.error("pve retry failed", err);
+    } finally {
+      setRetrying(false);
     }
   }
 
   function handleCleared(enc: PveEncounterStateResponse) {
-    setOutcome({ kind: "cleared", damage: sessionDamage + (enc.lastResolution?.damageDealt ?? 0) });
+    // A1 修正：改讀權威 bossHpMax-bossHpCurrent（本關累計傷害），不再靠本地
+    // sessionDamage 累加器——後者在頁面刷新/續玩後會重置為0，導致「本關已造成
+    // 傷害：0」的顯示bug（即使boss早已被打掉大半血量）。
+    // DUEL關（§5.2）改用「五連達成，你贏了！」文案，不提傷害概念。
+    setOutcome({
+      kind: "cleared",
+      damage: encounterDamageDealt(enc),
+      reasonText: enc.encounterType === "DUEL" ? "五連達成，你贏了！" : undefined,
+    });
     setTimeout(() => {
       if (enc.sequence >= 8) {
         // Run 已在後端直接結算為 WON（settleEncounterClear）；結算頁自行呼叫
@@ -162,8 +259,14 @@ export default function PveGamePage() {
   }
 
   function handleFailed(enc: PveEncounterStateResponse) {
-    const encDamage = sessionDamage + (enc.lastResolution?.damageDealt ?? 0);
-    setOutcome({ kind: "failed", damage: encDamage });
+    const encDamage = encounterDamageDealt(enc);
+    // DUEL關（§5.2）需區分「Boss五連」與「手數耗盡」兩種敗因文案。
+    const reason = duelFailReason(enc);
+    setOutcome({
+      kind: "failed",
+      damage: encDamage,
+      reasonText: reason ? PVE_DUEL_FAIL_COPY[reason] : undefined,
+    });
     setTimeout(() => {
       // Run 已在後端結算為 LOST；權威 goldEarned/goldSpent/totalDamageDealt 由
       // 結算頁呼叫 GET /pve/runs/{runId}/result 取得。這裡只留一份「本關戰況」
@@ -245,9 +348,12 @@ export default function PveGamePage() {
 
   function pickSkillDirection(dir: SkillDirection) {
     if (!skillFlow) return;
-    if (skillFlow.mode === "axis") {
-      setSkillFlow({ ...skillFlow, direction: dir, stage: "ready" });
-    } else if (skillFlow.mode === "ultimate") {
+    // 橫劈/縱劈（axis）與大絕（ultimate）選定方向後都還需要一個棋盤錨點：
+    // axis 是推擠參考格（api.yml SkillActionRequest.anchor 說明，PVE 無伴隨落子
+    // 故改由此欄位提供），ultimate 是施法錨點。兩者接著都進入 "anchor" 階段，
+    // 由 onSkillCellClick 收集 anchor 後才會到 "ready"。修正前 axis 分支直接跳
+    // "ready"、從未收集 anchor，導致送出的 anchor 永遠是 null（後端 422）。
+    if (skillFlow.mode === "axis" || skillFlow.mode === "ultimate") {
       setSkillFlow({ ...skillFlow, direction: dir, stage: "anchor" });
     }
   }
@@ -256,7 +362,11 @@ export default function PveGamePage() {
     if (!skillFlow || !encounter) return;
     const stoneHit = encounter.stones.some((s) => s.row === row && s.col === col);
     const obstacleHit = encounter.obstacles.some((o) => o.row === row && o.col === col);
-    if (skillFlow.mode === "ultimate" && skillFlow.stage === "anchor") {
+    if (skillFlow.mode === "axis" && skillFlow.stage === "anchor") {
+      // 橫劈/縱劈錨點＝推擠參考格，可為空格或現有棋子（api.yml anchor 說明；
+      // 後端 slashPush 僅檢查 in-bounds，不限空格），故不擋 stoneHit/obstacleHit。
+      setSkillFlow({ ...skillFlow, anchor: { row, col }, stage: "ready" });
+    } else if (skillFlow.mode === "ultimate" && skillFlow.stage === "anchor") {
       if (stoneHit || obstacleHit) {
         toast("大絕錨點須為空格", "error");
         return;
@@ -336,14 +446,45 @@ export default function PveGamePage() {
   }
 
   const skillPreviewCells = useMemo(() => skillFlowPreviewCells(skillFlow), [skillFlow]);
+  // L3 不可橫向 即時回饋（§7.6 item #2）：任一方湊成橫向五連的瞬間，該線灰化/
+  // 虛線渲染 + toast「橫向連線不計勝負！」。純由權威盤面推導（玩家黑子 stones
+  // ＋ Boss 白子 ENEMY_STONE obstacles），不需要新 API 欄位。
+  const voidLineCells = useMemo(() => {
+    if (!encounter?.horizontalDisabled) return [];
+    return horizontalFiveCells(
+      encounter.stones,
+      encounter.obstacles.filter((o) => o.kind === "ENEMY_STONE"),
+    );
+  }, [encounter]);
+  const toastedVoidKeysRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    toastedVoidKeysRef.current = new Set();
+  }, [encounterId]);
+  useEffect(() => {
+    if (voidLineCells.length === 0) return;
+    const seen = toastedVoidKeysRef.current;
+    const fresh = voidLineCells.some((c) => !seen.has(`${c.row},${c.col}`));
+    if (fresh) {
+      toast(PVE_HORIZONTAL_VOID_TOAST, "info");
+      voidLineCells.forEach((c) => seen.add(`${c.row},${c.col}`));
+    }
+  }, [voidLineCells]);
   // 本關已使用技能改讀權威 PveEncounterStateResponse.usedSkills（FR-B7），不再
   // 本地追蹤／存 sessionStorage。
   const usedSkillLabels = useMemo(
     () => (encounter?.usedSkills ?? []).map((s) => SKILL_NAME_ZH[s]),
     [encounter],
   );
+  // bug fix：舊版 usedSkills 曾把 L8 Boss 的施法也混入玩家清單、前端無標註——
+  // 改讀分開的 bossUsedSkills，並在每個項目加「魔王」標籤區分。
+  const bossUsedSkillLabels = useMemo(
+    () => (encounter?.bossUsedSkills ?? []).map((s) => `${SKILL_NAME_ZH[s]}（魔王）`),
+    [encounter],
+  );
   const boardInteractive =
-    !!encounter && encounter.status === "IN_PROGRESS" && !busy && !outcome;
+    !!encounter && encounter.status === "IN_PROGRESS" && !busy && !outcome && !showStrategyCard;
+  const isDuel = encounter?.encounterType === "DUEL";
+  const strategyCard = encounter ? strategyCardFor(encounter.sequence) : null;
 
   if (!encounter) {
     return (
@@ -388,20 +529,24 @@ export default function PveGamePage() {
         <div className="layout">
           <section>
             <div className="pveg-bars">
-              <div className={`pveg-boss-hp${bossHpPct < 25 ? " low" : ""}`}>
-                <div className="pveg-bar-label">
-                  <span>Boss HP</span>
-                  <span>
-                    {encounter.bossHpCurrent} / {encounter.bossHpMax}
-                  </span>
+              {/* DUEL關（第4/8關）沒有BossHP/傷害概念，不渲染HP條，改顯示手數與
+                  「輪到誰」提示（documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §5.2）。 */}
+              {!isDuel && (
+                <div className={`pveg-boss-hp${bossHpPct < 25 ? " low" : ""}`}>
+                  <div className="pveg-bar-label">
+                    <span>Boss HP</span>
+                    <span>
+                      {encounter.bossHpCurrent} / {encounter.bossHpMax}
+                    </span>
+                  </div>
+                  <div className="pveg-bar-track">
+                    <div className="pveg-bar-fill" style={{ width: `${bossHpPct}%` }} />
+                  </div>
                 </div>
-                <div className="pveg-bar-track">
-                  <div className="pveg-bar-fill" style={{ width: `${bossHpPct}%` }} />
-                </div>
-              </div>
+              )}
               <div className={`pveg-move-budget${movePct < 20 ? " low" : ""}`}>
                 <div className="pveg-bar-label">
-                  <span>剩餘手數</span>
+                  <span>{isDuel ? "剩餘手數（你的落子）" : "剩餘手數"}</span>
                   <span>
                     {remainingMoves} / {encounter.moveBudget}
                   </span>
@@ -410,6 +555,11 @@ export default function PveGamePage() {
                   <div className="pveg-bar-fill" style={{ width: `${movePct}%` }} />
                 </div>
               </div>
+              {isDuel && (
+                <p className="dim" style={{ fontSize: 12 }} data-testid="pve-duel-turn-hint">
+                  黑子（你）先手，白子（Boss）後手，連五即分出勝負
+                </p>
+              )}
             </div>
 
             <div className={`pveg-board-wrap${fxClass ? ` ${fxClass}` : ""}`}>
@@ -421,7 +571,12 @@ export default function PveGamePage() {
                 fieldType={encounter.fieldType}
                 pendingCell={pendingCell}
                 skillPreviewCells={skillPreviewCells}
+                bossLastMove={bossLastMove}
+                bossSkillCells={bossSkillCells}
+                horizontalDisabled={encounter.horizontalDisabled}
+                voidLineCells={voidLineCells}
                 interactive={boardInteractive}
+                skillFlowActive={!!skillFlow}
                 onCellClick={onBoardCellClick}
               />
               <div className="pveg-dmg-layer" data-testid="pve-dmg-layer">
@@ -473,6 +628,7 @@ export default function PveGamePage() {
                 ) : (
                   <>
                     <span className="dim" style={{ fontSize: 12 }}>
+                      {skillFlow.mode === "axis" && "請點選棋盤上一格作為推擠參考格（可為空格或現有棋子）"}
                       {skillFlow.mode === "ultimate" && "請點選棋盤上的空格作為大絕錨點"}
                       {skillFlow.mode === "target" && "請點選棋盤上一顆現存棋子作為目標"}
                       {skillFlow.mode === "scatter" &&
@@ -572,11 +728,16 @@ export default function PveGamePage() {
             <div className="card pad">
               <h3>本關戰況</h3>
               <p className="dim mt-8" style={{ fontSize: 13 }}>
-                本關已造成傷害：{sessionDamage}
+                本關已造成傷害：{encounterDamageDealt(encounter)}
               </p>
               <p className="dim" style={{ fontSize: 13 }}>
                 本關已使用技能：{usedSkillLabels.length ? usedSkillLabels.join("、") : "無"}
               </p>
+              {bossUsedSkillLabels.length > 0 && (
+                <p className="dim" style={{ fontSize: 13 }}>
+                  魔王已使用技能：{bossUsedSkillLabels.join("、")}
+                </p>
+              )}
             </div>
             <div className="card pad">
               <h3>持有遺物</h3>
@@ -613,24 +774,52 @@ export default function PveGamePage() {
         </Modal>
       )}
 
+      {showStrategyCard && strategyCard && !outcome && (
+        <PveStrategyCard
+          card={strategyCard}
+          initialStones={isDuel ? [] : encounter.stones}
+          onStart={() => setShowStrategyCard(false)}
+        />
+      )}
+
       {outcome && (
         <Modal dismissable={false}>
-          <h2 className={outcome.kind === "cleared" ? "" : "dim"}>
-            {outcome.kind === "cleared" ? "關卡通過！" : "挑戰失敗"}
+          <h2 className={outcome.kind === "cleared" ? "" : "dim"} data-testid="pve-outcome-title">
+            {outcome.reasonText ?? (outcome.kind === "cleared" ? "關卡通過！" : "挑戰失敗")}
           </h2>
-          <div className="pveg-outcome-stats">
-            <div>
-              <b>{outcome.damage}</b>
-              <span className="dim">本關造成傷害</span>
+          {!isDuel && (
+            <div className="pveg-outcome-stats">
+              <div>
+                <b>{outcome.damage}</b>
+                <span className="dim">本關造成傷害</span>
+              </div>
+              <div>
+                <b>{usedSkillLabels.length}</b>
+                <span className="dim">已使用技能種類</span>
+              </div>
             </div>
-            <div>
-              <b>{usedSkillLabels.length}</b>
-              <span className="dim">已使用技能種類</span>
-            </div>
-          </div>
+          )}
           <p className="dim" style={{ fontSize: 13, textAlign: "center" }}>
             已使用技能：{usedSkillLabels.length ? usedSkillLabels.join("、") : "無"}
           </p>
+          {outcome.kind === "draw" && (
+            <>
+              <p className="dim mt-8" style={{ fontSize: 13, textAlign: "center" }}>
+                手數已用盡，雙方皆未連五——這不算你輸，本關可無限次重試。
+              </p>
+              <div className="row gap-8 mt-16" style={{ justifyContent: "center" }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={retrying}
+                  onClick={retryDrawnEncounter}
+                  data-testid="pve-draw-retry-btn"
+                >
+                  再來一局
+                </button>
+              </div>
+            </>
+          )}
         </Modal>
       )}
     </>

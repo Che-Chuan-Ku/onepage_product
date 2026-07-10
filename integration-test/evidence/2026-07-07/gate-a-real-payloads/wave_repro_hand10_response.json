@@ -1,0 +1,143 @@
+{
+  "status": "success",
+  "code": "201000",
+  "message": "Created",
+  "data": {
+    "gameId": "c665cedd-5e63-4581-a74b-13aa22618a38",
+    "status": "PLAYING",
+    "currentTurn": "BLACK",
+    "moveCount": 10,
+    "lastMove": {
+      "color": "WHITE",
+      "row": 7,
+      "col": 8
+    },
+    "result": null,
+    "winningLine": null,
+    "blackClass": "WARRIOR",
+    "whiteClass": "ARCHER",
+    "fieldState": {
+      "fieldType": "BEACH",
+      "obstacles": [],
+      "erodedRows": 1,
+      "tideTriggered": true,
+      "roundCounter": 0,
+      "seaSide": "EAST"
+    },
+    "revealedHiddenCells": [
+      {
+        "cellKind": "TIDE",
+        "row": 7,
+        "col": 10
+      }
+    ],
+    "skillEvents": [
+      {
+        "eventType": "WAVE_SURGED",
+        "row": null,
+        "col": null,
+        "effectTriggered": true
+      },
+      {
+        "eventType": "STONE_PUSHED",
+        "row": 7,
+        "col": 6,
+        "effectTriggered": true
+      },
+      {
+        "eventType": "STONE_PUSHED",
+        "row": 7,
+        "col": 7,
+        "effectTriggered": true
+      },
+      {
+        "eventType": "STONE_PUSHED",
+        "row": 7,
+        "col": 8,
+        "effectTriggered": true
+      },
+      {
+        "eventType": "STONE_PUSHED",
+        "row": 7,
+        "col": 9,
+        "effectTriggered": true
+      },
+      {
+        "eventType": "STONE_PUSHED",
+        "row": 7,
+        "col": 10,
+        "effectTriggered": true
+      },
+      {
+        "eventType": "STONE_PUSHED",
+        "row": 7,
+        "col": 11,
+        "effectTriggered": true
+      },
+      {
+        "eventType": "SAND_ERODED",
+        "row": null,
+        "col": null,
+        "effectTriggered": true
+      },
+      {
+        "eventType": "TIDE_RISEN",
+        "row": null,
+        "col": null,
+        "effectTriggered": true
+      }
+    ],
+    "stones": [
+      {
+        "row": 7,
+        "col": 6,
+        "color": "BLACK"
+      },
+      {
+        "row": 7,
+        "col": 7,
+        "color": "WHITE"
+      },
+      {
+        "row": 7,
+        "col": 8,
+        "color": "BLACK"
+      },
+      {
+        "row": 7,
+        "col": 9,
+        "color": "BLACK"
+      },
+      {
+        "row": 7,
+        "col": 10,
+        "color": "BLACK"
+      },
+      {
+        "row": 7,
+        "col": 11,
+        "color": "BLACK"
+      },
+      {
+        "row": 13,
+        "col": 0,
+        "color": "WHITE"
+      },
+      {
+        "row": 13,
+        "col": 1,
+        "color": "WHITE"
+      },
+      {
+        "row": 13,
+        "col": 2,
+        "color": "WHITE"
+      },
+      {
+        "row": 13,
+        "col": 3,
+        "color": "WHITE"
+      }
+    ]
+  }
+}

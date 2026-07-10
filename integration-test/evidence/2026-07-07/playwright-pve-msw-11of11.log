@@ -1,0 +1,38 @@
+(node:71540) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2m[WebServer] [22m(node:71567) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 11 tests using 9 workers
+
+(node:71573) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71575) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71580) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71576) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71577) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71578) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71579) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71581) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71574) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓   3 [chromium] › e2e/pve-flow.spec.ts:74:7 › PVE 挑戰模式：模式選擇首頁入口 › 未登入點擊 PVE 卡片顯示需要註冊帳號提示，無訪客入口 (934ms)
+  ✓   9 [chromium] › e2e/pve-flow.spec.ts:168:7 › PVE 挑戰模式：結算畫面（FR-C7） › 找不到結算資料時顯示空狀態並提供回首頁按鈕（未經正常流程直接進入本頁） (986ms)
+  ✓   6 [chromium] › e2e/pve-flow.spec.ts:153:7 › PVE 挑戰模式：結算畫面（FR-C7） › WON 顯示到達關數/總傷害/金幣/持有清單，並可導航回首頁/再來一次 (2.5s)
+  ✓   2 [chromium] › e2e/pve-flow.spec.ts:86:7 › PVE 挑戰模式：職業選擇 → 建立 Run（FR-B1, FR-C8） › 已登入 → PVE 入口導向職業選擇頁 → 選職業建立Run → 導向棋盤關卡頁 (2.9s)
+  ✓   5 [chromium] › e2e/pve-game.spec.ts:95:7 › PVE棋盤關卡頁：技能使用（增量需求 FR-A2 FR-B5） › 使用起始技能後手數不變、持有量歸零，按鈕從列表消失 (3.3s)
+  ✓   8 [chromium] › e2e/pve-game.spec.ts:53:7 › PVE棋盤關卡頁：觸控確認落子（增量需求 FR-B2） › 點格子只預覽不落子；按確認落子才真正送出，點別處可改變預覽位置 (3.4s)
+  ✓  11 [chromium] › e2e/pve-game.spec.ts:143:7 › PVE棋盤關卡頁：放棄挑戰（增量需求 FR-C7） › 放棄挑戰二次確認後導向結算畫面 (2.4s)
+  ✓   7 [chromium] › e2e/pve-game.spec.ts:74:7 › PVE棋盤關卡頁：連線傷害結算與 Boss HP（增量需求 FR-B3） › 形成五連時 Boss HP 下降並顯示傷害浮動數字 (3.5s)
+  ✓   1 [chromium] › e2e/pve-flow.spec.ts:124:7 › PVE 挑戰模式：商店頁（FR-C3~FR-C5） › 金幣不足時重抽按鈕停用 (5.0s)
+  ✓   4 [chromium] › e2e/pve-flow.spec.ts:104:7 › PVE 挑戰模式：商店頁（FR-C3~FR-C5） › 購買展示位扣除金幣，跳過導向下一關棋盤頁 (5.2s)
+  ✓  10 [chromium] › e2e/pve-game.spec.ts:118:7 › PVE棋盤關卡頁：關卡通過後導向（增量需求 FR-C3） › Boss HP歸零時顯示通過overlay，非第8關導向商店頁 (4.3s)
+
+  11 passed (7.7s)

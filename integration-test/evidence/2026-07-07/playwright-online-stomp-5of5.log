@@ -1,0 +1,67 @@
+(node:72219) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2m[WebServer] [22m(node:72246) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+(node:72248) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2m[WebServer] [22m(node:72246) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/room/[roomId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/room/[roomId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/room/[roomId]/page.tsx
+  ✓  1 [chromium] › e2e/online.spec.ts:144:7 › 線上連線對戰（兩瀏覽器） › O0 STOMP 落子同步健檢：A 落子 B 即時收到 (4.3s)
+  ✓  2 [chromium] › e2e/online.spec.ts:181:7 › 線上連線對戰（兩瀏覽器） › O1 標準線上對戰：黑方五連勝，雙方即時同步且都見勝負 (3.8s)
+  ✓  3 [chromium] › e2e/online.spec.ts:209:7 › 線上連線對戰（兩瀏覽器） › O2 房間顯示雙方真實暱稱 + A 送聊天 B 收到 (1.5s)
+  ✓  4 [chromium] › e2e/online.spec.ts:234:7 › 線上連線對戰（兩瀏覽器） › O3 第三人加入已滿房間成為觀戰者，無 Ready 鈕 (3.3s)
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/room/[roomId]/page.tsx
+[2m[WebServer] [22m [33m[1m⚠[22m[39m ./node_modules/debug/src/node.js
+[2m[WebServer] [22mModule not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/onepage_product/frontend/node_modules/debug/src'
+[2m[WebServer] [22m
+[2m[WebServer] [22mImport trace for requested module:
+[2m[WebServer] [22m./node_modules/debug/src/node.js
+[2m[WebServer] [22m./node_modules/debug/src/index.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/main.js
+[2m[WebServer] [22m./node_modules/sockjs-client/lib/entry.js
+[2m[WebServer] [22m./src/lib/stomp/client.ts
+[2m[WebServer] [22m./src/app/room/[roomId]/page.tsx
+  ✓  5 [chromium] › e2e/online.spec.ts:259:7 › 線上連線對戰（兩瀏覽器） › O4 線上 Swap2：假先方放3子→假後方即時同步看到→選執黑→雙方進對局 (4.2s)
+
+  5 passed (20.2s)

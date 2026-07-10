@@ -6,66 +6,29 @@
   - Local:        http://localhost:3000
 
  ✓ Starting...
- ✓ Ready in 1056ms
- ✓ Compiled / in 399ms (1011 modules)
-(node:21988) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+ ✓ Ready in 913ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1288ms (1053 modules)
+(node:85570) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
- GET / 200 in 464ms
- ✓ Compiled /lobby in 57ms (1017 modules)
- GET /lobby 200 in 75ms
- ✓ Compiled /user in 74ms (1023 modules)
- GET /user 200 in 92ms
- GET / 200 in 21ms
-(node:21988) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
- ⚠ ./node_modules/debug/src/node.js
-Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
-
-Import trace for requested module:
-./node_modules/debug/src/node.js
-./node_modules/debug/src/index.js
-./node_modules/sockjs-client/lib/main.js
-./node_modules/sockjs-client/lib/entry.js
-./src/lib/stomp/client.ts
-./src/app/game/[gameId]/page.tsx
- ○ Compiling /game/[gameId] ...
- ⚠ ./node_modules/debug/src/node.js
-Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
-
-Import trace for requested module:
-./node_modules/debug/src/node.js
-./node_modules/debug/src/index.js
-./node_modules/sockjs-client/lib/main.js
-./node_modules/sockjs-client/lib/entry.js
-./src/lib/stomp/client.ts
-./src/app/game/[gameId]/page.tsx
- ⚠ ./node_modules/debug/src/node.js
-Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
-
-Import trace for requested module:
-./node_modules/debug/src/node.js
-./node_modules/debug/src/index.js
-./node_modules/sockjs-client/lib/main.js
-./node_modules/sockjs-client/lib/entry.js
-./src/lib/stomp/client.ts
-./src/app/game/[gameId]/page.tsx
- ⚠ ./node_modules/debug/src/node.js
-Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
-
-Import trace for requested module:
-./node_modules/debug/src/node.js
-./node_modules/debug/src/index.js
-./node_modules/sockjs-client/lib/main.js
-./node_modules/sockjs-client/lib/entry.js
-./src/lib/stomp/client.ts
-./src/app/game/[gameId]/page.tsx
- ⚠ ./node_modules/debug/src/node.js
-Module not found: Can't resolve 'supports-color' in '/Users/chechuanku/Documents/aiproject/gomoku/frontend/node_modules/debug/src'
-
-Import trace for requested module:
-./node_modules/debug/src/node.js
-./node_modules/debug/src/index.js
-./node_modules/sockjs-client/lib/main.js
-./node_modules/sockjs-client/lib/entry.js
-./src/lib/stomp/client.ts
-./src/app/opening/[gameId]/page.tsx
- GET / 200 in 55ms
+ GET / 200 in 1358ms
+ GET / 200 in 13ms
+ GET / 200 in 14ms
+(node:85570) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+ ✓ Compiled /pve/game/[encounterId] in 253ms (1076 modules)
+ GET /pve/game/e8ddf430-7ef3-4216-a729-78403dd3619a 200 in 431ms
+ GET /pve/game/d5cf8aed-a827-457b-ae05-173e3bfa6458 200 in 29ms
+ GET /pve/game/a60fb496-792a-4a4b-8917-c1b36237d232 200 in 14ms
+ GET /pve/game/6f7f35e8-60a7-4653-91f5-e1293ca601d2 200 in 10ms
+ ✓ Compiled /_not-found in 132ms (1052 modules)
+ GET /pve/result 404 in 170ms
+ ✓ Compiled /pve/result/[runId] in 128ms (1058 modules)
+ GET /pve/result/8aa271f3-45e8-4671-af9b-884963692919 200 in 281ms
+ ✓ Compiled in 178ms (1069 modules)
+ ✓ Compiled in 109ms (1069 modules)
+ ✓ Compiled in 161ms (1069 modules)
+ ✓ Compiled in 121ms (1069 modules)
+ ✓ Compiled in 141ms (1069 modules)
+ ✓ Compiled in 273ms (1069 modules)
+ ✓ Compiled in 125ms (1069 modules)
+[?25h

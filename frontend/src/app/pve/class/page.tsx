@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
 import { pveService } from "@/lib/api/pve";
 import { ApiError } from "@/lib/api/client";
@@ -11,7 +11,7 @@ import type { ClassType } from "@/lib/types/schemas";
 import {
   PVE_STARTER_SKILL,
   PVE_BOSS_HP_CURVE,
-  PVE_MOVE_BUDGET,
+  PVE_MOVE_BUDGET_CURVE,
   PVE_INITIAL_BOARD_ROWS,
   PVE_INITIAL_BOARD_COLS,
   PVE_ERROR,
@@ -30,6 +30,12 @@ const CLASS_IDS: ClassType[] = ["WARRIOR", "ARCHER"];
  */
 export default function PveClassPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // e2e-only determinism hook (?seed=xyz): lets tests inject a fixed
+  // PveRunCreateRequest.seed so Template A/B and VOLCANO/BEACH picks are
+  // reproducible (documents/PVE-關卡重設計-2026-07-08.md FR-A3). Real players
+  // never set this query param, so normal play is unaffected.
+  const seedOverride = searchParams.get("seed");
   const identity = useSession((s) => s.identity);
   const [picked, setPicked] = useState<ClassType | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,7 +73,10 @@ export default function PveClassPage() {
     if (!picked || busy) return;
     setBusy(true);
     try {
-      const run = await pveService.createRun({ classType: picked });
+      const run = await pveService.createRun({
+        classType: picked,
+        ...(seedOverride ? { seed: seedOverride } : {}),
+      });
       if (run.currentEncounter) {
         router.push(`/pve/game/${run.currentEncounter.encounterId}`);
       } else {
@@ -122,7 +131,7 @@ export default function PveClassPage() {
 
         <div className="pve-info-banner">
           <span>
-            手數預算 <b>{PVE_MOVE_BUDGET}</b>
+            手數預算 <b>{PVE_MOVE_BUDGET_CURVE[0]}</b>（第1關，每關獨立）
           </span>
           <span>
             Boss HP <b>{PVE_BOSS_HP_CURVE[0]}</b>（第1關）

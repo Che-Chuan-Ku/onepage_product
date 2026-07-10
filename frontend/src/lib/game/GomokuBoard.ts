@@ -133,6 +133,8 @@ export class GomokuBoard {
   stones: Record<string, StoneColor> = {};
   lastMove: [number, number] | null = null;
   highlight: [number, number][] = [];
+  /** L3 void-line cells (see setVoidCells). */
+  private voidCells: [number, number][] = [];
   opening = new Set<string>();
   interactive: boolean;
   requireConfirm: boolean;
@@ -371,6 +373,18 @@ export class GomokuBoard {
   /** Ultimate-skill 3x2 preview frame (dashed yellow); null clears it. */
   setPreviewCells(cells: FieldCell[] | null) {
     this.previewCells = cells || [];
+    this.draw();
+  }
+
+  /**
+   * L3「不可橫向」即時回饋 (PVE 全對弈階梯 §4.1 / §7.6 第二批 polish item #2):
+   * cells belonging to a five-in-a-row that does NOT count as a win — drawn
+   * as grayed-out (translucent gray disc over the stone) plus a dashed gray
+   * strikethrough per row, so the moment either side completes a horizontal
+   * five the board itself says "this line is void". null clears it.
+   */
+  setVoidCells(cells: [number, number][] | null) {
+    this.voidCells = cells || [];
     this.draw();
   }
 
@@ -722,6 +736,43 @@ export class GomokuBoard {
         ctx.arc(x, y, rad + 3, 0, 7);
         ctx.stroke();
       }
+    }
+    // L3 void horizontal line (§4.1 不可橫向 即時回饋): gray out each cell's
+    // stone and strike each row through with a dashed gray line — "this five
+    // does NOT count as a win", for either color.
+    if (this.voidCells.length) {
+      ctx.save();
+      const rowSpan = new Map<number, [number, number]>();
+      this.voidCells.forEach(([r, c]) => {
+        const span = rowSpan.get(r);
+        rowSpan.set(r, span ? [Math.min(span[0], c), Math.max(span[1], c)] : [c, c]);
+        const [x, y] = this.xy(r, c);
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = "#8a8f98";
+        ctx.beginPath();
+        ctx.arc(x, y, rad, 0, 7);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.setLineDash([4, 3]);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#b9bec7";
+        ctx.beginPath();
+        ctx.arc(x, y, rad + 2, 0, 7);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(185,190,199,.9)";
+      rowSpan.forEach(([cMin, cMax], r) => {
+        const a = this.xy(r, cMin);
+        const b = this.xy(r, cMax);
+        ctx.beginPath();
+        ctx.moveTo(...a);
+        ctx.lineTo(...b);
+        ctx.stroke();
+      });
+      ctx.restore();
     }
     // last move marker
     if (this.lastMove) {

@@ -41,6 +41,8 @@ interface BoardProps {
   revealedCells?: RevealedCell[];
   /** Ultimate-skill 3x2 preview frame; null/omit clears it. */
   previewCells?: FieldCell[] | null;
+  /** L3 void-line cells (grayed stones + dashed strikethrough); omit clears it. */
+  voidCells?: [number, number][] | null;
   /** SCATTER_SHOT placement guide (numbered previews + forbidden-zone hatch). */
   scatterGuide?: ScatterGuide | null;
   /** Allow taps on occupied cells (PRECISION_SNIPE targets an enemy stone). */
@@ -74,6 +76,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
     beach = null,
     revealedCells,
     previewCells = null,
+    voidCells = null,
     scatterGuide = null,
     allowOccupied = false,
     onPlace,
@@ -127,6 +130,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
     if (beach) b.setBeach(beach.side, beach.erodedRows);
     if (revealedCells?.length) b.setRevealedCells(revealedCells);
     if (previewCells?.length) b.setPreviewCells(previewCells);
+    if (voidCells?.length) b.setVoidCells(voidCells);
     if (scatterGuide) b.setScatterGuide(scatterGuide);
     return () => b.destroy();
     // re-instantiate only when the board size changes; other options are
@@ -164,6 +168,9 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(
   useEffect(() => {
     boardRef.current?.setPreviewCells(previewCells ?? null);
   }, [previewCells]);
+  useEffect(() => {
+    boardRef.current?.setVoidCells(voidCells ?? null);
+  }, [voidCells]);
   useEffect(() => {
     boardRef.current?.setScatterGuide(scatterGuide ?? null);
   }, [scatterGuide]);

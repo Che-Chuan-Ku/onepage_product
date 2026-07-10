@@ -1,0 +1,11 @@
+(node:72386) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/chechuanku/Documents/aiproject/onepage_product/frontend/src/lib/types/schemas.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/chechuanku/Documents/aiproject/onepage_product/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  createPveRun -> PveRunStateResponse
+PASS  encounter after clear (stones=[]) -> PveEncounterStateResponse
+PASS  getPveShop -> PveShopStateResponse
+PASS  skip -> PveShopSkipResponse (union, next encounter branch)
+PASS  abandon -> PveRunResultResponse
+
+Gate A: ALL PASS

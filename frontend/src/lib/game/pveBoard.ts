@@ -2,6 +2,7 @@ import { chebyshev } from "./duel";
 import type {
   Cell,
   PveEncounterEvent,
+  PveEncounterStateResponse,
   PveFieldType,
   PveMutationType,
   PveSkillUseRequest,
@@ -159,7 +160,94 @@ export function presentPveEvent(
     case "ENCOUNTER_CLEARED":
     case "ENCOUNTER_FAILED":
       return null;
+    // BOSS_MOVE_PLACED（2026-07-09新增，DUEL關）：不用toast，用棋盤上的短暫
+    // highlight（PveBoard bossLastMove prop）呈現「Boss剛下的這一手」即可，
+    // 比通用toast更貼合「對局進行中」的節奏（§5.2）。
+    case "BOSS_MOVE_PLACED":
+      return null;
     default:
       return null;
   }
+}
+
+// ── 魔王對弈 DUEL 結算文案（documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §5.2）──
+// DUEL 的 ENCOUNTER_FAILED 有兩種敗因（Boss連五 / 手數用盡），但 api.yml 的
+// events[].eventType 沒有攜帶原因欄位——用 movesUsed/moveBudget 純推導即可
+// 100%準確：DUEL 的手數用盡判定發生在「呼叫BossAiPolicy之前」（見後端
+// PveChallengeService#settleDuel），所以 Boss連五導致的FAILED，movesUsed 必然
+// 嚴格小於 moveBudget；反之手數用盡導致的FAILED，movesUsed 必然已達
+// moveBudget——兩者互斥，不需要新的API欄位。
+export type PveDuelFailReason = "BOSS_FIVE" | "MOVES_EXHAUSTED";
+
+export function duelFailReason(enc: PveEncounterStateResponse): PveDuelFailReason | null {
+  if (enc.encounterType !== "DUEL" || enc.status !== "FAILED") return null;
+  return enc.movesUsed >= enc.moveBudget ? "MOVES_EXHAUSTED" : "BOSS_FIVE";
+}
+
+export const PVE_DUEL_FAIL_COPY: Record<PveDuelFailReason, string> = {
+  BOSS_FIVE: "Boss 完成五連，你輸了",
+  MOVES_EXHAUSTED: "手數已用盡，你輸了",
+};
+
+// ── DUEL 和局 DRAW（2026-07-09 §1.5/§6.5 公平性修正）─────────────────────
+// 手數耗盡且雙方皆未連五：與FAILED不同，Run不會被沒收（仍IN_PROGRESS），前端
+// 顯示「勢均力敵」提示並讓玩家呼叫 retryPveEncounter 原地重試（可無限次），
+// 不導向結算頁。
+export const PVE_DUEL_DRAW_COPY = "勢均力敵！再來一局";
+
+// ── L3 不可橫向 即時回饋（§4.1 / §7.6 第二批 polish item #2）────────────────
+// 橫向五連在 L3 不算勝——後端/mock 都只是「不判勝」，玩家看到的是「我連了五顆
+// 卻沒贏」的沉默盤面。這裡把「湊成的那條橫向線」找出來，交給棋盤灰化/虛線
+// 渲染＋toast 提示，雙方（玩家黑子、Boss 白子）皆適用。
+export const PVE_HORIZONTAL_VOID_TOAST = "橫向連線不計勝負！";
+
+/**
+ * All cells belonging to a HORIZONTAL run of >=5 same-color stones, for both
+ * colors — pure scan over the two stone lists (player stones vs boss
+ * ENEMY_STONE cells). Only meaningful on an encounter with
+ * `horizontalDisabled` (the caller gates on that).
+ */
+export function horizontalFiveCells(playerStones: Cell[], enemyStones: Cell[]): Cell[] {
+  const found: Cell[] = [];
+  for (const stones of [playerStones, enemyStones]) {
+    const byRow = new Map<number, Set<number>>();
+    for (const s of stones) {
+      const cols = byRow.get(s.row) ?? new Set<number>();
+      cols.add(s.col);
+      byRow.set(s.row, cols);
+    }
+    byRow.forEach((cols, row) => {
+      const sorted = Array.from(cols).sort((a, b) => a - b);
+      let runStart = 0;
+      for (let i = 1; i <= sorted.length; i++) {
+        if (i < sorted.length && sorted[i] === sorted[i - 1] + 1) continue;
+        const runLen = i - runStart;
+        if (runLen >= 5) {
+          for (let j = runStart; j < i; j++) found.push({ row, col: sorted[j] });
+        }
+        runStart = i;
+      }
+    });
+  }
+  return found;
+}
+
+/** DUEL関's most recent boss reply coordinate, or null if none yet this call. */
+export function bossLastMoveFrom(enc: PveEncounterStateResponse): Cell | null {
+  const ev = [...enc.events].reverse().find((e) => e.eventType === "BOSS_MOVE_PLACED");
+  return ev && ev.row != null && ev.col != null ? { row: ev.row, col: ev.col } : null;
+}
+
+/**
+ * L8 SKILL_DEMON only (documents/PVE-全對弈階梯設計-2026-07-10.md §3/§9.2): the
+ * cells affected by the boss's most recent skill cast this settlement, plus a
+ * human-readable label — null if this settlement carried no boss skill cast.
+ */
+export function bossSkillCastFrom(
+  enc: PveEncounterStateResponse
+): { cells: Cell[]; skillType: SkillType } | null {
+  const events = enc.bossSkillEvents ?? [];
+  if (events.length === 0) return null;
+  const last = events[events.length - 1];
+  return { cells: last.cells, skillType: last.skillType };
 }

@@ -486,9 +486,16 @@ export type GameReplayResponse = z.infer<typeof GameReplayResponse>;
 export const PveFieldType = z.enum(["PLAIN", "VOLCANO", "BEACH"]);
 export type PveFieldType = z.infer<typeof PveFieldType>;
 
-// 固定綁定第3/6/8關（FR-C6）：ONE_EYE(獨眼)/RAGE(震怒)/ABYSS(深淵)。
+// 固定綁定第3/6關（FR-C6）：ONE_EYE(獨眼)/RAGE(震怒)。ABYSS(深淵)已隨2026-07-09
+// 魔王對弈改版retired（第8關改為DUEL，無任何關卡再使用ABYSS），enum值保留供
+// 舊資料相容。
 export const PveMutationType = z.enum(["NONE", "ONE_EYE", "RAGE", "ABYSS"]);
 export type PveMutationType = z.infer<typeof PveMutationType>;
+
+// 2026-07-09 新增（documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §1.0/§5.1）:
+// PUZZLE（第1/2/3/5/6/7關）／DUEL（第4/8關固定，魔王對弈）。
+export const PveEncounterType = z.enum(["PUZZLE", "DUEL"]);
+export type PveEncounterType = z.infer<typeof PveEncounterType>;
 
 export const PveRunStatus = z.enum(["IN_PROGRESS", "WON", "LOST", "ABANDONED"]);
 export type PveRunStatus = z.infer<typeof PveRunStatus>;
@@ -499,7 +506,11 @@ export type PveRunStatus = z.infer<typeof PveRunStatus>;
 export const PveRunResultStatus = z.enum(["WON", "LOST", "ABANDONED"]);
 export type PveRunResultStatus = z.infer<typeof PveRunResultStatus>;
 
-export const PveEncounterStatus = z.enum(["IN_PROGRESS", "CLEARED", "FAILED"]);
+// DRAW（2026-07-09新增，documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §1.5/
+// §6.5 公平性修正）：DUEL限定——手數耗盡且雙方皆未連五。與FAILED不同，Run不會
+// 被沒收（仍IN_PROGRESS）；前端應顯示「勢均力敵！再來一局」並呼叫
+// retryPveEncounter原地重試（可無限次），不導向結算頁。
+export const PveEncounterStatus = z.enum(["IN_PROGRESS", "CLEARED", "FAILED", "DRAW"]);
 export type PveEncounterStatus = z.infer<typeof PveEncounterStatus>;
 
 // 初始遺物池8個（遺物效果.feature），持有上限5，不可重複。
@@ -524,8 +535,13 @@ export const PveEventType = z.enum([
   "WAVE_SURGED",
   "TIDE_TRIGGERED",
   "BOSS_MUTATION_TRIGGERED",
+  // 2026-07-09 新增：DUEL關（第4/8關）Boss每回應一手即發布一次（row/col=Boss落子座標）。
+  "BOSS_MOVE_PLACED",
   "ENCOUNTER_CLEARED",
   "ENCOUNTER_FAILED",
+  // 2026-07-09 新增（§1.5/§6.5 公平性修正）：DUEL關限定，手數耗盡且雙方皆未
+  // 連五時發布，對應 status=DRAW。
+  "ENCOUNTER_DRAWN",
 ]);
 export type PveEventType = z.infer<typeof PveEventType>;
 
@@ -570,6 +586,20 @@ export type PveHeldRelicItem = z.infer<typeof PveHeldRelicItem>;
 export const PveStoneCell = z.object({ row: z.number().int(), col: z.number().int() });
 export type PveStoneCell = z.infer<typeof PveStoneCell>;
 
+// 2026-07-09 新增（additive）：obstacles[].kind — "ROCK"（VOLCANO障礙／PUZZLE關
+// legacy ABYSS障礙棋子，沿用既有岩石圖示）或 "ENEMY_STONE"（DUEL關Boss活棋，
+// 前端須走一般雙色棋子渲染，不可用岩石圖示，§5.2）。optional + 預設 "ROCK"：
+// 對還沒更新的 mock/舊回應寬容降級，行為與改版前一致。
+export const PveObstacleKind = z.enum(["ROCK", "ENEMY_STONE"]);
+export type PveObstacleKind = z.infer<typeof PveObstacleKind>;
+
+export const PveObstacleCell = z.object({
+  row: z.number().int(),
+  col: z.number().int(),
+  kind: PveObstacleKind.optional().default("ROCK"),
+});
+export type PveObstacleCell = z.infer<typeof PveObstacleCell>;
+
 export const PveLineResolution = z.object({
   // 線長，5以上；六連70/七連90（見連線傷害結算.feature）
   length: z.number().int(),
@@ -597,25 +627,47 @@ export const PveEncounterStateResponse = z.object({
   encounterId: z.string(),
   runId: z.string(),
   sequence: z.number().int().min(1).max(8),
-  // PVE專用11x11幾何規格，與真劍勝負場地不共用尺寸（FR-C2）
+  // PVE專用11x11幾何規格，與真劍勝負場地不共用尺寸（FR-C2）；DUEL關固定PLAIN
   fieldType: PveFieldType,
   mutationType: PveMutationType,
+  // 2026-07-09 新增：PUZZLE（消線關）或 DUEL（第4/8關魔王對弈）。optional +
+  // 預設 "PUZZLE"：對還沒更新的 mock 寬容降級。
+  encounterType: PveEncounterType.optional().default("PUZZLE"),
   boardRows: z.number().int(),
   boardCols: z.number().int(),
+  // DUEL關固定為0（無HP概念，前端依 encounterType 判斷是否渲染HP條）
   bossHpMax: z.number().int(),
   bossHpCurrent: z.number().int(),
   moveBudget: z.number().int(),
   movesUsed: z.number().int(),
   status: PveEncounterStatus,
   stones: z.array(PveStoneCell),
-  // VOLCANO可見障礙格3–5個；ABYSS突變動態生成的障礙棋子亦列於此（FR-C2 FR-C6）
-  obstacles: z.array(PveStoneCell),
+  // VOLCANO可見障礙格3–5個；PUZZLE關legacy ABYSS障礙棋子；DUEL關的Boss白子
+  // （kind=ENEMY_STONE）亦列於此（FR-C2 FR-C6，2026-07-09擴充）
+  obstacles: z.array(PveObstacleCell),
   skillUsableThisInterval: z.boolean(),
-  // 本關已使用技能清單（依使用順序，可含重複；FR-B7 關卡結算畫面顯示用，斷線
-  // 續玩查詢時同步回傳，api.yml:1697-1705）。
+  // 本關「玩家」已使用技能清單（依使用順序，可含重複；FR-B7 關卡結算畫面顯示用，
+  // 斷線續玩查詢時同步回傳，api.yml:1697-1705）。bug fix（2026-07-10）：此欄位
+  // 現在只含玩家自己的施放紀錄，Boss 的施法見 bossUsedSkills。
   usedSkills: z.array(SkillType),
   lastResolution: PveLastResolution.nullable(),
   events: z.array(PveEncounterEvent),
+  // 2026-07-10 新增（additive，documents/PVE-全對弈階梯設計-2026-07-10.md §4.1）：
+  // L3限定「不可橫向」——true時前端應顯示「橫向連五不算勝」提示。optional +
+  // 預設false：對還沒更新的 mock 寬容降級。
+  horizontalDisabled: z.boolean().optional().default(false),
+  // 2026-07-10 新增（additive，§3）：L8 SKILL_DEMON 本次結算內 Boss 施放的技能
+  // （精準狙擊/散射/開拓之星），供前端播放「這是Boss施法」的動畫變體，與玩家
+  // 自己施法的既有動畫路徑區分。optional + 預設[]：對還沒更新的 mock 寬容降級。
+  bossSkillEvents: z
+    .array(z.object({ skillType: SkillType, cells: z.array(PveStoneCell) }))
+    .optional()
+    .default([]),
+  // 2026-07-10 新增（additive，bug fix：舊版 usedSkills 曾把 Boss 施法混入玩家
+  // 清單、前端無標註）：L8 SKILL_DEMON 本關 Boss 已施放技能的完整歷史清單，與
+  // usedSkills（玩家清單）分開，供前端加「魔王」標籤顯示。optional + 預設[]：
+  // 對還沒更新的 mock 寬容降級。
+  bossUsedSkills: z.array(SkillType).optional().default([]),
 });
 export type PveEncounterStateResponse = z.infer<typeof PveEncounterStateResponse>;
 
