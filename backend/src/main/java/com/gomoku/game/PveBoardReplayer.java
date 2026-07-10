@@ -36,6 +36,14 @@ public final class PveBoardReplayer {
                 board.setObstacle(cell.getRow(), cell.getCol());
             }
         }
+        // Pre-placed shape stones (documents/PVE-關卡重設計-2026-07-08.md §0/§6) go
+        // down BEFORE any move/event so they are indistinguishable from moves
+        // already on the board — no extra API surface needed.
+        for (PveFieldCell cell : fieldCells) {
+            if (cell.getCellKind() == FieldCellKind.INITIAL_BLACK) {
+                board.setStone(cell.getRow(), cell.getCol(), StoneColor.BLACK);
+            }
+        }
 
         List<PveEncounterMove> orderedMoves = moves.stream()
                 .sorted(Comparator.comparingInt(PveEncounterMove::getEncounterMoveNumber))
@@ -105,16 +113,40 @@ public final class PveBoardReplayer {
                     board.removeStone(event.getRow(), event.getCol());
                 }
             }
+            case BOSS_MOVE_PLACED -> {
+                // DUEL encounters only (documents/PVE-魔王對弈與策略引導設計-2026-07-09.md
+                // §1.5/§5.1): the boss's reply stone after each player move.
+                if (event.getRow() != null && event.getCol() != null) {
+                    board.setStone(event.getRow(), event.getCol(), StoneColor.WHITE);
+                }
+            }
             case BOSS_MUTATION_TRIGGERED -> {
-                if (detail != null && "RAGE".equals(detail.mutation())) {
+                if (detail != null && ("RAGE".equals(detail.mutation()) || "PULSE_CLEAR".equals(detail.mutation()))) {
                     removeCells(board, detail);
                 } else if (event.getRow() != null && event.getCol() != null
                         && (detail == null || "ABYSS".equals(detail.mutation()))) {
                     board.setStone(event.getRow(), event.getCol(), StoneColor.WHITE);
                 }
             }
-            case WAVE_SURGED, TIDE_TRIGGERED, ENCOUNTER_CLEARED, ENCOUNTER_FAILED -> {
-                // no board mutation
+            case ENCOUNTER_CLEARED ->
+                // A3 修正（PVE-八關評論彙編與迭代清單-2026-07-08.md）：通關時「全清」
+                // 剩餘棋子——設計上margin<1的關卡本就會在雛形全部補完前打死Boss
+                // （見PVE-關卡重設計-2026-07-08.md §1），殘留的半成品雛形/未觸發場地
+                // 棋子在通關瞬間視覺上是「孤子」。二選一（全清 vs 保留但變灰標示）
+                // 中選「全清」：風險更低（不需新增前端灰階渲染狀態或新API欄位)、
+                // 對後續關卡零影響（下一關的棋盤本就是全新encounter重建，不共用棋子）。
+                clearAllStones(board);
+            case WAVE_SURGED, TIDE_TRIGGERED, ENCOUNTER_FAILED, ENCOUNTER_DRAWN -> {
+                // no board mutation — ENCOUNTER_DRAWN (2026-07-09 §1.5/§6.5): the
+                // board simply freezes at whatever it was when moves ran out.
+            }
+        }
+    }
+
+    private static void clearAllStones(SeriousBoard board) {
+        for (int r = 0; r < board.size(); r++) {
+            for (int c = 0; c < board.size(); c++) {
+                board.removeStone(r, c);
             }
         }
     }

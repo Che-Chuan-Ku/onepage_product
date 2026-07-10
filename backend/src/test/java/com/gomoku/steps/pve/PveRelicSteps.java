@@ -38,7 +38,14 @@ public class PveRelicSteps {
 
     @When("玩家形成五連")
     public void playerFormsFive() {
-        support.playCleanVerticalLine(support.user());
+        // Completes level 1's OWN pre-placed TYPE_A shape (2 moves, fits the
+        // real budget=3) instead of an unrelated fresh 5-line (needs 5 moves
+        // — documents/PVE-關卡重設計-2026-07-08.md shrank level 1's budget).
+        // Completing it forms exactly one clean vertical 5-line either way.
+        // Disarm the minor disruption first: level 1's tiny budget makes it
+        // fire at move 1, which could otherwise clear/push a stone mid-solve.
+        support.disableMinorDisruption();
+        support.completeCurrentEncounterShapes(support.user());
     }
 
     // ────────────────────────── diagonal walker ──────────────────────────────
@@ -50,10 +57,19 @@ public class PveRelicSteps {
 
     @When("玩家形成斜向五連")
     public void playerFormsDiagonalFive() {
+        // Ad-hoc unrelated construction (5 moves) — bump the budget (see
+        // setMoveBudget javadoc) and clear level 1's own pre-placed TYPE_A
+        // shape outright (§5 D4 board transform, 2026-07-08: the shape can
+        // now land anywhere post-transform, not just column 4, so shifting
+        // to a fixed "safe" column is no longer a guarantee — see
+        // clearInitialShapeStones javadoc).
+        support.setMoveBudget(100);
+        support.clearInitialShapeStones();
         for (int i = 0; i < 5; i++) {
-            ResponseEntity<Map> resp = support.placeMoveApi(support.user(), i, i);
+            int col = i + 5;
+            ResponseEntity<Map> resp = support.placeMoveApi(support.user(), i, col);
             Assertions.assertThat(resp.getStatusCode().is2xxSuccessful())
-                    .as("diagonal move (%d,%d) must succeed: %s", i, i, resp.getBody())
+                    .as("diagonal move (%d,%d) must succeed: %s", i, col, resp.getBody())
                     .isTrue();
         }
     }
@@ -71,6 +87,13 @@ public class PveRelicSteps {
     @When("火山噴發清除{int}顆玩家棋子")
     public void eruptionClearsPlayerStones(int count) {
         Assertions.assertThat(count).as("fixture erupts a 3-stone neighborhood").isEqualTo(3);
+        // Ad-hoc construction needs 4 moves — bump the budget (level 1's real
+        // budget is now 3; see setMoveBudget javadoc) and clear level 1's own
+        // pre-placed TYPE_A shape (§5 D4 board transform — see
+        // clearInitialShapeStones javadoc; (7,7)-(8,8) is no longer
+        // guaranteed free of it post-transform).
+        support.setMoveBudget(100);
+        support.clearInitialShapeStones();
         // Plant a hidden eruption cell on the PLAIN first encounter, surround
         // it with 3 stones, then step on it.
         PveFieldCell eruption = new PveFieldCell();
@@ -101,9 +124,16 @@ public class PveRelicSteps {
     public void holdsRelicWithWaveImminent(String user, String relicType) {
         support.grantRelic(PveRelicType.valueOf(relicType));
         // Seam: turn the first encounter into a BEACH field about to wave.
+        // Ad-hoc construction needs 4 real moves — bump the budget (level 1's
+        // real budget is now 3; see setMoveBudget javadoc) and clear level 1's
+        // own pre-placed TYPE_A shape (§5 D4 board transform — see
+        // clearInitialShapeStones javadoc; rows 0-2 are no longer guaranteed
+        // free of it post-transform).
         PveEncounter encounter = support.encounter();
         encounter.setFieldType(PveFieldType.BEACH);
+        encounter.setMoveBudget(100);
         support.encounters().save(encounter);
+        support.clearInitialShapeStones();
         PveFieldState state = support.fieldStates()
                 .findByEncounterIdAndDeletedFalse(support.encounterId()).orElseThrow();
         state.setSeaSide(BoardSide.NORTH);
@@ -152,6 +182,9 @@ public class PveRelicSteps {
         first.setClearedAt(Instant.now());
         support.encounters().save(first);
         support.jumpToEncounter(2);
+        // Ad-hoc construction needs 5 filler moves — bump the budget (level
+        // 2's real budget is now 4; see setMoveBudget javadoc).
+        support.setMoveBudget(100);
     }
 
     @When("^玩家於第2關第5手落子（Run累計第35手）$")
@@ -177,8 +210,24 @@ public class PveRelicSteps {
     @When("本關因連線移除的棋子累計達{int}顆")
     public void lineRemovalsReach(int count) {
         Assertions.assertThat(count % 5).as("fixture plays 5-lines").isZero();
-        support.setBossHp(100000);
+        // RECYCLER recomputes moveBudget as
+        // MOVE_BUDGET_CURVE[sequence-1] + totalRemoved/10 on every settlement
+        // (PveChallengeService) — level 1's real budget (2, 2026-07-09 curve)
+        // can't survive even one fresh unrelated 5-line under that formula, so
+        // this verifies the same formula on level 6 (budget 16, the largest
+        // curve value in the 2026-07-09 revised PUZZLE curve — level 8 is now
+        // a DUEL encounter and no longer has this concept at all, see
+        // documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §3.1). Level 6 is
+        // normally RAGE-mutated; force mutationType back to NONE here since
+        // this fixture is specifically about the RECYCLER formula, not RAGE
+        // interaction (RAGE unit coverage lives in Boss突變.feature instead).
+        support.jumpToEncounter(6);
         PveEncounter encounter = support.encounter();
+        encounter.setMutationType(com.gomoku.domain.enums.PveMutationType.NONE);
+        support.encounters().save(encounter);
+        ctx.putMemo("pve:baseBudget", support.encounter().getMoveBudget());
+        support.setBossHp(100000);
+        encounter = support.encounter();
         encounter.setBossHpMax(100000);
         support.encounters().save(encounter);
         for (int i = 0; i < count / 5; i++) {
@@ -188,23 +237,31 @@ public class PveRelicSteps {
 
     @Then("^本關手數預算增加 (\\d+)（每10顆\\+1）$")
     public void moveBudgetIncreased(int extra) {
-        Assertions.assertThat(support.encounter().getMoveBudget()).isEqualTo(30 + extra);
+        int baseBudget = (int) ctx.getMemo("pve:baseBudget");
+        Assertions.assertThat(support.encounter().getMoveBudget()).isEqualTo(baseBudget + extra);
     }
 
     // ────────────────────────── gemini star ──────────────────────────────────
 
     @When("^玩家一手同時完成橫向與縱向兩條五連（各50，合計100）$")
     public void oneHandCompletesTwoLines() {
+        // Ad-hoc construction needs 9 moves — bump the budget (level 1's real
+        // budget is now 3; see setMoveBudget javadoc) and clear level 1's own
+        // pre-placed TYPE_A shape: its col4 stones can extend row7 of this
+        // cross into an accidental premature 5-line/clear when Template B is
+        // seed-picked (see clearInitialShapeStones javadoc).
+        support.setMoveBudget(100);
+        support.clearInitialShapeStones();
         String user = support.user();
-        for (int c = 3; c < 7; c++) {
+        for (int c = 5; c < 9; c++) {
             Assertions.assertThat(support.placeMoveApi(user, 7, c)
                     .getStatusCode().is2xxSuccessful()).isTrue();
         }
         for (int r = 3; r < 7; r++) {
-            Assertions.assertThat(support.placeMoveApi(user, r, 7)
+            Assertions.assertThat(support.placeMoveApi(user, r, 9)
                     .getStatusCode().is2xxSuccessful()).isTrue();
         }
-        Assertions.assertThat(support.placeMoveApi(user, 7, 7)
+        Assertions.assertThat(support.placeMoveApi(user, 7, 9)
                 .getStatusCode().is2xxSuccessful()).isTrue();
     }
 
@@ -219,12 +276,17 @@ public class PveRelicSteps {
 
     @When("玩家使用橫劈技能推擠")
     public void useHorizontalSlashPush() {
+        // col9 instead of col5, and clear level 1's own pre-placed TYPE_A
+        // shape outright (see clearInitialShapeStones javadoc) — this test
+        // asserts an exact final board (stones set contains only the pushed
+        // cell), which a leftover template stone anywhere would break.
+        support.clearInitialShapeStones();
         String user = support.user();
-        Assertions.assertThat(support.placeMoveApi(user, 4, 5)
+        Assertions.assertThat(support.placeMoveApi(user, 4, 9)
                 .getStatusCode().is2xxSuccessful()).isTrue();
         support.grantSkill(SkillType.HORIZONTAL_SLASH, 1);
         ResponseEntity<Map> resp = support.useSkillApi(user,
-                "{\"skillType\":\"HORIZONTAL_SLASH\",\"direction\":\"UP\",\"anchor\":{\"row\":5,\"col\":5}}");
+                "{\"skillType\":\"HORIZONTAL_SLASH\",\"direction\":\"UP\",\"anchor\":{\"row\":5,\"col\":9}}");
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful())
                 .as("slash cast must succeed: %s", resp.getBody())
                 .isTrue();
@@ -235,7 +297,7 @@ public class PveRelicSteps {
         Set<Long> stones = support.stoneKeys(support.lastState());
         Assertions.assertThat(stones)
                 .as("stone pushed 2 cells (1 base + 1 chain core)")
-                .contains(PveCommonSteps.key(2, 5))
-                .doesNotContain(PveCommonSteps.key(3, 5), PveCommonSteps.key(4, 5));
+                .contains(PveCommonSteps.key(2, 9))
+                .doesNotContain(PveCommonSteps.key(3, 9), PveCommonSteps.key(4, 9));
     }
 }

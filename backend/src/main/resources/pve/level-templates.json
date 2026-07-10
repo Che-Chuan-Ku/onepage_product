@@ -1,0 +1,91 @@
+{
+  "_comment": "documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §2.1/§3.1 (2026-07-09 revision): sequences 4/8 are now DUEL encounters (BossAiPolicy) and no longer have templates here — PveFieldScheduler.plan()'s DUEL branch never calls activeShapes() for them. The remaining six PUZZLE levels (1/2/3/5/6/7) were re-themed to one classic shape each: L1=衝四(single TYPE_B), L2=活三→活四(unchanged X=1,Y=1), L3=活三+ONE_EYE誘餌(unchanged X=2,Y=0+HORIZONTAL decoy), L5=死四活三(X=2,Y=2, trimmed from the 07-08 doc's old L5), L6=雙三+RAGE(X=3,Y=2, reusing the 07-08 doc's old L5 column layout), L7=雙死四(X=3,Y=4 — a 7th shape as a horizontal row-band, same technique the 07-08 doc's old L8 used for its own 7th/8th shapes, with the same C7 lesson applied: any vertical column that falls inside the horizontal window's column range (3-7, i.e. columns 4/6) must be TYPE_B not TYPE_A, or a D4-transformed 'need' cell can silently merge with the horizontal window and break solvability — see 07-08 doc §2 'C7 換欄踩雷記錄'). Each shape is a 5-cell window along one axis: `line` is the fixed column (VERTICAL) or fixed row (HORIZONTAL); `start` is the window's first row (VERTICAL) or first col (HORIZONTAL), i.e. window = [start, start+4]. TYPE_A prefills offsets {1,2,3} and needs offsets {0,4} (2 moves); TYPE_B prefills offsets {0,1,3,4} and needs offset {2} (1 move). `backup:true` shapes are NOT counted toward a level's X/Y or its target move count T: level 3 uses it for a deliberate HORIZONTAL decoy window (ONE_EYE nullifies HORIZONTAL damage, so completing this window wastes a move for zero payoff, a one-time teaching cost about ONE_EYE's mechanic).",
+  "levels": [
+    {
+      "sequence": 1,
+      "templateA": [
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 4, "start": 2}
+      ],
+      "templateB": [
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 4, "start": 5}
+      ]
+    },
+    {
+      "sequence": 2,
+      "templateA": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 2},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 8, "start": 2}
+      ],
+      "templateB": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 5},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 8, "start": 5}
+      ]
+    },
+    {
+      "sequence": 3,
+      "templateA": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 2},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 8, "start": 2},
+        {"type": "TYPE_B", "orientation": "HORIZONTAL", "line": 9, "start": 3, "backup": true}
+      ],
+      "templateB": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 5},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 8, "start": 5},
+        {"type": "TYPE_B", "orientation": "HORIZONTAL", "line": 1, "start": 3, "backup": true}
+      ]
+    },
+    {
+      "sequence": 5,
+      "templateA": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 0, "start": 2},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 2},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 6, "start": 2},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 8, "start": 2}
+      ],
+      "templateB": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 0, "start": 5},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 5},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 6, "start": 5},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 8, "start": 5}
+      ]
+    },
+    {
+      "sequence": 6,
+      "templateA": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 0, "start": 2},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 2},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 4, "start": 2},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 6, "start": 2},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 8, "start": 2}
+      ],
+      "templateB": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 0, "start": 5},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 5},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 4, "start": 5},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 6, "start": 5},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 8, "start": 5}
+      ]
+    },
+    {
+      "sequence": 7,
+      "templateA": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 0, "start": 2},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 2},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 4, "start": 2},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 6, "start": 2},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 8, "start": 2},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 10, "start": 2},
+        {"type": "TYPE_B", "orientation": "HORIZONTAL", "line": 9, "start": 3}
+      ],
+      "templateB": [
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 0, "start": 5},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 2, "start": 5},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 4, "start": 5},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 6, "start": 5},
+        {"type": "TYPE_A", "orientation": "VERTICAL", "line": 8, "start": 5},
+        {"type": "TYPE_B", "orientation": "VERTICAL", "line": 10, "start": 5},
+        {"type": "TYPE_B", "orientation": "HORIZONTAL", "line": 1, "start": 3}
+      ]
+    }
+  ]
+}

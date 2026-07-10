@@ -101,6 +101,20 @@ public class PveController {
         return ResponseEntity.status(201).body(ManageResponse.created(data));
     }
 
+    /**
+     * POST /pve/encounters/{encounterId}/actions/retry — operationId:
+     * retryPveEncounter (documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §1.5/§6.5).
+     * DUEL-only, DRAW-status-only: reopens the SAME sequence with a fresh
+     * board and boss-AI RNG stream, without forfeiting the run (unlimited
+     * retries).
+     */
+    @PostMapping("/encounters/{encounterId}/actions/retry")
+    public ResponseEntity<ManageResponse<PveEncounterStateResponse>> retryPveEncounter(
+            @PathVariable String encounterId) {
+        PveEncounterStateResponse data = challengeService.retryDuelEncounter(currentUser.requireId(), encounterId);
+        return ResponseEntity.status(201).body(ManageResponse.created(data));
+    }
+
     /** GET /pve/runs/{runId}/shop — operationId: getPveShop (FR-C4). */
     @GetMapping("/runs/{runId}/shop")
     public ResponseEntity<ManageResponse<PveShopStateResponse>> getPveShop(

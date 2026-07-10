@@ -28,6 +28,11 @@ Feature: 線上即時落子
       Then 操作失敗，系統發布 InvalidMoveRejected 事件
       And 錯誤為 "落子超出棋盤範圍"
 
+    Example: 座標超出 schema 寬鬆上界時仍精確回報 422 而非 400（Bean Validation 短路防呆，需求 #36，api.yml:590-594/1335-1338）
+      When 黑方嘗試在 (16,16) 落子
+      Then 操作失敗，系統發布 InvalidMoveRejected 事件
+      And 錯誤狀態碼為 422 且錯誤訊息為 "座標超出棋盤範圍"
+
   Rule: 後置（狀態）- 合法落子後後端記錄並廣播給房內雙方
 
     Example: 合法落子後廣播狀態更新

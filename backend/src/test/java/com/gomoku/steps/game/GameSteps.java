@@ -408,6 +408,27 @@ public class GameSteps {
         }
     }
 
+    /**
+     * Strict variant of {@link #errorIs(String)}: asserts BOTH the exact HTTP
+     * status code AND the exact error message. Used to pin the MoveCreateRequest
+     * out-of-bounds regression (2026-07-08): before the fix, Bean Validation
+     * @Min/@Max short-circuited out-of-range row/col to a generic 400
+     * "請求參數錯誤" (see GlobalExceptionHandler.handleValidation) instead of the
+     * spec-mandated 422 "座標超出棋盤範圍" business error from GameService /
+     * SeriousDuelService (api.yml:590-594, 1335-1338).
+     */
+    @Then("錯誤狀態碼為 {int} 且錯誤訊息為 {string}")
+    public void errorStatusAndMessageAre(int expectedStatus, String expectedMessage) {
+        ResponseEntity<?> resp = ctx.getLastResponse();
+        Assertions.assertThat(resp).isNotNull();
+        Assertions.assertThat(resp.getStatusCode().value())
+                .as("HTTP status code, body=%s", resp.getBody())
+                .isEqualTo(expectedStatus);
+        Assertions.assertThat(resp.getBody()).isInstanceOf(Map.class);
+        Map<?, ?> body = (Map<?, ?>) resp.getBody();
+        Assertions.assertThat(body.get("message")).isEqualTo(expectedMessage);
+    }
+
     @Then("系統發布 GameStateUpdated 事件廣播給雙方")
     public void systemPublishesGameStateUpdated() {
         Assertions.assertThat(ctx.getLastResponse().getStatusCode().is2xxSuccessful()).isTrue();

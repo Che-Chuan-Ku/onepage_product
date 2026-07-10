@@ -1,6 +1,8 @@
 package com.gomoku.steps.pve;
 
 import com.gomoku.cucumber.ScenarioContext;
+import com.gomoku.domain.entity.PveEncounter;
+import com.gomoku.domain.entity.PveEncounterMove;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -21,9 +23,38 @@ public class PvePersistSteps {
         support.clearCurrentEncounterCheaply(user);
         Assertions.assertThat(support.skipShopApi(user).getStatusCode().is2xxSuccessful()).isTrue();
         Assertions.assertThat(support.encounter().getSequence()).isEqualTo(2);
-        support.placeFillers(user, 12);
-        // Snapshot as of the last settle — the "state before disconnect".
-        ctx.putMemo("pve:snapshotStones", support.stoneKeys(support.lastState()));
+        // documents/PVE-全對弈階梯設計-2026-07-10.md §1: L2 is DUEL now — a
+        // real placeMoveApi call would ALSO trigger a live BossAiPolicy reply
+        // each time (risking an early win/loss well before 12 fillers land).
+        // This is a pure persistence/resume-query test, not a real
+        // playthrough, so directly seed 12 scattered, non-adjacent PLAYER-only
+        // move rows (bypassing placeMove entirely — no boss stones, no risk
+        // of an accidental five-in-a-row).
+        support.setMoveBudget(100);
+        seedScatteredPlayerMoves(12);
+        ctx.putMemo("pve:snapshotStones", support.stoneKeys(support.getEncounterApi(user)));
+    }
+
+    /** Seeds {@code count} PLAYER (BLACK) moves at cells spaced far enough apart that none can accidentally form a line. */
+    private void seedScatteredPlayerMoves(int count) {
+        PveEncounter encounter = support.encounter();
+        int n = encounter.getMovesUsed();
+        int placed = 0;
+        for (int row = 0; row < 11 && placed < count; row += 2) {
+            for (int col = 0; col < 11 && placed < count; col += 2) {
+                n++;
+                PveEncounterMove move = new PveEncounterMove();
+                move.setEncounterId(encounter.getId());
+                move.setEncounterMoveNumber(n);
+                move.setRunMoveNumber(n);
+                move.setRow(row);
+                move.setCol(col);
+                support.moves().save(move);
+                placed++;
+            }
+        }
+        encounter.setMovesUsed(n);
+        support.encounters().save(encounter);
     }
 
     @When("玩家 {string} 查詢目前進行中的Run")

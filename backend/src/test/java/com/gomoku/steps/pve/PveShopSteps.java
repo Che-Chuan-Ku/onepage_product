@@ -7,6 +7,7 @@ import com.gomoku.domain.entity.PveShopOfferSlot;
 import com.gomoku.domain.entity.PveShopVisit;
 import com.gomoku.domain.enums.PveRelicType;
 import com.gomoku.domain.enums.PveRunStatus;
+import com.gomoku.domain.enums.PveShopOfferKind;
 import com.gomoku.domain.enums.PveShopVisitStatus;
 import com.gomoku.domain.enums.SkillType;
 import com.gomoku.repository.PveShopOfferSlotRepository;
@@ -33,14 +34,52 @@ public class PveShopSteps {
 
     @Given("玩家 {string} 於第1關剩餘手數為 {int} 時通過")
     public void clearsFirstEncounterWithRemaining(String user, int remaining) {
-        int needed = support.encounter().getMoveBudget() - remaining;
-        Assertions.assertThat(needed).isGreaterThanOrEqualTo(5);
-        support.setBossHp(50);
-        support.placeFillers(user, needed - 5);
-        support.playCleanVerticalLine(user);
+        // Clears via the level's OWN designed solution (documents/PVE-關卡
+        // 重設計-2026-07-08.md), not an unrelated 5-line — several levels'
+        // real move budgets are now too small to fit a whole extra line.
+        // Disarmed: this scenario asserts an EXACT final movesUsed, which a
+        // minor-disruption repair move (see disableMinorDisruption javadoc)
+        // would throw off.
+        support.disableMinorDisruption();
+        int budget = support.encounter().getMoveBudget();
+        int solutionMoves = support.currentEncounterSolutionMoveCount();
+        int filler = budget - remaining - solutionMoves;
+        Assertions.assertThat(filler)
+                .as("requested remaining=%d must be reachable within this level's real budget=%d and solution size=%d",
+                        remaining, budget, solutionMoves)
+                .isGreaterThanOrEqualTo(0);
+        if (filler > 0) {
+            support.placeSafeFillers(user, filler);
+        }
+        support.completeCurrentEncounterShapes(user);
         Assertions.assertThat(support.encounter().getStatus().name()).isEqualTo("CLEARED");
         Assertions.assertThat(support.encounter().getMovesUsed())
                 .isEqualTo(support.encounter().getMoveBudget() - remaining);
+    }
+
+    /**
+     * documents/PVE-全對弈階梯設計-2026-07-10.md §5.1: all 8 levels are DUEL
+     * now — there is no "designed solution" to complete anymore, so directly
+     * force-clear through the real economy side effects
+     * ({@link PveCommonSteps#forceWinCurrentDuelEncounter}) after pinning
+     * movesUsed to reach the requested remaining-move count. This exercises
+     * the SAME reward formula (10 + moveBudget - movesUsed) the real DUEL
+     * settlement path uses (see PveChallengeService#onEncounterCleared),
+     * just without needing to actually play out a full duel to a specific
+     * move count.
+     */
+    @Given("^玩家 \"([^\"]*)\" 於第(\\d+)關魔王對弈剩餘手數為 (\\d+) 時通過$")
+    public void clearsDuelEncounterWithRemaining(String user, int sequence, int remaining) {
+        support.jumpToEncounter(sequence);
+        PveEncounter encounter = support.encounter();
+        int budget = encounter.getMoveBudget();
+        Assertions.assertThat(remaining)
+                .as("requested remaining=%d must be reachable within this level's real budget=%d", remaining, budget)
+                .isLessThanOrEqualTo(budget);
+        encounter.setMovesUsed(budget - remaining);
+        support.encounters().save(encounter);
+        support.forceWinCurrentDuelEncounter();
+        Assertions.assertThat(support.encounter().getStatus().name()).isEqualTo("CLEARED");
     }
 
     @When("系統結算通關獎勵")
@@ -62,8 +101,28 @@ public class PveShopSteps {
 
     @Given("玩家 {string} 通過第{int}關")
     public void playerClearsEncounter(String user, int sequence) {
-        support.advanceToEncounter(user, sequence);
-        support.clearCurrentEncounterCheaply(user);
+        // Climbing several real PUZZLE levels' own designed solutions in one
+        // un-retried random-seed run compounds each level's own small chance
+        // of a rare RNG-driven edge case (RAGE/minor-disruption timing) ending
+        // an encounter FAILED instead of CLEARED — exactly the class of case
+        // 關卡可解性.feature grants itself MAX_SEED_ATTEMPTS retries for. A
+        // FAILED encounter also terminates the whole run (FR-C7), so there is
+        // nothing to salvage from the current run — retry the WHOLE climb
+        // with a fresh run (new random seed) instead of just the failed step.
+        String classType = support.run().getClassType().name();
+        AssertionError last = null;
+        for (int attempt = 0; attempt < 20; attempt++) {
+            try {
+                support.advanceToEncounter(user, sequence);
+                support.clearCurrentEncounterCheaply(user);
+                return;
+            } catch (AssertionError e) {
+                last = e;
+                support.startRun(user, classType);
+            }
+        }
+        throw new AssertionError("could not clear through sequence " + sequence
+                + " within 20 fresh-run attempts", last);
     }
 
     @When("系統推進至商店階段")
@@ -148,7 +207,39 @@ public class PveShopSteps {
     public void attemptPurchaseRelicSlot(String user) {
         support.ensureShopOpen(user);
         setGold(100);
+        // 2026-07-10 測試缺口修補：A2修正後（遺物滿5件時 drawer 直接不抽任何
+        // 遺物槽），正常抽選永遠碰不到「對遺物槽出手但已達上限」——本步驟原本
+        // 買到的其實是被 drawer 轉成技能的槽位，購買會成功（200），斷言的
+        // 「遺物持有已達上限」守門從未被行使。但真實流程仍可能觸及該守門：
+        // 持有4件時商店抽出2個遺物槽，買下第1個（達5件）後再買第2個。此處
+        // 直接把槽位改回 RELIC 商品重現該狀態，驗證 service 層的 RELIC_CAP
+        // 守門（PveShopService.purchase）——與本檔既有 setGold/setMoveBudget
+        // 同款 fixture 手法。
+        forceSlotOffer(0, PveShopOfferKind.RELIC, PveRelicType.SHARP_BLADE, null);
         purchase(user, 0);
+    }
+
+    // A2修正（2026-07-08調校輪）：遺物達上限時，兩個relic槽位改抽技能，三個
+    // 展示位全數變成技能——見PveShopOfferDrawer.drawSlots的class javadoc。
+    @Then("三個展示位皆為技能，不含任何遺物")
+    @SuppressWarnings("unchecked")
+    public void allSlotsAreSkillNoRelic() {
+        Map<String, Object> shop = getShop(support.user());
+        List<Map<String, Object>> offers = (List<Map<String, Object>>) shop.get("offers");
+        Assertions.assertThat(offers).hasSize(3);
+        Assertions.assertThat(offers).allMatch(o -> "SKILL".equals(o.get("offerKind")));
+    }
+
+    // A2修正：技能達上限時，原本的技能槽位改抽第3件遺物，三個展示位全數變成
+    // 遺物（前提：未持有的遺物池仍有>=3種可抽——預設8種遺物、目前僅持有0件時
+    // 恆滿足）。
+    @Then("三個展示位皆為遺物，不含任何技能")
+    @SuppressWarnings("unchecked")
+    public void allSlotsAreRelicNoSkill() {
+        Map<String, Object> shop = getShop(support.user());
+        List<Map<String, Object>> offers = (List<Map<String, Object>>) shop.get("offers");
+        Assertions.assertThat(offers).hasSize(3);
+        Assertions.assertThat(offers).allMatch(o -> "RELIC".equals(o.get("offerKind")));
     }
 
     @Given("玩家 {string} 已持有技能總數量達3")
@@ -160,6 +251,11 @@ public class PveShopSteps {
     public void attemptPurchaseSkillSlot(String user) {
         support.ensureShopOpen(user);
         setGold(100);
+        // 2026-07-10 測試缺口修補：同上（attemptPurchaseRelicSlot）——技能滿3
+        // 時 drawer 會把技能槽轉成遺物，原本此步驟買到的是遺物、購買成功，
+        // 「技能持有已達上限」守門從未被行使。強制槽位為 SKILL 商品以行使
+        // service 層 SKILL_CAP 守門。
+        forceSlotOffer(2, PveShopOfferKind.SKILL, null, SkillType.HORIZONTAL_SLASH);
         purchase(user, 2);
     }
 
@@ -286,6 +382,21 @@ public class PveShopSteps {
                 .findFirstByRunIdAndStatusAndDeletedFalseOrderByAfterEncounterSequenceDesc(
                         support.runId(), PveShopVisitStatus.OPEN)
                 .orElse(null);
+    }
+
+    /** 直接改寫已抽出的展示位商品（見 attemptPurchaseRelicSlot 註解——重現
+     * drawer 的滿載轉抽規則遮蔽不到、但真實流程仍可觸及的「對已達上限的商品
+     * 種類出手」狀態，行使 service 層守門）。 */
+    private void forceSlotOffer(int slotIndex, PveShopOfferKind kind, PveRelicType relicType, SkillType skillType) {
+        PveShopVisit visit = openVisit();
+        Assertions.assertThat(visit).as("an OPEN shop visit must exist").isNotNull();
+        PveShopOfferSlot slot = slotRepository
+                .findByShopVisitIdAndSlotIndexAndDeletedFalse(visit.getId(), slotIndex)
+                .orElseThrow();
+        slot.setOfferKind(kind);
+        slot.setRelicType(relicType);
+        slot.setSkillType(skillType);
+        slotRepository.save(slot);
     }
 
     @SuppressWarnings("unchecked")

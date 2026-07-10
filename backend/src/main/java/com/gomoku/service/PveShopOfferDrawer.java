@@ -2,6 +2,7 @@ package com.gomoku.service;
 
 import com.gomoku.domain.entity.PveRun;
 import com.gomoku.domain.entity.PveRunRelic;
+import com.gomoku.domain.entity.PveRunSkill;
 import com.gomoku.domain.entity.PveShopOfferSlot;
 import com.gomoku.domain.entity.PveShopVisit;
 import com.gomoku.domain.enums.ClassType;
@@ -10,6 +11,7 @@ import com.gomoku.domain.enums.PveShopOfferKind;
 import com.gomoku.domain.enums.SkillType;
 import com.gomoku.game.PveRandoms;
 import com.gomoku.repository.PveRunRelicRepository;
+import com.gomoku.repository.PveRunSkillRepository;
 import com.gomoku.repository.PveShopOfferSlotRepository;
 import com.gomoku.repository.PveShopVisitRepository;
 import org.springframework.stereotype.Component;
@@ -21,10 +23,19 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Opens shop visits and (re)draws the fixed 3 display slots — relic x2 +
- * one skill from the player's 3-skill class pool (FR-C4). Held relics are
- * never drawn; draws are seed-deterministic per (sequence, rerollCount)
- * (FR-A3). Skill price fixed at 6; relic prices from PveRelicType.
+ * Opens shop visits and (re)draws the fixed 3 display slots (FR-C4). Held
+ * relics are never drawn; draws are seed-deterministic per (sequence,
+ * rerollCount) (FR-A3). Skill price fixed at 6; relic prices from
+ * PveRelicType.
+ *
+ * A2 修正（PVE-八關評論彙編與迭代清單-2026-07-08.md）：原本固定「relic x2 +
+ * skill x1」，一旦該類別（relic 5件 / skill 3件）已達持有上限，那個固定槽位
+ * 仍會抽出同類商品，只是永遠買不起（後端422、前端灰掉）——形同白佔一個展示
+ * 位的「廢卡」。改為：技能已達上限時，該槽位改抽一件遺物（3 relic + 0
+ * skill，前提是遺物池還有>=3種未持有可抽）；遺物已達上限（且技能未達上限）
+ * 時，兩個relic槽位改抽技能（0 relic + 3 skill）。兩類同時達上限（此後再無
+ * 任何可購商品）是唯二保留舊行為（該槽維持原類別但不可購買）的情形——這種情況
+ * 下沒有任何替代品可補，属於遊戲後期正常的「全部收藏完畢」狀態，非bug。
  */
 @Component
 public class PveShopOfferDrawer {
@@ -35,13 +46,16 @@ public class PveShopOfferDrawer {
     private final PveShopVisitRepository visitRepository;
     private final PveShopOfferSlotRepository slotRepository;
     private final PveRunRelicRepository relicRepository;
+    private final PveRunSkillRepository skillRepository;
 
     public PveShopOfferDrawer(PveShopVisitRepository visitRepository,
                               PveShopOfferSlotRepository slotRepository,
-                              PveRunRelicRepository relicRepository) {
+                              PveRunRelicRepository relicRepository,
+                              PveRunSkillRepository skillRepository) {
         this.visitRepository = visitRepository;
         this.slotRepository = slotRepository;
         this.relicRepository = relicRepository;
+        this.skillRepository = skillRepository;
     }
 
     /** Open the shop after clearing {@code afterSequence} (never after the 8th). */
@@ -72,7 +86,21 @@ public class PveShopOfferDrawer {
         Collections.shuffle(pool, rng);
 
         List<SkillType> classPool = skillPoolFor(run.getClassType());
-        SkillType skill = classPool.get(rng.nextInt(classPool.size()));
+
+        // A2 修正：把「固定relic x2 + skill x1」改成依持有上限動態決定relic/skill
+        // 槽位數，避免已達上限的類別繼續佔用展示位（見class javadoc）。
+        int totalSkillQty = skillRepository.findByRunIdAndDeletedFalse(run.getId()).stream()
+                .mapToInt(PveRunSkill::getQuantity)
+                .sum();
+        boolean skillCapped = totalSkillQty >= PveShopService.SKILL_CAP;
+        boolean relicCapped = held.size() >= PveShopService.RELIC_CAP;
+
+        int relicSlots = 2;
+        if (skillCapped && !relicCapped && pool.size() >= 3) {
+            relicSlots = 3; // skill槽位改抽第3件遺物（不再佔位賣不出去的技能）
+        } else if (relicCapped && !skillCapped) {
+            relicSlots = 0; // 兩個relic槽位改抽技能
+        }
 
         for (int slotIndex = 0; slotIndex < 3; slotIndex++) {
             PveShopOfferSlot slot = initial
@@ -82,13 +110,14 @@ public class PveShopOfferDrawer {
             slot.setShopVisitId(visit.getId());
             slot.setSlotIndex(slotIndex);
             slot.setPurchased(false);
-            if (slotIndex < 2) {
+            if (slotIndex < relicSlots) {
                 PveRelicType relic = slotIndex < pool.size() ? pool.get(slotIndex) : null;
                 slot.setOfferKind(PveShopOfferKind.RELIC);
                 slot.setRelicType(relic);
                 slot.setSkillType(null);
                 slot.setPrice(relic == null ? 0 : relic.getPrice());
             } else {
+                SkillType skill = classPool.get(rng.nextInt(classPool.size()));
                 slot.setOfferKind(PveShopOfferKind.SKILL);
                 slot.setSkillType(skill);
                 slot.setRelicType(null);

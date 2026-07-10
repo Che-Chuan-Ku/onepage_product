@@ -11,10 +11,13 @@ Feature: 金幣與商店
   Background:
     Given 玩家 "alice" 職業為 "WARRIOR"，一個PVE Run進行中
 
-  Rule: 後置（狀態）- 通過一關獲得 10+剩餘手數 金幣
+  Rule: 後置（狀態）- 通過一關獲得 10+剩餘手數 金幣（全8關皆為DUEL，公式統一適用）
 
-    Example: 剩餘手數20時通關獲得金幣
-      Given 玩家 "alice" 於第1關剩餘手數為 20 時通過
+    Example: 第1關對弈以較少手數獲勝（手數預算50，剩餘20手）時獲得金幣
+      # documents/PVE-全對弈階梯設計-2026-07-10.md §5.1: 8關全部統一沿用既有
+      # DUEL公式 reward=10+(moveBudget-movesUsed)，公式本身與具體關卡數值無關；
+      # 第1關(NOVICE) moveBudget=50（§7.6重校準）；獎勵只看剩餘手數，示例採剩餘20手。
+      Given 玩家 "alice" 於第1關魔王對弈剩餘手數為 20 時通過
       When 系統結算通關獎勵
       Then 玩家獲得金幣 30（10+20）
       And 系統發布 GoldAwarded 事件

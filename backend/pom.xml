@@ -160,6 +160,18 @@
         <configuration>
           <includes>
             <include>**/RunCucumberTest.java</include>
+            <!-- 2026-07-09 魔王對弈與策略引導設計: BossAiPolicy's 8-layer decision
+                 table gets pure-JUnit unit coverage (no Spring/DB needed) —
+                 explicitly included since this module's surefire config only
+                 auto-discovers RunCucumberTest by default. -->
+            <include>**/BossAiPolicyTest.java</include>
+            <!-- 2026-07-10 狙擊閉四combo平衡修正 (game-balance task item #1):
+                 same reasoning as BossAiPolicyTest above — pure-JUnit,
+                 no Spring/DB, must be explicitly included. -->
+            <include>**/BossAiPolicySkillAwareDefenseTest.java</include>
+            <!-- 2026-07-10 第二批 polish item #4 (L5 岩石覆蓋下限): pure-JUnit
+                 generation-invariant test, same explicit-include reasoning. -->
+            <include>**/PveFieldSchedulerVolcanoTest.java</include>
           </includes>
         </configuration>
       </plugin>

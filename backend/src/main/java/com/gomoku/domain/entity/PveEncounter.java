@@ -1,8 +1,11 @@
 package com.gomoku.domain.entity;
 
 import com.gomoku.domain.enums.PveEncounterStatus;
+import com.gomoku.domain.enums.PveEncounterType;
 import com.gomoku.domain.enums.PveFieldType;
+import com.gomoku.domain.enums.PveMinorDisruptionType;
 import com.gomoku.domain.enums.PveMutationType;
+import com.gomoku.domain.enums.PveOpeningScript;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -58,6 +61,61 @@ public class PveEncounter extends BaseEntity {
     @Column(name = "failed_at")
     private Instant failedAt;
 
+    /** DUEL only (2026-07-09 §1.5/§6.5 公平性修正): set when moves are exhausted with no winner (status DRAW). */
+    @Column(name = "drawn_at")
+    private Instant drawnAt;
+
+    /**
+     * DUEL only (2026-07-09 §1.5/§6.5 公平性修正): 1-based retry ordinal for
+     * this (run, sequence) — incremented every time a DRAWn duel encounter is
+     * retried via {@code retryDuelEncounter}, and mixed into the boss-AI RNG
+     * seed so each retry gets an independent random stream instead of
+     * deterministically replaying the exact same draw (see
+     * {@code PveChallengeService#duelRunSeed}). Always 1 for PUZZLE encounters
+     * and for a DUEL encounter's very first attempt.
+     */
+    @Column(name = "attempt_number", nullable = false)
+    private int attemptNumber = 1;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "minor_disruption_type", length = 20, nullable = false)
+    private PveMinorDisruptionType minorDisruptionType = PveMinorDisruptionType.NONE;
+
+    @Column(name = "minor_disruption_triggered", nullable = false)
+    private boolean minorDisruptionTriggered = false;
+
+    /** 2026-07-09 魔王對弈設計 §1.0/§5.1: PUZZLE (default, sequences 1/2/3/5/6/7) vs DUEL (4/8). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "encounter_type", length = 10, nullable = false)
+    private PveEncounterType encounterType = PveEncounterType.PUZZLE;
+
+    /** DUEL only (§1.4); NONE for every PUZZLE encounter. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "opening_script", length = 10, nullable = false)
+    private PveOpeningScript openingScript = PveOpeningScript.NONE;
+
+    // ── L8 "SKILL_DEMON" 一次性技能 charge 旗標（documents/PVE-全對弈階梯設計-
+    // 2026-07-10.md §3.2/§9.1; migration V7）：三者只在 sequence=8 有意義，
+    // 其餘關卡恆為 false。
+
+    @Column(name = "boss_pioneer_used", nullable = false)
+    private boolean bossPioneerUsed = false;
+
+    @Column(name = "boss_sniper_used", nullable = false)
+    private boolean bossSniperUsed = false;
+
+    @Column(name = "boss_scatter_used", nullable = false)
+    private boolean bossScatterUsed = false;
+
+    public boolean isBossPioneerUsed() { return bossPioneerUsed; }
+    public void setBossPioneerUsed(boolean bossPioneerUsed) { this.bossPioneerUsed = bossPioneerUsed; }
+
+    public boolean isBossSniperUsed() { return bossSniperUsed; }
+    public void setBossSniperUsed(boolean bossSniperUsed) { this.bossSniperUsed = bossSniperUsed; }
+
+    public boolean isBossScatterUsed() { return bossScatterUsed; }
+    public void setBossScatterUsed(boolean bossScatterUsed) { this.bossScatterUsed = bossScatterUsed; }
+
     public String getRunId() { return runId; }
     public void setRunId(String runId) { this.runId = runId; }
 
@@ -96,4 +154,22 @@ public class PveEncounter extends BaseEntity {
 
     public Instant getFailedAt() { return failedAt; }
     public void setFailedAt(Instant failedAt) { this.failedAt = failedAt; }
+
+    public Instant getDrawnAt() { return drawnAt; }
+    public void setDrawnAt(Instant drawnAt) { this.drawnAt = drawnAt; }
+
+    public int getAttemptNumber() { return attemptNumber; }
+    public void setAttemptNumber(int attemptNumber) { this.attemptNumber = attemptNumber; }
+
+    public PveMinorDisruptionType getMinorDisruptionType() { return minorDisruptionType; }
+    public void setMinorDisruptionType(PveMinorDisruptionType minorDisruptionType) { this.minorDisruptionType = minorDisruptionType; }
+
+    public boolean isMinorDisruptionTriggered() { return minorDisruptionTriggered; }
+    public void setMinorDisruptionTriggered(boolean minorDisruptionTriggered) { this.minorDisruptionTriggered = minorDisruptionTriggered; }
+
+    public PveEncounterType getEncounterType() { return encounterType; }
+    public void setEncounterType(PveEncounterType encounterType) { this.encounterType = encounterType; }
+
+    public PveOpeningScript getOpeningScript() { return openingScript; }
+    public void setOpeningScript(PveOpeningScript openingScript) { this.openingScript = openingScript; }
 }

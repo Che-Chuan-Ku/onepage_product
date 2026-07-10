@@ -24,18 +24,41 @@ public class PveRunEndSteps {
     @Autowired private PveCommonSteps support;
     @Autowired private ScenarioContext ctx;
 
-    @Given("^玩家 \"([^\"]*)\" 於第(\\d+)關手數用盡且BossHP>0$")
-    public void atEncounterWithMovesExhausted(String user, int sequence) {
+    /**
+     * documents/PVE-全對弈階梯設計-2026-07-10.md §1: every level is DUEL now —
+     * "moves exhausted" alone no longer fails the encounter (that outcome is
+     * DRAW, see 魔王對弈.feature), only the boss completing five-in-a-row
+     * does. Seed the boss with an about-to-complete four (both flanks open,
+     * plus a prior BOSS_MOVE_PLACED event so the NEXT boss reply uses
+     * BossAiPolicy rather than the scripted opening move) so its own layer-1
+     * "own five" always fires on its very next turn regardless of where the
+     * player's own filler move lands.
+     */
+    @Given("^玩家 \"([^\"]*)\" 於第(\\d+)關Boss即將完成連五$")
+    public void bossAboutToCompleteFive(String user, int sequence) {
         support.jumpToEncounter(sequence);
         PveEncounter encounter = support.encounter();
-        encounter.setMovesUsed(encounter.getMoveBudget() - 1);
-        support.encounters().save(encounter);
+        seedBossMoveEvent(encounter, 10, 10);
+        for (int c = 2; c <= 5; c++) {
+            seedBossMoveEvent(encounter, 2, c);
+        }
     }
 
-    @When("系統判定該關失敗")
-    public void systemJudgesEncounterFailed() {
+    @When("系統判定該關失敗（Boss連五）")
+    public void systemJudgesEncounterFailedByBossFive() {
         support.placeFillers(support.user(), 1);
         Assertions.assertThat(support.encounter().getStatus().name()).isEqualTo("FAILED");
+    }
+
+    private void seedBossMoveEvent(PveEncounter encounter, int row, int col) {
+        com.gomoku.domain.entity.PveEncounterEvent event = new com.gomoku.domain.entity.PveEncounterEvent();
+        event.setEncounterId(encounter.getId());
+        event.setMoveNumber(encounter.getMovesUsed());
+        event.setEventType(com.gomoku.domain.enums.PveEncounterEventType.BOSS_MOVE_PLACED);
+        event.setRow(row);
+        event.setCol(col);
+        event.setOccurredAt(Instant.now());
+        support.events().save(event);
     }
 
     @Then("^系統發布 PveRunEnded 事件，reachedEncounterSequence為(\\d+)$")

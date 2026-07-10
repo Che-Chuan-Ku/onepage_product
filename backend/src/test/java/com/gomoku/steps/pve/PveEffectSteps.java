@@ -90,10 +90,17 @@ public class PveEffectSteps {
         ctx.putMemo("pve:encB", support.encounterId());
     }
 
-    @When("^比對兩個 Run 第 2 關（.*）的場地類型與障礙格/隱藏格位置$")
-    public void compareSecondEncounters() {
-        ctx.putMemo("pve:summaryA", driveToSecondEncounter("pveSeedA", "pve:runA", "pve:encA"));
-        ctx.putMemo("pve:summaryB", driveToSecondEncounter("pveSeedB", "pve:runB", "pve:encB"));
+    /**
+     * documents/PVE-全對弈階梯設計-2026-07-10.md §4.2: L2 is now fixed PLAIN
+     * (no random VOLCANO/BEACH draw anymore) — the seed-determinism proof
+     * moves to L5's one-time static VOLCANO rocks instead (same underlying
+     * argument: a seed-derived {@code PveRandoms.forPurpose} draw, just a
+     * different call site).
+     */
+    @When("^比對兩個 Run 第 5 關的岩石障礙格位置$")
+    public void compareFifthEncounterRocks() {
+        ctx.putMemo("pve:summaryA", driveToEncounter("pveSeedA", "pve:runA", "pve:encA", 5));
+        ctx.putMemo("pve:summaryB", driveToEncounter("pveSeedB", "pve:runB", "pve:encB", 5));
     }
 
     @Then("^兩者完全相同（FR-A3 NFR-1）$")
@@ -102,20 +109,19 @@ public class PveEffectSteps {
                 .isEqualTo(ctx.getMemo("pve:summaryB"));
     }
 
-    /** Clear encounter 1, skip the shop, then summarize encounter 2's field. */
-    private String driveToSecondEncounter(String user, String runKey, String encKey) {
+    /** Advance to encounter {@code targetSequence} (force-clearing DUEL levels in between), then summarize its field cells. */
+    private String driveToEncounter(String user, String runKey, String encKey, int targetSequence) {
         ctx.putMemo("pve:user", user);
         ctx.putMemo("pve:runId", ctx.getMemo(runKey));
         ctx.putMemo("pve:encounterId", ctx.getMemo(encKey));
-        support.clearCurrentEncounterCheaply(user);
-        Assertions.assertThat(support.skipShopApi(user).getStatusCode().is2xxSuccessful()).isTrue();
+        support.advanceToEncounter(user, targetSequence);
 
-        PveEncounter second = support.encounters()
-                .findByRunIdAndSequenceAndDeletedFalse(support.runId(), 2)
+        PveEncounter target = support.encounters()
+                .findByRunIdAndSequenceAndDeletedFalse(support.runId(), targetSequence)
                 .orElseThrow();
         List<PveFieldCell> cells = support.fieldCells()
-                .findByEncounterIdAndDeletedFalse(second.getId());
-        StringBuilder summary = new StringBuilder(second.getFieldType().name());
+                .findByEncounterIdAndDeletedFalse(target.getId());
+        StringBuilder summary = new StringBuilder(target.getFieldType().name());
         cells.stream()
                 .map(c -> c.getCellKind() + "@" + c.getRow() + "," + c.getCol() + ":" + c.isVisibleToPlayer())
                 .sorted()

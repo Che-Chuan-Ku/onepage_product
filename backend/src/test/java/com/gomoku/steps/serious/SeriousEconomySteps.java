@@ -39,6 +39,13 @@ public class SeriousEconomySteps {
                 row, col, skill, direction));
     }
 
+    /** Plain placement (no skill attached), e.g. out-of-bounds coordinate negative tests. */
+    @When("玩家 {string} 於 \\({int},{int}\\) 落子")
+    public void placePlain(String user, int row, int col) {
+        support.ensureTurn(user);
+        support.placeAs(user, String.format("{\"row\":%d,\"col\":%d}", row, col));
+    }
+
     @Then("系統發布 SkillUsed 事件，技能為 {string}")
     public void skillUsedPublishedWithType(String skill) {
         assertLastSuccess();

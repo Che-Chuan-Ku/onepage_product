@@ -1,15 +1,25 @@
 package com.gomoku.steps.pve;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gomoku.cucumber.ScenarioContext;
 import com.gomoku.domain.entity.PveEncounter;
+import com.gomoku.domain.entity.PveEncounterMove;
 import com.gomoku.domain.entity.PveFieldCell;
 import com.gomoku.domain.entity.PveRun;
 import com.gomoku.domain.entity.PveRunRelic;
 import com.gomoku.domain.entity.PveRunSkill;
 import com.gomoku.domain.enums.FieldCellKind;
 import com.gomoku.domain.enums.PveEncounterEventType;
+import com.gomoku.domain.enums.PveEncounterStatus;
+import com.gomoku.domain.enums.PveEncounterType;
 import com.gomoku.domain.enums.PveRelicType;
 import com.gomoku.domain.enums.SkillType;
+import com.gomoku.domain.enums.StoneColor;
+import com.gomoku.game.DuelPlayerPolicy;
+import com.gomoku.game.PveBoardReplayer;
+import com.gomoku.game.PveFieldScheduler;
+import com.gomoku.game.ReferencePlayerPolicy;
+import com.gomoku.game.SeriousBoard;
 import com.gomoku.repository.PveEncounterEventRepository;
 import com.gomoku.repository.PveEncounterMoveRepository;
 import com.gomoku.repository.PveEncounterRepository;
@@ -59,22 +69,49 @@ public class PveCommonSteps {
     @Autowired private PveRunRelicRepository relicRepository;
     @Autowired private PveShopVisitRepository shopVisitRepository;
     @Autowired private PveChallengeService challengeService;
+    @Autowired private ObjectMapper objectMapper;
 
     // ────────────────────────── backgrounds ──────────────────────────────────
 
     @Given("^一場PVE挑戰對局進行中，棋盤11×11，倍率為 1\\.0$")
     public void pveGameInProgressWithBoard() {
         startRun("alice", "WARRIOR");
+        // 連線傷害結算.feature builds ad-hoc unrelated line/cross constructions
+        // (5-9 moves) — bump the budget (level 1's real budget is now 3; see
+        // setMoveBudget javadoc) AND clear level 1's own pre-placed TYPE_A
+        // shape (its col4 stones can otherwise silently extend an ad-hoc
+        // horizontal line into an accidental premature clear, ~50% of runs
+        // depending on the seed-driven Template A/B pick — see
+        // clearInitialShapeStones javadoc). This background is exclusive to
+        // that feature.
+        setMoveBudget(100);
+        clearInitialShapeStones();
     }
 
     @Given("一場PVE挑戰對局進行中，第1關 BossHP 100，手數預算30")
     public void pveGameInProgressFirstEncounter() {
         startRun("alice", "WARRIOR");
+        // 關卡勝敗判定.feature's background text states an illustrative
+        // moveBudget=30 (decoupled from level 1's real curve value, now 3 —
+        // see Run循環與場地排程.feature's note); it also plays an ad-hoc clean
+        // line via playCleanVerticalLine, so also clear level 1's own
+        // pre-placed shape (see clearInitialShapeStones javadoc).
+        setMoveBudget(30);
+        clearInitialShapeStones();
     }
 
     @Given("一場PVE挑戰對局進行中，玩家 {string} 職業為 {string}")
     public void pveGameInProgressWithClass(String user, String classType) {
         startRun(user, classType);
+        // 技能使用.feature (the only feature using this background) builds
+        // ad-hoc stone constructions at hand-picked coordinates unrelated to
+        // level 1's own designed puzzle (e.g. PIONEER_STAR's (4,6)/(5,6)) —
+        // clear level 1's pre-placed TYPE_A shape so it can't collide (§5 D4
+        // board transform, 2026-07-08: the shape's column/rows are no longer
+        // pinned to column 4, they can land anywhere post-transform, so a
+        // "safe" hardcoded coordinate before the transform existed is no
+        // longer guaranteed safe — see clearInitialShapeStones javadoc).
+        clearInitialShapeStones();
     }
 
     @Given("一個PVE Run進行中")
@@ -183,6 +220,28 @@ public class PveCommonSteps {
         return resp;
     }
 
+    /**
+     * POST /pve/encounters/{encounterId}/actions/retry (2026-07-09 §1.5/§6.5
+     * 公平性修正) — DUEL-only, DRAW-status-only: reopens the same sequence
+     * with a fresh board. On success, updates {@code pve:encounterId} to the
+     * NEW encounter's id (the old one is soft-deleted server-side) and
+     * {@code pve:lastState} to its state, mirroring placeMoveApi/useSkillApi.
+     */
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<Map> retryEncounterApi(String user) {
+        ResponseEntity<Map> resp = restTemplate.postForEntity(
+                "/api/gmk/v1/pve/encounters/" + encounterId() + "/actions/retry",
+                new HttpEntity<>("{}", commonGiven.authHeaders(user)),
+                Map.class);
+        ctx.setLastResponse(resp);
+        if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+            Map<String, Object> data = (Map<String, Object>) resp.getBody().get("data");
+            ctx.putMemo("pve:lastState", data);
+            ctx.putMemo("pve:encounterId", data.get("encounterId"));
+        }
+        return resp;
+    }
+
     /** Default-parameter cast used by steps that name only the skill. */
     public ResponseEntity<Map> useSkillDefault(String user, String skillType) {
         String body = switch (skillType) {
@@ -209,6 +268,17 @@ public class PveCommonSteps {
                 Map.class);
         ctx.setLastResponse(resp);
         return resp.getBody() == null ? null : (Map<String, Object>) resp.getBody().get("data");
+    }
+
+    /** Like {@link #getEncounterApi(String)} but for an explicit id (not the memoized "current" one) — used to assert a retired/soft-deleted encounter 404s. */
+    public ResponseEntity<Map> getEncounterByIdApi(String user, String encId) {
+        ResponseEntity<Map> resp = restTemplate.exchange(
+                "/api/gmk/v1/pve/encounters/" + encId,
+                org.springframework.http.HttpMethod.GET,
+                new HttpEntity<>(commonGiven.authHeaders(user)),
+                Map.class);
+        ctx.setLastResponse(resp);
+        return resp;
     }
 
     @SuppressWarnings("unchecked")
@@ -302,15 +372,23 @@ public class PveCommonSteps {
         }
     }
 
+    /**
+     * Only the target column's own 5-cell window + a 1-row vertical buffer
+     * above/below must be clear (prevents the line silently becoming a 6+
+     * run) — a full 3-column neighborhood is no longer required now that PVE
+     * boards start with dense pre-placed shapes (documents/PVE-關卡重設計-
+     * 2026-07-08.md §0/§2: every level's shapes sit exclusively on even
+     * columns 0/2/4/6/8/10, so any odd column is always entirely free of
+     * them). Residual risk of an incidental diagonal merge is accepted —
+     * extremely low given the design's >=2 column-spacing safety lemma.
+     */
     private int[] findVerticalSegment(Set<Long> blocked) {
         for (int col = 0; col < 11; col++) {
             for (int startRow = 0; startRow + 4 < 11; startRow++) {
                 boolean ok = true;
                 for (int r = Math.max(0, startRow - 1); r <= Math.min(10, startRow + 5) && ok; r++) {
-                    for (int c = Math.max(0, col - 1); c <= Math.min(10, col + 1) && ok; c++) {
-                        if (blocked.contains(key(r, c))) {
-                            ok = false;
-                        }
+                    if (blocked.contains(key(r, col))) {
+                        ok = false;
                     }
                 }
                 if (ok) {
@@ -379,6 +457,58 @@ public class PveCommonSteps {
         encounterRepository.save(encounter);
     }
 
+    /**
+     * Overrides the current encounter's move budget — an explicit escape
+     * hatch for relic/effect unit-style tests that build an ad-hoc board
+     * unrelated to the level's own designed solution (documents/PVE-關卡
+     * 重設計-2026-07-08.md shrank every real per-level budget to just
+     * 30-60% slack over its own solution, too tight for such constructions).
+     */
+    public void setMoveBudget(int budget) {
+        PveEncounter encounter = encounter();
+        encounter.setMoveBudget(budget);
+        encounterRepository.save(encounter);
+    }
+
+    /**
+     * Removes the current encounter's pre-placed INITIAL_BLACK shape cells
+     * (documents/PVE-關卡重設計-2026-07-08.md §0/§6) AND disarms its single-shot
+     * minor disruption (§5), restoring the blank-board premise some
+     * narrowly-scoped mechanism unit tests need: RAGE's "pick a random
+     * occupied cell" changes which cell an unrelated ad-hoc stone cluster's
+     * index maps to if the template is present, and — separately — sequences
+     * 1/2/4/5/7's minor disruption fires at moveBudget/2 (move 1 for level 1's
+     * real budget=3), which would otherwise silently clear/push an ad-hoc
+     * test's own just-placed stone before its later assertions run.
+     * Interaction between RAGE/ABYSS/minor-disruption and the real template
+     * is covered separately by completeCurrentEncounterShapes / the 關卡可解性
+     * harness — this method is only for tests that want a truly blank board.
+     */
+    public void clearInitialShapeStones() {
+        for (PveFieldCell cell : fieldCellRepository.findByEncounterIdAndDeletedFalse(encounterId())) {
+            if (cell.getCellKind() == FieldCellKind.INITIAL_BLACK) {
+                cell.setDeleted(true);
+                fieldCellRepository.save(cell);
+            }
+        }
+        disableMinorDisruption();
+    }
+
+    /**
+     * Disarms the current encounter's single-shot minor disruption (§5)
+     * without touching its pre-placed shape cells — for tests that DO want
+     * the real template (e.g. completing it via completeCurrentEncounterShapes)
+     * but still need determinism: on tight-budget levels (level 1's real
+     * budget is 3) the disruption fires as early as move 1, which could
+     * otherwise clear/push a stone mid-solve before a strict assertion runs.
+     */
+    public void disableMinorDisruption() {
+        PveEncounter encounter = encounter();
+        encounter.setMinorDisruptionType(com.gomoku.domain.enums.PveMinorDisruptionType.NONE);
+        encounter.setMinorDisruptionTriggered(true);
+        encounterRepository.save(encounter);
+    }
+
     public void grantSkill(SkillType type, int quantity) {
         PveRunSkill skill = skillRepository
                 .findByRunIdAndSkillTypeAndDeletedFalse(runId(), type)
@@ -410,6 +540,19 @@ public class PveCommonSteps {
     }
 
     /**
+     * Seam: overwrite the CURRENT run's seed BEFORE jumping to an encounter,
+     * pinning every seed-derived draw (template pool, D4 transform, eruption
+     * centers) for fixtures whose hardcoded coordinates must provably avoid
+     * the level's real shape windows. Must be called before the target
+     * encounter is created — already-created encounters keep their old plan.
+     */
+    public void pinRunSeed(String seed) {
+        PveRun run = run();
+        run.setSeed(seed);
+        runRepository.save(run);
+    }
+
+    /**
      * Seam: jump the run to encounter {@code sequence} as if the previous
      * encounters were cleared (reached = sequence-1); creates the encounter
      * through the real scheduler so field/mutation stay seed-authentic.
@@ -425,15 +568,251 @@ public class PveCommonSteps {
         ctx.putMemo("pve:encounterId", encounter.getId());
     }
 
-    /** Clear the current encounter with one clean 5-line (HP lowered to 50 first). */
+    /**
+     * Clear the current encounter cheaply, branching on encounter type
+     * (documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §1.0): PUZZLE completes
+     * its own designed solution (07-08 doc: complete every non-backup
+     * pre-placed shape's missing cell(s) — always within budget by design);
+     * DUEL force-clears directly through the real economy/shop/run-settlement
+     * side effects ({@link #forceWinCurrentDuelEncounter}) since this helper
+     * exists purely to ADVANCE unrelated feature tests (economy, shop,
+     * run-end) past a boss-duel level, not to exercise the duel itself — the
+     * duel's actual win-rate is validated separately by
+     * BossDuelStatisticsSteps using the real BossAiPolicy + a reference
+     * player policy.
+     */
     public void clearCurrentEncounterCheaply(String user) {
-        PveEncounter encounter = encounter();
-        if (encounter.getBossHpCurrent() > 50) {
-            encounter.setBossHpCurrent(50);
-            encounterRepository.save(encounter);
+        if (encounter().getEncounterType() == PveEncounterType.DUEL) {
+            forceWinCurrentDuelEncounter();
+        } else {
+            completeCurrentEncounterShapes(user);
         }
-        playCleanVerticalLine(user);
         Assertions.assertThat(encounter().getStatus().name()).isEqualTo("CLEARED");
+    }
+
+    /**
+     * Force-clears the CURRENT DUEL encounter through the real
+     * {@link PveChallengeService#onEncounterCleared} side effects (gold
+     * award, reach advance, shop-open/run-WON) without actually playing out
+     * the duel — see {@link #clearCurrentEncounterCheaply} javadoc for why
+     * this is the right seam for generic test advancement instead of a real
+     * playthrough.
+     */
+    public void forceWinCurrentDuelEncounter() {
+        PveRun currentRun = run();
+        PveEncounter currentEncounter = encounter();
+        challengeService.onEncounterCleared(currentRun, currentEncounter);
+        runRepository.save(currentRun);
+        encounterRepository.save(currentEncounter);
+    }
+
+    /** Rebuilds the CURRENT encounter's authoritative board (same reconstruction PveChallengeService itself uses). */
+    public SeriousBoard currentBoard() {
+        List<PveFieldCell> cells = fieldCellRepository.findByEncounterIdAndDeletedFalse(encounterId());
+        List<PveEncounterMove> encounterMoves = moveRepository
+                .findByEncounterIdOrderByEncounterMoveNumberAsc(encounterId());
+        List<com.gomoku.domain.entity.PveEncounterEvent> encounterEvents = eventRepository
+                .findByEncounterIdOrderByOccurredAtAscIdAsc(encounterId());
+        return PveBoardReplayer.rebuild(cells, encounterMoves, encounterEvents, objectMapper);
+    }
+
+    /**
+     * Plays the CURRENT DUEL encounter to completion using
+     * {@link ReferencePlayerPolicy} for the player (BLACK) against the REAL
+     * API — the real {@code BossAiPolicy} replies via the server's own
+     * placeMove flow, exactly as a live client would. Returns true iff the
+     * encounter ended CLEARED (player won five-in-a-row); false on FAILED
+     * (boss five or moves exhausted). Used by the DUEL win-rate statistic
+     * (documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §4.2) — deliberately NOT
+     * used by {@link #clearCurrentEncounterCheaply}'s generic advancement
+     * helper, which force-clears instead (see its javadoc).
+     */
+    public boolean playDuelToCompletion(String user) {
+        return playDuelToCompletion(user, ReferencePlayerPolicy::nextMove);
+    }
+
+    /**
+     * Same as {@link #playDuelToCompletion(String)} but with the player-side
+     * policy parameterized (documents/PVE-魔王對弈與策略引導設計-2026-07-09.md §6.4
+     * "普通玩家" statistical baseline) — lets the DUEL win-rate statistic drive
+     * either {@link ReferencePlayerPolicy} (VCF+VCT-lite forcing search) or
+     * {@code OrdinaryPlayerPolicy} (no search, basic reflexes only) through
+     * the exact same real-API loop.
+     */
+    public boolean playDuelToCompletion(String user, DuelPlayerPolicy policy) {
+        int guard = 0;
+        while (encounter().getStatus() == PveEncounterStatus.IN_PROGRESS && guard++ < 400) {
+            SeriousBoard board = currentBoard();
+            boolean horizontalDisabled = encounter().getSequence() == 3;
+            int[] move = policy.nextMove(board, StoneColor.BLACK, horizontalDisabled);
+            ResponseEntity<Map> resp = placeMoveApi(user, move[0], move[1]);
+            if (!resp.getStatusCode().is2xxSuccessful()) {
+                throw new AssertionError("player policy move (" + move[0] + "," + move[1]
+                        + ") rejected: " + resp.getBody());
+            }
+        }
+        return encounter().getStatus() == PveEncounterStatus.CLEARED;
+    }
+
+    /** The move count the CURRENT encounter's designed solution needs (sum of every non-backup shape's completion cells). */
+    public int currentEncounterSolutionMoveCount() {
+        int total = 0;
+        for (PveFieldScheduler.ShapeSpec shape : activeShapeSpecs()) {
+            if (!shape.backup()) {
+                total += shape.completionCells().size();
+            }
+        }
+        return total;
+    }
+
+    private List<PveFieldScheduler.ShapeSpec> activeShapeSpecs() {
+        PveEncounter encounter = encounter();
+        return PveFieldScheduler.activeShapes(run().getSeed(), encounter.getSequence());
+    }
+
+    private Set<Long> activeShapeWindowCells() {
+        Set<Long> cells = new HashSet<>();
+        for (PveFieldScheduler.ShapeSpec shape : activeShapeSpecs()) {
+            for (int[] rc : shape.windowCells()) {
+                cells.add(key(rc[0], rc[1]));
+            }
+        }
+        return cells;
+    }
+
+    /**
+     * Completes every non-backup shape of the CURRENT encounter via its
+     * designed solution, handling two real disruptions inline: ABYSS (level
+     * 8) spawning a white obstacle right on a target cell (precision-snipe
+     * it, granting the skill on demand — the design's own stated mitigation,
+     * §3) and RAGE (level 6) clearing one of a shape's own already-placed
+     * stones before its line completes (re-place any missing window cell —
+     * repair — until the shape's line actually RESOLVES, §4).
+     *
+     * 2026-07-09 調校輪2: the old flow placed each completion cell exactly
+     * once and moved on. Under RAGE's new 3-move cadence an eruption fires
+     * DURING a shape's fill sequence far more often, and blasting a
+     * just-repaired cell between the repair and the gap placement left the
+     * gap sitting in a broken window — no line, no damage, encounter quietly
+     * stuck IN_PROGRESS until the budget ran out. The per-shape loop below
+     * re-reads the real board after every placement and keeps repairing +
+     * re-placing until a LINE_RESOLVED event lands for the encounter (or the
+     * encounter leaves IN_PROGRESS) — exactly the "重下被炸掉的部分" reaction
+     * the design doc §4 expects of a live player.
+     */
+    public void completeCurrentEncounterShapes(String user) {
+        List<PveFieldScheduler.ShapeSpec> shapes = activeShapeSpecs();
+        Set<Long> allWindowCells = activeShapeWindowCells();
+        for (PveFieldScheduler.ShapeSpec shape : shapes) {
+            if (shape.backup()) {
+                continue;
+            }
+            if (encounter().getStatus() != PveEncounterStatus.IN_PROGRESS) {
+                break;
+            }
+            int resolvedBefore = lineResolvedCount();
+            int guard = 0;
+            while (encounter().getStatus() == PveEncounterStatus.IN_PROGRESS
+                    && lineResolvedCount() == resolvedBefore
+                    && guard++ < 30) {
+                ensureShapeFilled(user, shape);
+                if (encounter().getStatus() != PveEncounterStatus.IN_PROGRESS
+                        || lineResolvedCount() != resolvedBefore) {
+                    break; // a repair move itself completed the line (or ended the encounter)
+                }
+                Set<Long> stones = stoneKeys(getEncounterApi(user));
+                boolean placedAny = false;
+                for (int[] target : shape.completionCells()) {
+                    if (!stones.contains(key(target[0], target[1]))) {
+                        placeOrSnipe(user, target[0], target[1], allWindowCells);
+                        placedAny = true;
+                        break; // re-read the real board before the next placement
+                    }
+                }
+                if (!placedAny) {
+                    break; // every window cell already present without a resolution — nothing left to place
+                }
+            }
+        }
+    }
+
+    /** LINE_RESOLVED event count for the CURRENT encounter (authoritative "did the line actually settle" signal). */
+    private int lineResolvedCount() {
+        return eventRepository.findByEncounterIdAndEventTypeOrderByOccurredAtAscIdAsc(
+                encounterId(), PveEncounterEventType.LINE_RESOLVED).size();
+    }
+
+    private void ensureShapeFilled(String user, PveFieldScheduler.ShapeSpec shape) {
+        Set<Long> stones = stoneKeys(getEncounterApi(user));
+        for (int[] rc : shape.filledCells()) {
+            long k = key(rc[0], rc[1]);
+            if (!stones.contains(k)) {
+                ResponseEntity<Map> resp = placeMoveApi(user, rc[0], rc[1]);
+                Assertions.assertThat(resp.getStatusCode().is2xxSuccessful())
+                        .as("repair move (%d,%d) must succeed: %s", rc[0], rc[1], resp.getBody())
+                        .isTrue();
+                stones.add(k);
+            }
+        }
+    }
+
+    private void placeOrSnipe(String user, int row, int col, Set<Long> allWindowCells) {
+        Map<String, Object> state = getEncounterApi(user);
+        if (!obstacleKeys(state).contains(key(row, col))) {
+            ResponseEntity<Map> resp = placeMoveApi(user, row, col);
+            if (resp.getStatusCode().is2xxSuccessful()) {
+                return;
+            }
+            if (encounter().getStatus() != PveEncounterStatus.IN_PROGRESS) {
+                return; // boss already died from an earlier shape's resolution
+            }
+            throw new AssertionError("designed move (" + row + "," + col + ") failed: " + resp.getBody());
+        }
+        if (skillQuantity(SkillType.PRECISION_SNIPE) <= 0) {
+            grantSkill(SkillType.PRECISION_SNIPE, 20);
+        }
+        ResponseEntity<Map> snipe = useSkillApi(user, snipeBody(row, col));
+        if (snipe.getStatusCode().is2xxSuccessful()) {
+            return;
+        }
+        // Interval already used this turn — open a fresh one with one harmless
+        // filler move (outside every shape's window), then retry the snipe.
+        int[] filler = findFillerCell(user, allWindowCells);
+        Assertions.assertThat(placeMoveApi(user, filler[0], filler[1]).getStatusCode().is2xxSuccessful())
+                .as("filler move to open a new skill interval must succeed").isTrue();
+        ResponseEntity<Map> retry = useSkillApi(user, snipeBody(row, col));
+        Assertions.assertThat(retry.getStatusCode().is2xxSuccessful())
+                .as("snipe retry must succeed: %s", retry.getBody()).isTrue();
+    }
+
+    private String snipeBody(int row, int col) {
+        return String.format("{\"skillType\":\"PRECISION_SNIPE\",\"target\":{\"row\":%d,\"col\":%d}}", row, col);
+    }
+
+    private int[] findFillerCell(String user, Set<Long> allWindowCells) {
+        Map<String, Object> state = getEncounterApi(user);
+        Set<Long> occupied = new HashSet<>();
+        occupied.addAll(stoneKeys(state));
+        occupied.addAll(obstacleKeys(state));
+        for (int r = 0; r < 11; r++) {
+            for (int c = 0; c < 11; c++) {
+                long k = key(r, c);
+                if (!occupied.contains(k) && !allWindowCells.contains(k)) {
+                    return new int[]{r, c};
+                }
+            }
+        }
+        throw new AssertionError("no filler cell available outside every shape window");
+    }
+
+    /** Places `count` filler stones, never touching any active shape's 5-cell window. */
+    public void placeSafeFillers(String user, int count) {
+        Set<Long> avoid = activeShapeWindowCells();
+        for (int i = 0; i < count; i++) {
+            int[] cell = findFillerCell(user, avoid);
+            Assertions.assertThat(placeMoveApi(user, cell[0], cell[1]).getStatusCode().is2xxSuccessful())
+                    .as("safe filler move (%d,%d) must succeed", cell[0], cell[1]).isTrue();
+        }
     }
 
     /** Advance through cleared encounters + shop skips until currentSequence == target. */

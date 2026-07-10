@@ -144,9 +144,11 @@ public class PveBattleSteps {
 
     @Given("玩家棋子鋪局使得落子後形成六連")
     public void sixLineSetup() {
-        placeAll(List.of(new int[]{5, 3}, new int[]{5, 4}, new int[]{5, 5},
-                new int[]{5, 6}, new int[]{5, 8}));
-        ctx.putMemo("pve:sixCell", new int[]{5, 7});
+        // cols shifted off col4 (default level-1 background pre-places a
+        // TYPE_A shape at col4 — documents/PVE-關卡重設計-2026-07-08.md).
+        placeAll(List.of(new int[]{5, 5}, new int[]{5, 6}, new int[]{5, 7},
+                new int[]{5, 8}, new int[]{5, 10}));
+        ctx.putMemo("pve:sixCell", new int[]{5, 9});
     }
 
     @When("玩家落子完成該六連")
@@ -216,7 +218,13 @@ public class PveBattleSteps {
 
     @Given("玩家已用滿30手，當前BossHP為{int}")
     public void movesNearlyExhaustedWithHp(int hp) {
+        // Generic 30-move budget scenario (Background text), decoupled from the
+        // real per-level MOVE_BUDGET_CURVE (level 1 is now 3) so this exercises
+        // the moves-exhausted judgement rule in isolation (documents/PVE-關卡
+        // 重設計-2026-07-08.md §1 changed the curve; this scenario's numbers are
+        // illustrative, not level-1-specific).
         PveEncounter encounter = support.encounter();
+        encounter.setMoveBudget(30);
         encounter.setMovesUsed(29);
         encounter.setBossHpCurrent(hp);
         support.encounters().save(encounter);
@@ -466,10 +474,28 @@ public class PveBattleSteps {
     @When("玩家使用大絕 \"PIONEER_STAR\" 清除範圍內棋子")
     public void usePioneerStarToClear() {
         String user = support.user();
+        // 2026-07-09 魔王對弈與策略引導設計: level 1's real moveBudget dropped
+        // 3→2 (re-themed to a single-shape "衝四" teaching level, §3.1) — the
+        // 2 ad-hoc placements below now exactly exhaust that budget and would
+        // end the encounter (FAILED, moves exhausted) before the skill cast
+        // below ever runs. Bump the budget like the other ad-hoc fixtures in
+        // this feature already do (see PveCommonSteps#setMoveBudget javadoc).
+        support.setMoveBudget(100);
         placeAll(List.of(new int[]{4, 6}, new int[]{5, 6}));
         support.grantSkill(SkillType.PIONEER_STAR, 1);
         ctx.putMemo("pve:hpBefore", support.encounter().getBossHpCurrent());
-        ResponseEntity<Map> resp = support.useSkillDefault(user, "PIONEER_STAR");
+        // 2026-07-10 flaky root-cause fix: the shared useSkillDefault anchor is
+        // (5,5) — dead center, which is exactly where the (all-DUEL now) boss's
+        // reply moves cluster (BossAiPolicy layer 7/8 center preference with a
+        // seeded top-K random pick). Depending on the RNG draw the boss's two
+        // replies to the placements above sometimes took (5,5) itself, failing
+        // the cast with 422 "大絕錨點格必須為空格" — an intermittent, seed-
+        // boundary failure. (0,0) is structurally unreachable within two boss
+        // replies (candidates stay within Chebyshev<=2 of existing stones near
+        // the center), so the anchor is deterministically empty — stronger
+        // than pinning a seed.
+        ResponseEntity<Map> resp = support.useSkillApi(user,
+                "{\"skillType\":\"PIONEER_STAR\",\"direction\":\"RIGHT\",\"anchor\":{\"row\":0,\"col\":0}}");
         Assertions.assertThat(resp.getStatusCode().is2xxSuccessful())
                 .as("pioneer star cast must succeed: %s", resp.getBody())
                 .isTrue();
